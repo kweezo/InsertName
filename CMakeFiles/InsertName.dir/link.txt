@@ -1,1 +1,0 @@
-/usr/bin/c++ -Wall CMakeFiles/InsertName.dir/src/main.cpp.o -o bin/InsertName  -lglfw -lassimp -lvulkan 

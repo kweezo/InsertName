@@ -1,6 +1,7 @@
-lib/lnx/glfw
-lib/win/glfw
+lib/lnx
+lib/win
 cmake_install.cmake
 CMakeCache.txt
 CMakeFiles
 .vscode
+build
