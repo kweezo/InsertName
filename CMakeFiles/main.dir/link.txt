@@ -1,0 +1,1 @@
+/usr/bin/c++ -Wall CMakeFiles/main.dir/src/main.cpp.o -o bin/main  -lglfw 
