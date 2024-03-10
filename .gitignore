@@ -12,3 +12,4 @@ CMakeLists.txt
 Makefile
 .vscode
 build
+src/settings.bin
