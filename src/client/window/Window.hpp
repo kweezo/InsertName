@@ -10,7 +10,7 @@ public:
     static void CreateWindowContext(int width, int height, const char* title);
     static void DestroyWindowContext();
 
-    GLFWwindow* GetGLFWwindow() const;
+    static GLFWwindow* GetGLFWwindow();
 
 
 
