@@ -24,6 +24,7 @@ public:
     static void DestroyDevice();
 
     static VkDevice GetDevice();
+    static VkPhysicalDevice GetPhysicalDevice();
 private:
     static VkDevice device;
     static VkPhysicalDevice physicalDevice;

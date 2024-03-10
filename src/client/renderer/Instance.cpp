@@ -10,7 +10,7 @@ void Instance::CreateInstance(){
     if (instance != VK_NULL_HANDLE) {
         throw std::runtime_error("Vulkan instance already created");
     }
-    if(!Window::GetGlfwInitialized()){
+    if(!Window::GetGLFWInitialized()){
         throw std::runtime_error("GLFW not initialized");
     }
 

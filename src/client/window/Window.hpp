@@ -24,7 +24,8 @@ public:
 
     static GLFWwindow* GetGLFWwindow();
 
-    static bool GetGlfwInitialized();
+    static bool GetGLFWInitialized();
+    static VkSurfaceKHR GetVulkanSurface();
 
     static void CreateVulkanSurface();
 

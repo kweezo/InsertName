@@ -101,6 +101,13 @@ void Device::CreateQueueCreateInfos(){
     }
 }
 
+VkPhysicalDevice Device::GetPhysicalDevice(){
+    return physicalDevice;
+}
+VkDevice Device::GetDevice(){
+    return device;
+}
+
 void Device::DestroyDevice(){
     vkDestroyDevice(device, nullptr);
 }

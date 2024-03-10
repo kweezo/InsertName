@@ -25,7 +25,7 @@ void Window::CreateWindowContext(int width, int height, const char* title){
     }
 }
 
-bool Window::GetGlfwInitialized(){
+bool Window::GetGLFWInitialized(){
     return glfwInitialized;
 }
 
@@ -57,4 +57,8 @@ void Window::CreateVulkanSurface(){
             throw std::runtime_error("Failed to create window surface!");
         }
     #endif
+}
+
+VkSurfaceKHR Window::GetVulkanSurface(){
+    return surface;
 }
