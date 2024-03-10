@@ -9,16 +9,12 @@
 #include "Instance.hpp"
 
 typedef struct QueueFamilyInfo{
-    uint32_t graphicsFamily;
-    uint32_t presentFamily;
     bool graphicsFamilyFound = false;
-    bool presentFamilyFound = false;
+    bool transferFamilyFound = false;
 
-    uint32_t graphicsQueueCount;
-    uint32_t transferQueueCount;
 
-    VkDeviceQueueCreateInfo graphicsQueueCreateInfo;
-    VkDeviceQueueCreateInfo transferQueueCreateInfo;
+    VkDeviceQueueCreateInfo graphicsQueueCreateInfo{};
+    VkDeviceQueueCreateInfo transferQueueCreateInfo{};
 } QueueFamilyInfo;
 
 
@@ -32,8 +28,10 @@ private:
     static VkDevice device;
     static VkPhysicalDevice physicalDevice;
 
+    static QueueFamilyInfo queueFamilyInfo;
+
     static void PickPhysicalDevice();
-    static void PickLogicalDevice();
+    static void CreateLogicalDevice();
     static void CreateQueueCreateInfos();
 
 };

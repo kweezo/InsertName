@@ -2,9 +2,12 @@
 
 VkDevice Device::device = VK_NULL_HANDLE;
 VkPhysicalDevice Device::physicalDevice = VK_NULL_HANDLE;
+QueueFamilyInfo Device::queueFamilyInfo = {};
 
 void Device::CreateDevice(){
     PickPhysicalDevice();
+    CreateQueueCreateInfos();
+    CreateLogicalDevice();
 }
 
 void Device::PickPhysicalDevice(){
@@ -43,17 +46,35 @@ void Device::PickPhysicalDevice(){
     }
 }
 
-void Device::PickLogicalDevice(){
-    //VkDeviceCreateInfo createInfo = {};
-    //createInfo.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
-    //createInfo.queueCreateInfoCount = 1;
-    //createInfo.pQueueCreateInfos = &queueCreateInfo;
+void Device::CreateLogicalDevice(){
+    if(queueFamilyInfo.graphicsFamilyFound == false){
+        throw std::runtime_error("Failed to find a suitable queue family!");
+    }
 
-    //createInfo.enabledExtensionCount = 0;
+    std::vector<VkDeviceQueueCreateInfo> queueCreateInfos;
 
-    //if(vkCreateDevice(physicalDevice, &createInfo, nullptr, &device) != VK_SUCCESS){
-    //    throw std::runtime_error("Failed to create logical device!");
-    //}
+    std::vector<float> graphicsQueuePriorities(queueFamilyInfo.graphicsQueueCreateInfo.queueCount, 1.0f);
+    queueFamilyInfo.graphicsQueueCreateInfo.pQueuePriorities = graphicsQueuePriorities.data();
+
+    queueCreateInfos.push_back(queueFamilyInfo.graphicsQueueCreateInfo);
+
+    if(queueFamilyInfo.transferFamilyFound){
+        std::vector<float> transferQueuePriorities(queueFamilyInfo.transferQueueCreateInfo.queueCount, 1.0f);
+        queueFamilyInfo.transferQueueCreateInfo.pQueuePriorities = transferQueuePriorities.data();
+        queueCreateInfos.push_back(queueFamilyInfo.transferQueueCreateInfo);
+    }
+
+
+    VkDeviceCreateInfo createInfo{};
+    createInfo.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
+    createInfo.queueCreateInfoCount = static_cast<uint32_t>(queueCreateInfos.size());
+    createInfo.pQueueCreateInfos = queueCreateInfos.data();
+    createInfo.enabledExtensionCount = 0;
+    createInfo.enabledLayerCount = 0;
+
+    if(vkCreateDevice(physicalDevice, &createInfo, nullptr, &device) != VK_SUCCESS){
+        throw std::runtime_error("Failed to create logical device!");
+    }
 
 }
 
@@ -63,6 +84,21 @@ void Device::CreateQueueCreateInfos(){
 
     std::vector<VkQueueFamilyProperties> queueFamilies(queueFamilyCount);
     vkGetPhysicalDeviceQueueFamilyProperties(physicalDevice, &queueFamilyCount, queueFamilies.data());
+    
+    for(int i = 0; i < (int)queueFamilies.size(); i++){
+        if(queueFamilies[i].queueFlags & VK_QUEUE_GRAPHICS_BIT){
+            queueFamilyInfo.graphicsFamilyFound = true;
+            queueFamilyInfo.graphicsQueueCreateInfo.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
+            queueFamilyInfo.graphicsQueueCreateInfo.queueFamilyIndex = i;   
+            queueFamilyInfo.graphicsQueueCreateInfo.queueCount = queueFamilies[i].queueCount;
+        }
+        else if(queueFamilies[i].queueFlags & VK_QUEUE_TRANSFER_BIT){
+            queueFamilyInfo.transferFamilyFound = true;
+            queueFamilyInfo.transferQueueCreateInfo.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
+            queueFamilyInfo.transferQueueCreateInfo.queueFamilyIndex = i;   
+            queueFamilyInfo.transferQueueCreateInfo.queueCount = queueFamilies[i].queueCount;
+        }
+    }
 }
 
 void Device::DestroyDevice(){
