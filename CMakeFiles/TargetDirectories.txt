@@ -1,3 +1,0 @@
-/home/jtv/InsertName/CMakeFiles/InsertName.dir
-/home/jtv/InsertName/CMakeFiles/edit_cache.dir
-/home/jtv/InsertName/CMakeFiles/rebuild_cache.dir
