@@ -10,7 +10,5 @@ public:
     static void DestroyRenderer();
 
     static void RenderFrame();
-
-    static bool ShouldExit();
 private:
 };
