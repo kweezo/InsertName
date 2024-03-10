@@ -4,6 +4,7 @@
 void Renderer::InitRenderer(){
     Instance::CreateInstance();
     Device::CreateDevice();
+    Window::CreateVulkanSurface();
 }
 
 void Renderer::RenderFrame(){

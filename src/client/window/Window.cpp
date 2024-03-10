@@ -40,12 +40,21 @@ GLFWwindow* Window::GetGLFWwindow(){
 }
 
 void Window::CreateVulkanSurface(){
-    VkWin32SurfaceCreateInfoKHR createInfo{};
-    createInfo.sType = VK_STRUCTURE_TYPE_WIN32_SURFACE_CREATE_INFO_KHR;
-    createInfo.hwnd = glfwGetWin32Window(window);
-    createInfo.hinstance = GetModuleHandle(nullptr);
-
-    if (vkCreateWin32SurfaceKHR(Instance::GetInstance(), &createInfo, nullptr, &surface) != VK_SUCCESS) {
-        throw std::runtime_error("failed to create window surface!");
+    if(Instance::GetInstance == VK_NULL_HANDLE){
+        throw std::runtime_error("Vulkan instance not created");
     }
+    #ifdef _WIN32
+        VkWin32SurfaceCreateInfoKHR createInfo{};
+        createInfo.sType = VK_STRUCTURE_TYPE_WIN32_SURFACE_CREATE_INFO_KHR;
+        createInfo.hwnd = glfwGetWin32Window(window);
+        createInfo.hinstance = GetModuleHandle(nullptr);
+
+        if (vkCreateWin32SurfaceKHR(Instance::GetInstance(), &createInfo, nullptr, &surface) != VK_SUCCESS) {
+            throw std::runtime_error("failed to create window surface!");
+        }
+    #else
+        if(glfwCreateWindowSurface(Instance::GetInstance(), window, nullptr, &surface) != VK_SUCCESS){
+            throw std::runtime_error("Failed to create window surface!");
+        }
+    #endif
 }
