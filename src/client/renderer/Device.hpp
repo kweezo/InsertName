@@ -25,6 +25,8 @@ public:
 
     static VkDevice GetDevice();
     static VkPhysicalDevice GetPhysicalDevice();
+
+    static QueueFamilyInfo GetQueueFamilyInfo();
 private:
     static VkDevice device;
     static VkPhysicalDevice physicalDevice;

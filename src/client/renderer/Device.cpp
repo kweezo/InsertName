@@ -101,6 +101,10 @@ void Device::CreateQueueCreateInfos(){
     }
 }
 
+QueueFamilyInfo Device::GetQueueFamilyInfo(){
+    return queueFamilyInfo;
+}
+
 VkPhysicalDevice Device::GetPhysicalDevice(){
     return physicalDevice;
 }

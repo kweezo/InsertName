@@ -1,6 +1,7 @@
 #pragma once
 
 #include <vector>
+#include <iostream>
 #include <stdexcept>
 
 #include <vulkan/vulkan.h>
@@ -15,5 +16,8 @@ public:
 
     static VkInstance GetInstance();
 private:
+    static void SetupDebugMessenger();
+
     static VkInstance instance;
+    static VkDebugUtilsMessengerEXT debugMessenger;
 };

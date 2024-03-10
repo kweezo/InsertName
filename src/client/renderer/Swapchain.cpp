@@ -6,6 +6,7 @@ void Swapchain::CreateSwapchain(){
     VkSurfaceCapabilitiesKHR surfaceCapabilities;
     vkGetPhysicalDeviceSurfaceCapabilitiesKHR(Device::GetPhysicalDevice(), Window::GetVulkanSurface(),
      &surfaceCapabilities);
+
    
     VkSwapchainCreateInfoKHR createInfo{};
 
@@ -13,6 +14,33 @@ void Swapchain::CreateSwapchain(){
     createInfo.surface = Window::GetVulkanSurface();
     createInfo.minImageCount = std::min(surfaceCapabilities.minImageCount, PREFERRED_IMAGE_COUNT);
     createInfo.imageFormat = ChooseSwapchainImageFormat();
+    createInfo.imageColorSpace = VK_COLOR_SPACE_SRGB_NONLINEAR_KHR;
+    createInfo.imageExtent = surfaceCapabilities.currentExtent;
+    createInfo.imageArrayLayers = 1;
+    createInfo.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
+
+    if(Device::GetQueueFamilyInfo().transferFamilyFound){
+        createInfo.imageSharingMode = VK_SHARING_MODE_CONCURRENT;
+        uint32_t indices[] = {Device::GetQueueFamilyInfo().graphicsQueueCreateInfo.queueFamilyIndex,
+         Device::GetQueueFamilyInfo().transferQueueCreateInfo.queueFamilyIndex};
+
+        createInfo.queueFamilyIndexCount = 2;
+        createInfo.pQueueFamilyIndices = indices;
+    }
+    else{
+        createInfo.imageSharingMode = VK_SHARING_MODE_EXCLUSIVE;
+        createInfo.queueFamilyIndexCount = 0;
+    }
+
+    createInfo.preTransform = surfaceCapabilities.currentTransform;
+    createInfo.compositeAlpha = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR;
+    createInfo.presentMode = VK_PRESENT_MODE_FIFO_KHR;
+    createInfo.clipped = VK_TRUE;
+    createInfo.oldSwapchain = VK_NULL_HANDLE;
+
+    if(vkCreateSwapchainKHR(Device::GetDevice(), &createInfo, nullptr, &swapchain) != VK_SUCCESS){
+        throw std::runtime_error("Failed to create swapchain!");
+    }
 }
 
 VkFormat Swapchain::ChooseSwapchainImageFormat(){

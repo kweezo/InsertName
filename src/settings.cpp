@@ -19,6 +19,7 @@ void WriteSettingsIfNotSet(const Settings& settings, const std::string& filename
     }
 
     int existingSetting;
+    file.clear();
     file.seekg(0);
     file.read(reinterpret_cast<char*>(&existingSetting), sizeof(int));
     if (file.gcount() != sizeof(int)) { 
@@ -27,7 +28,6 @@ void WriteSettingsIfNotSet(const Settings& settings, const std::string& filename
         if(file.fail()){
             throw std::runtime_error("Failed to write to the settings file");
         }
-        std::cout << "Writing width" << std::endl;
     }
 
     file.seekg(sizeof(int));

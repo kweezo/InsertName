@@ -5,6 +5,7 @@ void Renderer::InitRenderer(){
     Instance::CreateInstance();
     Device::CreateDevice();
     Window::CreateVulkanSurface();
+    Swapchain::CreateSwapchain();
 }
 
 void Renderer::RenderFrame(){
