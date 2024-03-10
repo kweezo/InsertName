@@ -8,4 +8,4 @@ struct Settings {
 
 void readSetting(int& setting, const std::string& settingName, const std::string& filename = "settings.bin");
 void writeSetting(const int& setting, const std::string& settingName, const std::string& filename = "settings.bin");
-void writeSettingsIfNotSet(const Settings& settings, const std::string& filename);
+void WriteSettingsIfNotSet(const Settings& settings, const std::string& filename);

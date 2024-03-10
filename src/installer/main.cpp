@@ -6,7 +6,7 @@ int main() {
     settings.height = 1080; // Set the height
     // Set other settings as needed
 
-    writeSettingsIfNotSet(settings, "../src/settings.bin");
+    WriteSettingsIfNotSet(settings, "src/settings.bin");
 
     return 0;
 }
