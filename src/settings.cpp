@@ -2,7 +2,14 @@
 
 void ReadSettings(Settings& settings, const std::string& filename) {
     std::ifstream in(filename, std::ios::binary);
+    if (!in) {
+        throw std::runtime_error("Failed to open settings file for reading");
+    }
+
     in.read(reinterpret_cast<char*>(&settings), sizeof(Settings));
+    if (in.fail()) {
+        throw std::runtime_error("Failed to read settings from file");
+    }
 }
 
 void WriteSettings(const Settings& settings, const std::string& filename) {
