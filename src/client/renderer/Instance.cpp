@@ -36,3 +36,10 @@ void Instance::CreateInstance(){
         throw std::runtime_error("Failed to create Vulkan instance");
     }
 }
+
+void Instance::DestroyInstance(){
+    if (instance == VK_NULL_HANDLE) {
+        throw std::runtime_error("Vulkan instance not created");
+    }
+    vkDestroyInstance(instance, nullptr);
+}
