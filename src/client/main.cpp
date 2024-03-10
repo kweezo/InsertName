@@ -1,9 +1,13 @@
 #include "window/Window.hpp"
 #include "renderer/Renderer.hpp"
+#include "../settings.hpp"
 
 
 int main(){
-    Window::CreateWindowContext(1920, 1080, "Vulkan");
+    Settings settings;
+    ReadSettings(settings, "settings.bin");
+
+    Window::CreateWindowContext(settings.width, settings.height, "Vulkan");
     Renderer::InitRenderer();
 
     while(!glfwWindowShouldClose(Window::GetGLFWwindow())){
