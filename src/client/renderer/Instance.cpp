@@ -5,7 +5,9 @@ const std::vector<const char*> validationLayers = {
 };
 
 std::vector<const char*> instanceExtensions = {
-    "VK_EXT_debug_utils"
+#ifdef NDEBUG
+    "VK_EXT_debug_utils",
+#endif
 };
 
 VKAPI_ATTR VkBool32 VKAPI_CALL debugCallback(
@@ -13,6 +15,10 @@ VKAPI_ATTR VkBool32 VKAPI_CALL debugCallback(
     VkDebugUtilsMessageTypeFlagsEXT messageType,
     const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData,
     void* pUserData) {
+
+    if(messageSeverity < VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT){
+        return VK_FALSE;
+    }
 
     std::cerr << "validation layer: " << pCallbackData->pMessage << std::endl;
 
@@ -61,24 +67,30 @@ void Instance::CreateInstance(){
 
     createInfo.enabledExtensionCount = instanceExtensions.size();
     createInfo.ppEnabledExtensionNames = instanceExtensions.data();
-    
+
+#ifdef NDEBUG
     createInfo.enabledLayerCount = validationLayers.size();
     createInfo.ppEnabledLayerNames = validationLayers.data();
+#else
+    createInfo.enabledLayerCount = 0;
+#endif
 
     if (vkCreateInstance(&createInfo, nullptr, &instance) != VK_SUCCESS) {
         throw std::runtime_error("Failed to create Vulkan instance");
     }
 
-
+#ifdef NDEBUG
     SetupDebugMessenger();
+#endif
 }
 
 void Instance::SetupDebugMessenger() {
     VkDebugUtilsMessengerCreateInfoEXT createInfo{};
     createInfo.sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT;
-    createInfo.messageSeverity = VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT |
-     VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT;
-    createInfo.messageType = VK_DEBUG_UTILS_MESSAGE_TYPE_GENERAL_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT;
+    createInfo.messageSeverity = VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT |
+     VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_SEVERITY_INFO_BIT_EXT;
+    createInfo.messageType = VK_DEBUG_UTILS_MESSAGE_TYPE_GENERAL_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT |
+     VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT;
     createInfo.pfnUserCallback = debugCallback;
 
     if (CreateDebugUtilsMessengerEXT(instance, &createInfo, nullptr, &debugMessenger) != VK_SUCCESS) {
@@ -94,6 +106,13 @@ VkInstance Instance::GetInstance(){
 }
 
 void Instance::DestroyInstance(){
+    if (debugMessenger != VK_NULL_HANDLE) {
+        auto func = (PFN_vkDestroyDebugUtilsMessengerEXT) vkGetInstanceProcAddr(instance, "vkDestroyDebugUtilsMessengerEXT");
+        if (func != nullptr) {
+            func(instance, debugMessenger, nullptr);
+        }
+    }
+
     if (instance == VK_NULL_HANDLE) {
         throw std::runtime_error("Vulkan instance not created");
     }

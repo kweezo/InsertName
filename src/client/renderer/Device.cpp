@@ -1,5 +1,9 @@
 #include "Device.hpp"
 
+const std::vector<const char*> deviceExtensions = {
+    VK_KHR_SWAPCHAIN_EXTENSION_NAME
+};
+
 VkDevice Device::device = VK_NULL_HANDLE;
 VkPhysicalDevice Device::physicalDevice = VK_NULL_HANDLE;
 QueueFamilyInfo Device::queueFamilyInfo = {};
@@ -69,7 +73,8 @@ void Device::CreateLogicalDevice(){
     createInfo.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
     createInfo.queueCreateInfoCount = static_cast<uint32_t>(queueCreateInfos.size());
     createInfo.pQueueCreateInfos = queueCreateInfos.data();
-    createInfo.enabledExtensionCount = 0;
+    createInfo.enabledExtensionCount = deviceExtensions.size();
+    createInfo.ppEnabledExtensionNames = deviceExtensions.data();
     createInfo.enabledLayerCount = 0;
 
     if(vkCreateDevice(physicalDevice, &createInfo, nullptr, &device) != VK_SUCCESS){

@@ -1,5 +1,7 @@
 #pragma once
 
+#include <vulkan/vulkan.h>
+
 #include "Instance.hpp"
 #include "Device.hpp"
 #include "../window/Window.hpp"

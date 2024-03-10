@@ -13,6 +13,8 @@ void Renderer::RenderFrame(){
 }
 
 void Renderer::DestroyRenderer(){
+    Swapchain::DestroySwapchain();
+    vkDestroySurfaceKHR(Instance::GetInstance(), Window::GetVulkanSurface(), nullptr);
     Device::DestroyDevice();
     Instance::DestroyInstance();
 }

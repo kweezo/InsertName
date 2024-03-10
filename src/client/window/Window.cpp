@@ -40,9 +40,6 @@ GLFWwindow* Window::GetGLFWwindow(){
 }
 
 void Window::CreateVulkanSurface(){
-    if(Instance::GetInstance == VK_NULL_HANDLE){
-        throw std::runtime_error("Vulkan instance not created");
-    }
     #ifdef _WIN32
         VkWin32SurfaceCreateInfoKHR createInfo{};
         createInfo.sType = VK_STRUCTURE_TYPE_WIN32_SURFACE_CREATE_INFO_KHR;
