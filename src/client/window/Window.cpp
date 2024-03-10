@@ -15,7 +15,7 @@ void Window::CreateWindowContext(int width, int height, const char* title){
     glfwInitialized = true;
     
     glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
-#ifdef WIN32
+#ifdef _WIN32
     window = glfwCreateWindow(width, height, title, glfwGetPrimaryMonitor(), NULL);
 #else
     window = glfwCreateWindow(width, height, title, NULL, NULL);
