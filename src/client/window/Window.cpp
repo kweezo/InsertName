@@ -2,6 +2,7 @@
 
 GLFWwindow* Window::window = nullptr;
 bool Window::glfwInitialized = false;
+VkSurfaceKHR Window::surface = VK_NULL_HANDLE;
 
 void Window::CreateWindowContext(int width, int height, const char* title){
     if (glfwInitialized) {
@@ -36,4 +37,15 @@ void Window::DestroyWindowContext(){
 
 GLFWwindow* Window::GetGLFWwindow(){
     return window;
+}
+
+void Window::CreateVulkanSurface(){
+    VkWin32SurfaceCreateInfoKHR createInfo{};
+    createInfo.sType = VK_STRUCTURE_TYPE_WIN32_SURFACE_CREATE_INFO_KHR;
+    createInfo.hwnd = glfwGetWin32Window(window);
+    createInfo.hinstance = GetModuleHandle(nullptr);
+
+    if (vkCreateWin32SurfaceKHR(Instance::GetInstance(), &createInfo, nullptr, &surface) != VK_SUCCESS) {
+        throw std::runtime_error("failed to create window surface!");
+    }
 }
