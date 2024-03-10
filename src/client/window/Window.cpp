@@ -15,6 +15,7 @@ void Window::CreateWindowContext(int width, int height, const char* title){
     glfwInitialized = true;
     
     glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
+    glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE);
     
 
     window = glfwCreateWindow(width, height, title, NULL, NULL);

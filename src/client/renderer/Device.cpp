@@ -43,6 +43,28 @@ void Device::PickPhysicalDevice(){
     }
 }
 
+void Device::PickLogicalDevice(){
+    //VkDeviceCreateInfo createInfo = {};
+    //createInfo.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
+    //createInfo.queueCreateInfoCount = 1;
+    //createInfo.pQueueCreateInfos = &queueCreateInfo;
+
+    //createInfo.enabledExtensionCount = 0;
+
+    //if(vkCreateDevice(physicalDevice, &createInfo, nullptr, &device) != VK_SUCCESS){
+    //    throw std::runtime_error("Failed to create logical device!");
+    //}
+
+}
+
+void Device::CreateQueueCreateInfos(){
+    uint32_t queueFamilyCount = 0;
+    vkGetPhysicalDeviceQueueFamilyProperties(physicalDevice, &queueFamilyCount, nullptr);
+
+    std::vector<VkQueueFamilyProperties> queueFamilies(queueFamilyCount);
+    vkGetPhysicalDeviceQueueFamilyProperties(physicalDevice, &queueFamilyCount, queueFamilies.data());
+}
+
 void Device::DestroyDevice(){
     vkDestroyDevice(device, nullptr);
 }
