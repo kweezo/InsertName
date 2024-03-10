@@ -16,9 +16,8 @@ void Window::CreateWindowContext(int width, int height, const char* title){
     
     glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
     
-    const GLFWvidmode* mode = glfwGetVideoMode(glfwGetPrimaryMonitor());
 
-    window = glfwCreateWindow(mode->width, mode->height, title, glfwGetPrimaryMonitor(), NULL);
+    window = glfwCreateWindow(width, height, title, NULL, NULL);
     if (!window) {
         throw std::runtime_error("Failed to create GLFW window");
     }
