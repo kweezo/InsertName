@@ -1,5 +1,8 @@
 #include "Instance.hpp"
 
+const std::vector<const char*> validationLayers = {
+    "VK_LAYER_KHRONOS_validation"
+};
 
 VkInstance Instance::instance = VK_NULL_HANDLE;
 
@@ -29,12 +32,22 @@ void Instance::CreateInstance(){
 
     createInfo.enabledExtensionCount = glfwExtensionCount;
     createInfo.ppEnabledExtensionNames = glfwExtensions;
+    
+    createInfo.enabledLayerCount = validationLayers.size();
+    createInfo.ppEnabledLayerNames = validationLayers.data();
 
     createInfo.enabledLayerCount = 0;
 
     if (vkCreateInstance(&createInfo, nullptr, &instance) != VK_SUCCESS) {
         throw std::runtime_error("Failed to create Vulkan instance");
     }
+}
+
+VkInstance Instance::GetInstance(){
+    if (instance == VK_NULL_HANDLE) {
+        throw std::runtime_error("Vulkan instance not created");
+    }
+    return instance;
 }
 
 void Instance::DestroyInstance(){

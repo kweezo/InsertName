@@ -3,6 +3,7 @@
 
 void Renderer::InitRenderer(){
     Instance::CreateInstance();
+    Device::CreateDevice();
 }
 
 void Renderer::RenderFrame(){
@@ -10,5 +11,6 @@ void Renderer::RenderFrame(){
 }
 
 void Renderer::DestroyRenderer(){
+    Device::DestroyDevice();
     Instance::DestroyInstance();
 }

@@ -153,6 +153,30 @@ src/client/main.cpp.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/client.dir/build.make CMakeFiles/client.dir/src/client/main.cpp.s
 .PHONY : src/client/main.cpp.s
 
+src/client/renderer/Device.o: src/client/renderer/Device.cpp.o
+.PHONY : src/client/renderer/Device.o
+
+# target to build an object file
+src/client/renderer/Device.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/client.dir/build.make CMakeFiles/client.dir/src/client/renderer/Device.cpp.o
+.PHONY : src/client/renderer/Device.cpp.o
+
+src/client/renderer/Device.i: src/client/renderer/Device.cpp.i
+.PHONY : src/client/renderer/Device.i
+
+# target to preprocess a source file
+src/client/renderer/Device.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/client.dir/build.make CMakeFiles/client.dir/src/client/renderer/Device.cpp.i
+.PHONY : src/client/renderer/Device.cpp.i
+
+src/client/renderer/Device.s: src/client/renderer/Device.cpp.s
+.PHONY : src/client/renderer/Device.s
+
+# target to generate assembly for a file
+src/client/renderer/Device.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/client.dir/build.make CMakeFiles/client.dir/src/client/renderer/Device.cpp.s
+.PHONY : src/client/renderer/Device.cpp.s
+
 src/client/renderer/Instance.o: src/client/renderer/Instance.cpp.o
 .PHONY : src/client/renderer/Instance.o
 
@@ -237,6 +261,9 @@ help:
 	@echo "... src/client/main.o"
 	@echo "... src/client/main.i"
 	@echo "... src/client/main.s"
+	@echo "... src/client/renderer/Device.o"
+	@echo "... src/client/renderer/Device.i"
+	@echo "... src/client/renderer/Device.s"
 	@echo "... src/client/renderer/Instance.o"
 	@echo "... src/client/renderer/Instance.i"
 	@echo "... src/client/renderer/Instance.s"
