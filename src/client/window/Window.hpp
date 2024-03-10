@@ -12,7 +12,7 @@ public:
 
     static GLFWwindow* GetGLFWwindow();
 
-
+    static bool GetGlfwInitialized();
 
 private:
     static GLFWwindow* window;

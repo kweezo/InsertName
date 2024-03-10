@@ -177,6 +177,30 @@ src/client/renderer/Instance.cpp.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/client.dir/build.make CMakeFiles/client.dir/src/client/renderer/Instance.cpp.s
 .PHONY : src/client/renderer/Instance.cpp.s
 
+src/client/renderer/Renderer.o: src/client/renderer/Renderer.cpp.o
+.PHONY : src/client/renderer/Renderer.o
+
+# target to build an object file
+src/client/renderer/Renderer.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/client.dir/build.make CMakeFiles/client.dir/src/client/renderer/Renderer.cpp.o
+.PHONY : src/client/renderer/Renderer.cpp.o
+
+src/client/renderer/Renderer.i: src/client/renderer/Renderer.cpp.i
+.PHONY : src/client/renderer/Renderer.i
+
+# target to preprocess a source file
+src/client/renderer/Renderer.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/client.dir/build.make CMakeFiles/client.dir/src/client/renderer/Renderer.cpp.i
+.PHONY : src/client/renderer/Renderer.cpp.i
+
+src/client/renderer/Renderer.s: src/client/renderer/Renderer.cpp.s
+.PHONY : src/client/renderer/Renderer.s
+
+# target to generate assembly for a file
+src/client/renderer/Renderer.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/client.dir/build.make CMakeFiles/client.dir/src/client/renderer/Renderer.cpp.s
+.PHONY : src/client/renderer/Renderer.cpp.s
+
 src/client/window/Window.o: src/client/window/Window.cpp.o
 .PHONY : src/client/window/Window.o
 
@@ -216,6 +240,9 @@ help:
 	@echo "... src/client/renderer/Instance.o"
 	@echo "... src/client/renderer/Instance.i"
 	@echo "... src/client/renderer/Instance.s"
+	@echo "... src/client/renderer/Renderer.o"
+	@echo "... src/client/renderer/Renderer.i"
+	@echo "... src/client/renderer/Renderer.s"
 	@echo "... src/client/window/Window.o"
 	@echo "... src/client/window/Window.i"
 	@echo "... src/client/window/Window.s"
