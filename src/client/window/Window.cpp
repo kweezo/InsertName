@@ -15,12 +15,10 @@ void Window::CreateWindowContext(int width, int height, const char* title){
     glfwInitialized = true;
     
     glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
-#ifdef _WIN32
-    window = glfwCreateWindow(width, height, title, glfwGetPrimaryMonitor(), NULL);
-#else
-    window = glfwCreateWindow(width, height, title, NULL, NULL);
-#endif
-//TODO: REMOVE
+    
+    const GLFWvidmode* mode = glfwGetVideoMode(glfwGetPrimaryMonitor());
+
+    window = glfwCreateWindow(mode->width, mode->height, title, glfwGetPrimaryMonitor(), NULL);
     if (!window) {
         throw std::runtime_error("Failed to create GLFW window");
     }
