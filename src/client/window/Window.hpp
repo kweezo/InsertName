@@ -18,4 +18,6 @@ private:
     static GLFWwindow* window;
 
     static bool glfwInitialized;
+
+    VkSurfaceKHR surface;
 };
