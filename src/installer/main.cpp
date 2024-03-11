@@ -5,7 +5,7 @@ int main() {
     settings.width = 1920;
     settings.height = 1080;
 
-    WriteSettings(settings, "../src/settings.bin");
+    WriteSettings(settings, "src/settings.bin");
 
     return 0;
 }

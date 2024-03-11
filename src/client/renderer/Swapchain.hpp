@@ -18,6 +18,9 @@ public:
     static VkSwapchainKHR GetSwapchain();
 private:
     static VkSwapchainKHR swapchain;
+    static std::vector<VkImageView> swapchainImageViews;
 
     static VkFormat ChooseSwapchainImageFormat();
+
+    static void CreateSwapchainImageViews();
 };

@@ -1,9 +1,8 @@
 <<<<<<< HEAD
-lib
-bin
+lib/win/*
+lib/lnx/*
+bin/*
 =======
-lib/lnx
-lib/win
 >>>>>>> a8d8c7a336b688e2f7b85ac8782e63cff16e8422
 cmake_install.cmake
 CMakeCache.txt
