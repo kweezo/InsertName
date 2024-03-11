@@ -86,6 +86,21 @@ void Swapchain::CreateSwapchainImageViews(){
     }
 }
 
+VkSwapchainKHR Swapchain::GetSwapchain(){
+    return swapchain;
+}
+
+VkExtent2D Swapchain::GetExtent(){
+    VkSurfaceCapabilitiesKHR surfaceCapabilities;
+    vkGetPhysicalDeviceSurfaceCapabilitiesKHR(Device::GetPhysicalDevice(), Window::GetVulkanSurface(),
+     &surfaceCapabilities);
+    return surfaceCapabilities.currentExtent;
+}
+
+VkFormat Swapchain::GetImageFormat(){
+    return ChooseSwapchainImageFormat();
+}
+
 void Swapchain::DestroySwapchain(){
     vkDestroySwapchainKHR(Device::GetDevice(), swapchain, nullptr);
 }

@@ -56,6 +56,12 @@ void Window::CreateVulkanSurface(){
     #endif
 }
 
+VkExtent2D  Window::GetExtent(){
+    int width, height;
+    glfwGetFramebufferSize(window, &width, &height);
+    return {static_cast<uint32_t>(width), static_cast<uint32_t>(height)};
+}
+
 VkSurfaceKHR Window::GetVulkanSurface(){
     return surface;
 }

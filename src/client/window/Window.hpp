@@ -27,6 +27,8 @@ public:
     static bool GetGLFWInitialized();
     static VkSurfaceKHR GetVulkanSurface();
 
+    static VkExtent2D GetExtent();
+
     static void CreateVulkanSurface();
 
 private:

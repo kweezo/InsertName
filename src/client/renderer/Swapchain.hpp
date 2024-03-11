@@ -16,6 +16,9 @@ public:
     static void DestroySwapchain();
 
     static VkSwapchainKHR GetSwapchain();
+
+    static VkExtent2D GetExtent();
+    static VkFormat GetImageFormat();
 private:
     static VkSwapchainKHR swapchain;
     static std::vector<VkImageView> swapchainImageViews;

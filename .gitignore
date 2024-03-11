@@ -12,3 +12,4 @@ Makefile
 .vscode
 build
 src/settings.bin
+notes
