@@ -16,7 +16,7 @@ int main(){
     Shader shader = Shader("shaders/bin/triangleVert.spv", "shaders/bin/triangleFrag.spv"); // TEMP REMOVE LATER
 
     //NIKO PREBERI
-// this is all temporary kr hocem videt trikotnik na zaslonu in brez tega bi rabl fuul vec boilerplate kar bom pol naredu
+//* this is all temporary kr hocem videt trikotnik na zaslonu in brez tega bi rabl fuul vec boilerplate kar bom pol naredu
     VkPipelineVertexInputStateCreateInfo vertexInputInfo{};
     vertexInputInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
     vertexInputInfo.vertexBindingDescriptionCount = 0;
