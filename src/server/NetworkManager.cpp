@@ -40,7 +40,7 @@ int NetworkManager::initNetwork() {
         throw std::runtime_error("Failed to listen on socket");
     }
 
-    std::cout << "Server is listening on port" << serverAddress.sin_port << "...\n";
+    std::cout << "Server is listening on port " << ntohs(serverAddress.sin_port) << "...\n";
     return 0;
 }
 
