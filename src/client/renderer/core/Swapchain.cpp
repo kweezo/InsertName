@@ -42,6 +42,8 @@ void Swapchain::CreateSwapchain(){
     if(vkCreateSwapchainKHR(Device::GetDevice(), &createInfo, nullptr, &swapchain) != VK_SUCCESS){
         throw std::runtime_error("Failed to create swapchain!");
     }
+
+    CreateSwapchainImageViews();
 }
 
 VkFormat Swapchain::ChooseSwapchainImageFormat(){

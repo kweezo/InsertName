@@ -82,11 +82,11 @@ colorAttachment.finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
         glfwPollEvents();
         Renderer::RenderFrame();
 
-   //     buffer.BeginCommandBuffer(imageIndex);
-   //     vkCmdDraw(buffer.GetCommandBuffer(), 3, 1, 0, 0);
-   //     buffer.EndCommandBuffer();
+        buffer.BeginCommandBuffer(imageIndex);
+        vkCmdDraw(buffer.GetCommandBuffer(), 3, 1, 0, 0);
+        buffer.EndCommandBuffer();
 
-        imageIndex = (imageIndex + 1) % PREFERRED_IMAGE_COUNT;
+        imageIndex = (imageIndex + 1) % 2;
     }
 
     Renderer::DestroyRenderer();

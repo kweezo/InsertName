@@ -69,7 +69,6 @@ GraphicsPipeline::GraphicsPipeline(VkPipelineVertexInputStateCreateInfo vertexIn
     std::vector<VkImageView> swapchainImageViews = Swapchain::GetSwapchainImageViews();
 
     framebuffers.resize(swapchainImageViews.size());
-    std::cerr << swapchainImageViews.size() << std::endl;
 
     for(int i = 0; i < swapchainImageViews.size(); i++){
         VkFramebufferCreateInfo framebufferInfo{};
@@ -96,7 +95,6 @@ void GraphicsPipeline::BeginRenderPassAndBindPipeline(uint32_t imageIndex, VkCom
     VkRenderPassBeginInfo renderPassInfo{};
     renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
     renderPassInfo.renderPass = renderPass;
-    std::cerr << imageIndex << " " << framebuffers.size();
     renderPassInfo.framebuffer = framebuffers[imageIndex];
     renderPassInfo.renderArea.offset = {0, 0};
     renderPassInfo.renderArea.extent = Swapchain::GetExtent();
