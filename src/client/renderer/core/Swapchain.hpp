@@ -19,9 +19,13 @@ public:
 
     static VkExtent2D GetExtent();
     static VkFormat GetImageFormat();
+
+    static std::vector<VkImageView> GetSwapchainImageViews();
 private:
     static VkSwapchainKHR swapchain;
     static std::vector<VkImageView> swapchainImageViews;
+
+    std::vector<VkFramebuffer> framebuffers;
 
     static VkFormat ChooseSwapchainImageFormat();
 

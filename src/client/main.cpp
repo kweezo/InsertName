@@ -1,9 +1,11 @@
-#include "window/Window.hpp"
-#include "renderer/Renderer.hpp"
+#include "renderer/window/Window.hpp"
+#include "renderer/core/Renderer.hpp"
+#include "renderer/core/CommandBuffer.hpp"
+#include "renderer/core/Swapchain.hpp"
 #include "../settings.hpp"
 
-#include "renderer/Shader.hpp"
-#include "renderer/GraphicsPipeline.hpp"
+#include "renderer/core/Shader.hpp"
+#include "renderer/core/GraphicsPipeline.hpp"
 
 
 int main(){
@@ -72,9 +74,19 @@ colorAttachment.finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
     GraphicsPipeline pipeline = GraphicsPipeline(vertexInputInfo, VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, VK_POLYGON_MODE_FILL, multisampling,
      depthStencilInfo, colorBlending, renderPassInfo, shader);
 
+    CommandBuffer buffer = CommandBuffer(VK_COMMAND_BUFFER_LEVEL_PRIMARY, COMMAND_BUFFER_GRAPHICS_FLAG, pipeline);
+
+    uint32_t imageIndex = 0;
+
     while(!glfwWindowShouldClose(Window::GetGLFWwindow())){
         glfwPollEvents();
         Renderer::RenderFrame();
+
+   //     buffer.BeginCommandBuffer(imageIndex);
+   //     vkCmdDraw(buffer.GetCommandBuffer(), 3, 1, 0, 0);
+   //     buffer.EndCommandBuffer();
+
+        imageIndex = (imageIndex + 1) % PREFERRED_IMAGE_COUNT;
     }
 
     Renderer::DestroyRenderer();

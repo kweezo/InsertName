@@ -66,15 +66,74 @@ GraphicsPipeline::GraphicsPipeline(VkPipelineVertexInputStateCreateInfo vertexIn
         throw std::runtime_error("Failed to create graphics pipeline");
     }
 
+    std::vector<VkImageView> swapchainImageViews = Swapchain::GetSwapchainImageViews();
+
+    framebuffers.resize(swapchainImageViews.size());
+    std::cerr << swapchainImageViews.size() << std::endl;
+
+    for(int i = 0; i < swapchainImageViews.size(); i++){
+        VkFramebufferCreateInfo framebufferInfo{};
+        framebufferInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
+        framebufferInfo.renderPass = renderPass;
+        framebufferInfo.attachmentCount = 1;
+        framebufferInfo.pAttachments = &swapchainImageViews[i];
+        framebufferInfo.width = Swapchain::GetExtent().width;
+        framebufferInfo.height = Swapchain::GetExtent().height;
+        framebufferInfo.layers = 1;
+
+        if(vkCreateFramebuffer(Device::GetDevice(), &framebufferInfo, nullptr, &framebuffers[i]) != VK_SUCCESS){
+            throw std::runtime_error("Failed to create framebuffer");
+        }
+    }
+
+
+
     useCount = new uint32_t;
     useCount[0] = 1;
 }
 
+void GraphicsPipeline::BeginRenderPassAndBindPipeline(uint32_t imageIndex, VkCommandBuffer commandBuffer){
+    VkRenderPassBeginInfo renderPassInfo{};
+    renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
+    renderPassInfo.renderPass = renderPass;
+    std::cerr << imageIndex << " " << framebuffers.size();
+    renderPassInfo.framebuffer = framebuffers[imageIndex];
+    renderPassInfo.renderArea.offset = {0, 0};
+    renderPassInfo.renderArea.extent = Swapchain::GetExtent();
+    VkClearValue clearColor = {0.0f, 0.0f, 0.0f, 1.0f}; // todo, make this dynamic
+    renderPassInfo.clearValueCount = 1;
+    renderPassInfo.pClearValues = &clearColor;
+
+    vkCmdBeginRenderPass(commandBuffer, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
+
+    vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline);
+
+    //I will also just specify the scissors and the viewport here for convenience
+
+    VkViewport viewport{};
+    viewport.x = 0.0f;
+    viewport.y = 0.0f;
+    viewport.width = Swapchain::GetExtent().width;
+    viewport.height = Swapchain::GetExtent().height;
+    viewport.minDepth = 0.0f;
+    viewport.maxDepth = 1.0f;
+    vkCmdSetViewport(commandBuffer, 0, 1, &viewport);
+
+    VkRect2D scissor{};
+    scissor.offset = {0, 0};
+    scissor.extent = Swapchain::GetExtent();
+    vkCmdSetScissor(commandBuffer, 0, 1, &scissor);
+}
+
+void GraphicsPipeline::EndRenderPass(VkCommandBuffer commandBuffer){
+    vkCmdEndRenderPass(commandBuffer);
+}
 GraphicsPipeline::GraphicsPipeline(const GraphicsPipeline& other){
     pipeline = other.pipeline;
     pipelineLayout = other.pipelineLayout;
     renderPass = other.renderPass;
     useCount = other.useCount;
+    framebuffers = other.framebuffers;
     useCount[0]++;
 }
 
@@ -87,12 +146,17 @@ GraphicsPipeline GraphicsPipeline::operator=(const GraphicsPipeline& other){
     pipelineLayout = other.pipelineLayout;
     renderPass = other.renderPass;
     useCount = other.useCount;
+    framebuffers = other.framebuffers;
     useCount[0]++;
     return *this;
 }
 
 GraphicsPipeline::~GraphicsPipeline(){
     if(useCount[0] == 1){
+        for(const VkFramebuffer& framebuffer : framebuffers){
+            vkDestroyFramebuffer(Device::GetDevice(), framebuffer, nullptr);
+        }
+    
         vkDestroyPipeline(Device::GetDevice(), pipeline, nullptr);
         vkDestroyPipelineLayout(Device::GetDevice(), pipelineLayout, nullptr);
         vkDestroyRenderPass(Device::GetDevice(), renderPass, nullptr);

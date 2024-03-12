@@ -97,6 +97,10 @@ VkExtent2D Swapchain::GetExtent(){
     return surfaceCapabilities.currentExtent;
 }
 
+std::vector<VkImageView> Swapchain::GetSwapchainImageViews(){
+    return swapchainImageViews;
+}
+
 VkFormat Swapchain::GetImageFormat(){
     return ChooseSwapchainImageFormat();
 }

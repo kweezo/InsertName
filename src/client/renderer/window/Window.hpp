@@ -14,7 +14,7 @@
 #include <vulkan/vulkan_win32.h>
 #endif
 
-#include "../renderer/Instance.hpp"
+#include "../core/Instance.hpp"
 
 class Window {
 
