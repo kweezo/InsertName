@@ -14,6 +14,9 @@ CommandBuffer::CommandBuffer(VkCommandBufferLevel level, uint32_t flags, Graphic
 
 void CommandBuffer::BeginCommandBuffer(uint32_t imageIndex){
     //TODO, HANDLE SECONDARY CMD BUFFERS
+
+    vkResetCommandBuffer(commandBuffer, 0);
+
     VkCommandBufferBeginInfo beginInfo = {};
     beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
     beginInfo.flags = 0;

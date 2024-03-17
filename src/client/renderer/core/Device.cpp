@@ -7,11 +7,16 @@ const std::vector<const char*> deviceExtensions = {
 VkDevice Device::device = VK_NULL_HANDLE;
 VkPhysicalDevice Device::physicalDevice = VK_NULL_HANDLE;
 QueueFamilyInfo Device::queueFamilyInfo = {};
+std::vector<VkQueue> Device::graphicsQueues = {};
+std::vector<VkQueue> Device::transferQueues = {};
+uint32_t Device::graphicsQueueFamilyIndex = 0;
+uint32_t Device::transferQueueFamilyIndex = 0;
 
 void Device::CreateDevice(){
     PickPhysicalDevice();
     CreateQueueCreateInfos();
     CreateLogicalDevice();
+    GetQueues();
 }
 
 void Device::PickPhysicalDevice(){
@@ -104,6 +109,40 @@ void Device::CreateQueueCreateInfos(){
             queueFamilyInfo.transferQueueCreateInfo.queueCount = queueFamilies[i].queueCount;
         }
     }
+}
+
+void Device::GetQueues(){
+    for(int i = 0; i < queueFamilyInfo.graphicsQueueCreateInfo.queueCount; i++){
+        VkQueue queue;
+        vkGetDeviceQueue(device, queueFamilyInfo.graphicsQueueCreateInfo.queueFamilyIndex, i, &queue);
+        graphicsQueues.push_back(queue);
+    }
+
+    if(queueFamilyInfo.transferFamilyFound){
+        for(int i = 0; i < queueFamilyInfo.transferQueueCreateInfo.queueCount; i++){
+            VkQueue queue;
+            vkGetDeviceQueue(device, queueFamilyInfo.transferQueueCreateInfo.queueFamilyIndex, i, &queue);
+            transferQueues.push_back(queue);
+        }
+    }
+}
+
+VkQueue Device::GetGraphicsQueue(){ 
+    VkQueue &queue = graphicsQueues[graphicsQueueFamilyIndex];
+    graphicsQueueFamilyIndex = (graphicsQueueFamilyIndex + 1) % graphicsQueues.size();
+
+    return queue;
+}
+
+VkQueue Device::GetTransferQueue(){
+    if(queueFamilyInfo.transferFamilyFound == false){
+        return GetGraphicsQueue();
+    }
+    
+    VkQueue &queue = transferQueues[transferQueueFamilyIndex];
+    transferQueueFamilyIndex = (transferQueueFamilyIndex + 1) % transferQueues.size();
+    
+    return queue;
 }
 
 QueueFamilyInfo Device::GetQueueFamilyInfo(){

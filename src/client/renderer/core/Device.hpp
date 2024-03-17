@@ -26,8 +26,17 @@ public:
     static VkDevice GetDevice();
     static VkPhysicalDevice GetPhysicalDevice();
 
+    static VkQueue GetGraphicsQueue();
+    static VkQueue GetTransferQueue();
+
     static QueueFamilyInfo GetQueueFamilyInfo();
 private:
+    static uint32_t graphicsQueueFamilyIndex;
+    static uint32_t transferQueueFamilyIndex;
+
+    static std::vector<VkQueue> graphicsQueues;
+    static std::vector<VkQueue> transferQueues;
+
     static VkDevice device;
     static VkPhysicalDevice physicalDevice;
 
@@ -36,5 +45,6 @@ private:
     static void PickPhysicalDevice();
     static void CreateLogicalDevice();
     static void CreateQueueCreateInfos();
+    static void GetQueues();
 
 };
