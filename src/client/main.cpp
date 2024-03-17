@@ -148,13 +148,19 @@ colorAttachment.finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
         presentInfo.pImageIndices = &imageIndex;
         presentInfo.swapchainCount = 1;
 
-        vkQueuePresentKHR(Device::GetTransferQueue(), &presentInfo);
+        vkQueuePresentKHR(Device::GetGraphicsQueue(), &presentInfo);
         
 
         Renderer::RenderFrame();
 
         imageIndex = (imageIndex + 1) % 2;
     }
+
+    vkDeviceWaitIdle(Device::GetDevice());
+
+    vkDestroySemaphore(Device::GetDevice(), renderFinishedSemaphore, nullptr);
+    vkDestroySemaphore(Device::GetDevice(), imageAvailableSemaphore, nullptr);
+    vkDestroyFence(Device::GetDevice(), inFlightFence, nullptr);
 
     Renderer::DestroyRenderer();
     Window::DestroyWindowContext();

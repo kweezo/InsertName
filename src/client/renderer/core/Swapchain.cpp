@@ -99,6 +99,12 @@ VkExtent2D Swapchain::GetExtent(){
     return surfaceCapabilities.currentExtent;
 }
 
+uint32_t Swapchain::GetImageCount(){
+    uint32_t imageCount;
+    vkGetSwapchainImagesKHR(Device::GetDevice(), swapchain, &imageCount, nullptr);
+    return imageCount;
+}
+
 std::vector<VkImageView> Swapchain::GetSwapchainImageViews(){
     return swapchainImageViews;
 }
@@ -108,5 +114,9 @@ VkFormat Swapchain::GetImageFormat(){
 }
 
 void Swapchain::DestroySwapchain(){
+    for(auto imageView : swapchainImageViews){
+        vkDestroyImageView(Device::GetDevice(), imageView, nullptr);
+    }
+
     vkDestroySwapchainKHR(Device::GetDevice(), swapchain, nullptr);
 }

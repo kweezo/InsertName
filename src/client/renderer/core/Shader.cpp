@@ -79,6 +79,7 @@ Shader Shader::operator=(const Shader& other){
 }
 
 Shader::~Shader(){
+        std::cerr << "pamapam\n";
     if(useCount[0] <= 1){
         vkDestroyShaderModule(Device::GetDevice(), vertexShaderModule, nullptr);
         vkDestroyShaderModule(Device::GetDevice(), fragmentShaderModule, nullptr);

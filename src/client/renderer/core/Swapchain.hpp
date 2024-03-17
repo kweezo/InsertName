@@ -20,6 +20,8 @@ public:
     static VkExtent2D GetExtent();
     static VkFormat GetImageFormat();
 
+    static uint32_t GetImageCount();
+
     static std::vector<VkImageView> GetSwapchainImageViews();
 private:
     static VkSwapchainKHR swapchain;
