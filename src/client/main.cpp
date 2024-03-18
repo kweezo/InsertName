@@ -7,7 +7,7 @@
 #include "renderer/core/VertexBuffer.hpp"
 #include "../settings.hpp"
 
-
+//implement staging and index buffer support (I am going to kill myself)
 
 int main(){
     Settings settings;
@@ -38,7 +38,7 @@ int main(){
 
     float vertices[] = {
         0.0f, -0.5f, 0.0f, 1.0f, 1.0f, 1.0f,
-        0.5f, 0.5f, 0.0f, 1.0f, 1.0f, 1.0f,
+        0.5f, 0.5f, 0.0f, 1.0f, 0.0f, 1.0f,
         -0.5f, 0.5f, 0.0f, 1.0f, 1.0f, 1.0f
     };
 
