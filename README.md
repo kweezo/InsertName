@@ -25,4 +25,4 @@ validation layer: Validation Error: [ VUID-vkDestroyDevice-device-00378 ] Object
     - Handle all draw calls made by user while still maintaining a semblance of performance 
     - All the different shaders
 
-*Shoutout to https://developer.nvidia.com/blog/vulkan-dos-donts/ gotta be of my favorite genders*
+*Shoutout to https://developer.nvidia.com/blog/vulkan-dos-donts/ gotta be of one my favorite genders*

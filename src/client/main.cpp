@@ -2,10 +2,11 @@
 #include "renderer/core/Renderer.hpp"
 #include "renderer/core/CommandBuffer.hpp"
 #include "renderer/core/Swapchain.hpp"
-#include "../settings.hpp"
-
 #include "renderer/core/Shader.hpp"
 #include "renderer/core/GraphicsPipeline.hpp"
+#include "renderer/core/VertexBuffer.hpp"
+#include "../settings.hpp"
+
 
 
 int main(){
@@ -14,15 +15,44 @@ int main(){
 
     Window::CreateWindowContext(settings.width, settings.height, "Vulkan");
     Renderer::InitRenderer();
-
+{
     Shader shader = Shader("shaders/bin/triangleVert.spv", "shaders/bin/triangleFrag.spv"); // TEMP REMOVE LATER
 
-    //NIKO PREBERI
-//* this is all temporary kr hocem videt trikotnik na zaslonu in brez tega bi rabl fuul vec boilerplate kar bom pol naredu
+    std::vector<VkVertexInputAttributeDescription> attributeDescriptions(2);
+
+    attributeDescriptions[0].binding = 0;
+    attributeDescriptions[0].location = 0;
+    attributeDescriptions[0].format = VK_FORMAT_R32G32B32_SFLOAT;
+    attributeDescriptions[0].offset = 0;
+
+    attributeDescriptions[1].binding = 0;
+    attributeDescriptions[1].location = 1;
+    attributeDescriptions[1].format = VK_FORMAT_R32G32B32_SFLOAT;
+    attributeDescriptions[1].offset = sizeof(float)  * 3;
+    
+
+    VkVertexInputBindingDescription bindingDescription = {};
+    bindingDescription.binding = 0;
+    bindingDescription.stride = 6 * sizeof(float);
+    bindingDescription.inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
+
+    float vertices[] = {
+        0.0f, -0.5f, 0.0f, 1.0f, 1.0f, 1.0f,
+        0.5f, 0.5f, 0.0f, 1.0f, 1.0f, 1.0f,
+        -0.5f, 0.5f, 0.0f, 1.0f, 1.0f, 1.0f
+    };
+
+    VertexBuffer vertexBuffer = VertexBuffer(attributeDescriptions, {bindingDescription}, sizeof(vertices),
+     VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, vertices);
+
+    BufferDescriptions buffDescription = vertexBuffer.GetDescriptions();
+
     VkPipelineVertexInputStateCreateInfo vertexInputInfo{};
     vertexInputInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
-    vertexInputInfo.vertexBindingDescriptionCount = 0;
-    vertexInputInfo.vertexAttributeDescriptionCount = 0;
+    vertexInputInfo.vertexBindingDescriptionCount = buffDescription.bindingDescriptions.size();
+    vertexInputInfo.pVertexBindingDescriptions = buffDescription.bindingDescriptions.data();
+    vertexInputInfo.vertexAttributeDescriptionCount = buffDescription.attributeDescriptions.size();
+    vertexInputInfo.pVertexAttributeDescriptions = buffDescription.attributeDescriptions.data();
     VkPipelineMultisampleStateCreateInfo multisampling{};
     multisampling.sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
     multisampling.sampleShadingEnable = VK_FALSE;
@@ -52,10 +82,10 @@ int main(){
     colorAttachment.samples = VK_SAMPLE_COUNT_1_BIT;
     colorAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
     colorAttachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
-colorAttachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+    colorAttachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
     colorAttachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
     colorAttachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-colorAttachment.finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;        
+    colorAttachment.finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;        
 
 
     VkSubpassDependency subpassDep{};
@@ -99,11 +129,15 @@ colorAttachment.finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
     fenceInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
     fenceInfo.flags = VK_FENCE_CREATE_SIGNALED_BIT;
 
+
+
     if(vkCreateSemaphore(Device::GetDevice(), &semaphoreInfo, nullptr, &imageAvailableSemaphore) != VK_SUCCESS ||
        vkCreateSemaphore(Device::GetDevice(), &semaphoreInfo, nullptr, &renderFinishedSemaphore) != VK_SUCCESS ||
        vkCreateFence(Device::GetDevice(), &fenceInfo, nullptr, &inFlightFence) != VK_SUCCESS){ //cleanup is for losers anyways (ill do it later maybe lol)
         throw std::runtime_error("Failed to create semaphores");
     }
+
+ 
 
     while(!glfwWindowShouldClose(Window::GetGLFWwindow())){
         glfwPollEvents();
@@ -114,7 +148,11 @@ colorAttachment.finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
         vkAcquireNextImageKHR(Device::GetDevice(), Swapchain::GetSwapchain(), UINT64_MAX, imageAvailableSemaphore, VK_NULL_HANDLE, &imageIndex);
 
 
+        VkDeviceSize offsets[] = {0};
+
         buffer.BeginCommandBuffer(imageIndex);
+        VkBuffer buff = vertexBuffer.GetBuffer();
+        vkCmdBindVertexBuffers(buffer.GetCommandBuffer(), 0, 1, &buff, offsets);
         vkCmdDraw(buffer.GetCommandBuffer(), 3, 1, 0, 0);
         buffer.EndCommandBuffer();
 
@@ -161,7 +199,7 @@ colorAttachment.finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
     vkDestroySemaphore(Device::GetDevice(), renderFinishedSemaphore, nullptr);
     vkDestroySemaphore(Device::GetDevice(), imageAvailableSemaphore, nullptr);
     vkDestroyFence(Device::GetDevice(), inFlightFence, nullptr);
-
+}
     Renderer::DestroyRenderer();
     Window::DestroyWindowContext();
 

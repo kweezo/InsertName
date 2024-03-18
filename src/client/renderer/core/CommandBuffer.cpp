@@ -10,6 +10,9 @@ CommandBuffer::CommandBuffer(VkCommandBufferLevel level, uint32_t flags, Graphic
     if(vkAllocateCommandBuffers(Device::GetDevice(), &allocInfo, &commandBuffer) != VK_SUCCESS){
         throw std::runtime_error("Failed to allocate command buffers");
     }
+
+    useCount = new uint32_t;
+    useCount[0] = 1;
 }
 
 void CommandBuffer::BeginCommandBuffer(uint32_t imageIndex){
