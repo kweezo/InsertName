@@ -7,6 +7,7 @@
 #include <vulkan/vulkan.h>
 
 #include "Device.hpp"
+#include "CommandPool.hpp"
 
 typedef struct BufferDescriptions{
     std::vector<VkVertexInputAttributeDescription> attributeDescriptions;
@@ -17,7 +18,7 @@ class VertexBuffer{
 public:
     VertexBuffer(std::vector<VkVertexInputAttributeDescription> attributeDescriptions,
      std::vector<VkVertexInputBindingDescription> bindingDescriptions, size_t size,
-     VkBufferUsageFlags usage, VkMemoryPropertyFlags properties, void* data);
+      VkMemoryPropertyFlags properties, void* data, bool transferToLocalDevMem);
 
 
     VkBuffer GetBuffer();
@@ -28,6 +29,8 @@ public:
     VertexBuffer operator=(const VertexBuffer& other);
     ~VertexBuffer();
 private:
+    void AllocateMemory(VkDeviceMemory memory, size_t size, VkMemoryPropertyFlags properties);
+
     uint32_t* useCount;
 
     BufferDescriptions descriptions;

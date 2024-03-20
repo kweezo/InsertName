@@ -43,7 +43,7 @@ int main(){
     };
 
     VertexBuffer vertexBuffer = VertexBuffer(attributeDescriptions, {bindingDescription}, sizeof(vertices),
-     VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, vertices);
+      VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, vertices, true);
 
     BufferDescriptions buffDescription = vertexBuffer.GetDescriptions();
 

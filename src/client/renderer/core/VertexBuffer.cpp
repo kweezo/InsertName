@@ -2,13 +2,24 @@
 
 VertexBuffer::VertexBuffer(std::vector<VkVertexInputAttributeDescription> attributeDescriptions,
  std::vector<VkVertexInputBindingDescription> bindingDescriptions, size_t size,
- VkBufferUsageFlags usage, VkMemoryPropertyFlags properties, void* data){
+ VkMemoryPropertyFlags properties, void* data, bool transferToLocalDevMem){
+
+    VkBufferUsageFlagBits usage = VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
    
     VkBufferCreateInfo bufferInfo{};
     bufferInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
     bufferInfo.size = size;
     bufferInfo.usage = usage;
-    bufferInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+    
+    if(Device::GetQueueFamilyInfo().transferFamilyFound){
+        bufferInfo.sharingMode = VK_SHARING_MODE_CONCURRENT;
+        bufferInfo.queueFamilyIndexCount = 2;
+        uint32_t queueFamilyIndices[] = {Device::GetQueueFamilyInfo().graphicsQueueCreateInfo.queueFamilyIndex,
+         Device::GetQueueFamilyInfo().transferQueueCreateInfo.queueFamilyIndex};
+        bufferInfo.pQueueFamilyIndices = queueFamilyIndices;
+    }else{
+        bufferInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+    }
 
     if(vkCreateBuffer(Device::GetDevice(), &bufferInfo, nullptr, &buffer) != VK_SUCCESS){
         throw std::runtime_error("Failed to create vertex buffer");

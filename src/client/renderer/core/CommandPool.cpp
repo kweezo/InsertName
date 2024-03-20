@@ -13,14 +13,14 @@ void CommandPool::CreateCommandPools(){
         throw std::runtime_error("Failed to create the graphics command pool!");
     }
 
+
+    poolInfo.flags = VK_COMMAND_POOL_CREATE_TRANSIENT_BIT;
     if(Device::GetQueueFamilyInfo().transferFamilyFound){
         poolInfo.queueFamilyIndex = Device::GetQueueFamilyInfo().transferQueueCreateInfo.queueFamilyIndex;
+    }
 
-        if(vkCreateCommandPool(Device::GetDevice(), &poolInfo, nullptr, &transferCommandPool) != VK_SUCCESS){
-            throw std::runtime_error("Failed to create the transfer command pool!");
-        }
-    }else{
-        transferCommandPool = graphicsCommandPool;
+    if(vkCreateCommandPool(Device::GetDevice(), &poolInfo, nullptr, &transferCommandPool) != VK_SUCCESS){
+        throw std::runtime_error("Failed to create the transfer command pool!");
     }
 }
 
@@ -34,7 +34,5 @@ VkCommandPool CommandPool::GetTransferCommandPool(){
 
 void CommandPool::DestroyCommandPools(){
     vkDestroyCommandPool(Device::GetDevice(), graphicsCommandPool, nullptr);
-    if(Device::GetQueueFamilyInfo().transferFamilyFound){
-        vkDestroyCommandPool(Device::GetDevice(), transferCommandPool, nullptr);
-    }
+    vkDestroyCommandPool(Device::GetDevice(), transferCommandPool, nullptr);
 }

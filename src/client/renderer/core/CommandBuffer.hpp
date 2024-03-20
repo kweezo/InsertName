@@ -26,6 +26,8 @@ public:
     VkCommandBuffer GetCommandBuffer();
 private:
 
+    uint32_t flags;
+
     uint32_t* useCount;
 
     GraphicsPipeline& pipeline;
