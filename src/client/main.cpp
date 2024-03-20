@@ -43,7 +43,7 @@ int main(){
     };
 
     VertexBuffer vertexBuffer = VertexBuffer(attributeDescriptions, {bindingDescription}, sizeof(vertices),
-      VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, vertices, true);
+     vertices, true);
 
     BufferDescriptions buffDescription = vertexBuffer.GetDescriptions();
 
@@ -114,7 +114,7 @@ int main(){
     GraphicsPipeline pipeline = GraphicsPipeline(vertexInputInfo, VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, VK_POLYGON_MODE_FILL, multisampling,
      depthStencilInfo, colorBlending, renderPassInfo, shader);
 
-    CommandBuffer buffer = CommandBuffer(VK_COMMAND_BUFFER_LEVEL_PRIMARY, COMMAND_BUFFER_GRAPHICS_FLAG, pipeline);
+    CommandBuffer buffer = CommandBuffer(VK_COMMAND_BUFFER_LEVEL_PRIMARY, COMMAND_BUFFER_GRAPHICS_FLAG, &pipeline);
 
     uint32_t imageIndex = 0;
 

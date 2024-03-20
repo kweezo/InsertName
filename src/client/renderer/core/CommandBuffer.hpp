@@ -3,6 +3,7 @@
 //IMPORTANT: Draw calls will be categorized by the pipeline they use
 
 #include <stdexcept>
+#include <memory>
 
 #include <vulkan/vulkan.h>
 
@@ -12,9 +13,12 @@
 #define COMMAND_BUFFER_GRAPHICS_FLAG 1
 #define COMMAND_BUFFER_TRANSFER_FLAG 2
 
+
 class CommandBuffer{
 public:
-    CommandBuffer(VkCommandBufferLevel level, uint32_t flags, GraphicsPipeline& pipeline);
+    //You can ONLY pass the pipeline as nullptr if its a transfer command buffer
+    CommandBuffer(VkCommandBufferLevel level, uint32_t flags, GraphicsPipeline* pipeline);
+    CommandBuffer();
     ~CommandBuffer();
 
     CommandBuffer(const CommandBuffer& other);
@@ -26,10 +30,16 @@ public:
     VkCommandBuffer GetCommandBuffer();
 private:
 
+    VkCommandBufferLevel level;
     uint32_t flags;
 
     uint32_t* useCount;
 
-    GraphicsPipeline& pipeline;
+    std::shared_ptr<GraphicsPipeline> pipeline;
     VkCommandBuffer commandBuffer;
 };
+
+typedef struct SecondaryCommandBuffer{
+    CommandBuffer commandBuffer = CommandBuffer();
+    bool free = true;
+} SecondaryCommandBuffer;

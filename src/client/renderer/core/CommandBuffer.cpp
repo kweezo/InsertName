@@ -1,6 +1,8 @@
 #include "CommandBuffer.hpp"
 
-CommandBuffer::CommandBuffer(VkCommandBufferLevel level, uint32_t flags, GraphicsPipeline& pipeline) : pipeline(pipeline){
+CommandBuffer::CommandBuffer(): commandBuffer(VK_NULL_HANDLE) {}
+
+CommandBuffer::CommandBuffer(VkCommandBufferLevel level, uint32_t flags, GraphicsPipeline* pipeline){
     VkCommandBufferAllocateInfo allocInfo = {};
     allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
     allocInfo.commandPool = (flags & COMMAND_BUFFER_GRAPHICS_FLAG == COMMAND_BUFFER_GRAPHICS_FLAG)
@@ -16,11 +18,14 @@ CommandBuffer::CommandBuffer(VkCommandBufferLevel level, uint32_t flags, Graphic
     useCount[0] = 1;
 
     this->flags = flags;
+    this->pipeline.reset(pipeline);
+    this->level = level;
 }
 
 void CommandBuffer::BeginCommandBuffer(uint32_t imageIndex){
-    //TODO, HANDLE SECONDARY CMD BUFFERS
-
+    if(level == VK_COMMAND_BUFFER_LEVEL_SECONDARY){
+        throw std::runtime_error("Tried to record a secondary command buffer, aborting!");
+    }
 
     vkResetCommandBuffer(commandBuffer, 0);
 
@@ -34,13 +39,13 @@ void CommandBuffer::BeginCommandBuffer(uint32_t imageIndex){
     }
 
     if(flags & COMMAND_BUFFER_GRAPHICS_FLAG == COMMAND_BUFFER_GRAPHICS_FLAG){
-        pipeline.BeginRenderPassAndBindPipeline(imageIndex, commandBuffer);
+        pipeline.get()->BeginRenderPassAndBindPipeline(imageIndex, commandBuffer);
     }
 }
 
 void CommandBuffer::EndCommandBuffer(){
     if(flags & COMMAND_BUFFER_GRAPHICS_FLAG == COMMAND_BUFFER_GRAPHICS_FLAG){
-        pipeline.EndRenderPass(commandBuffer);
+        pipeline.get()->EndRenderPass(commandBuffer);
     }
 
     if(vkEndCommandBuffer(commandBuffer) != VK_SUCCESS){
