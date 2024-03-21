@@ -3,6 +3,7 @@
 #define MAX_FREE_COMMAND_BUFFER_COUNT 3 //probably needs to be adjusted for performance but idk
 
 CommandBuffer VertexBuffer::primaryCommandBuffer = CommandBuffer();
+std::vector<SecondaryCommandBuffer> VertexBuffer::secondaryCommandBuffers = {};
 
 VertexBuffer::VertexBuffer(std::vector<VkVertexInputAttributeDescription> attributeDescriptions,
  std::vector<VkVertexInputBindingDescription> bindingDescriptions, size_t size,
@@ -43,6 +44,11 @@ VertexBuffer::VertexBuffer(std::vector<VkVertexInputAttributeDescription> attrib
 
 
         CopyFromBuffer(stagingBuffer, size);
+    }else{
+        void* mappedData;
+        vkMapMemory(Device::GetDevice(), bufferMemory, 0, size, 0, &mappedData);
+        memcpy(mappedData, data, size);
+        vkUnmapMemory(Device::GetDevice(), bufferMemory);
     }
 
    
@@ -81,13 +87,6 @@ void VertexBuffer::CopyFromBuffer(VkBuffer srcBuffer, VkDeviceSize size){
     secondaryCommandBuffer.get()->commandBuffer.EndCommandBuffer();
 
 
-    /*VkCommandBuffer commandBuffer = CommandPool::BeginSingleTimeCommands();
-
-    VkBufferCopy copyRegion{};
-    copyRegion.size = size;
-    vkCmdCopyBuffer(commandBuffer, srcBuffer, dstBuffer, 1, &copyRegion);
-
-    CommandPool::EndSingleTimeCommands(commandBuffer);*/
 }
 
 void VertexBuffer::CreateBuffer(VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties, VkBuffer& buffer, VkDeviceMemory& bufferMemory){
