@@ -8,6 +8,7 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY bin)
 
 option(BUILD_CLIENT "Build the client executable" ON)
 option(BUILD_INSTALLER "Build the installer executable" OFF)
+option(BUILD_SERVER "Build the installer executable" OFF)
 option(DEBUG "Build with debug flags" OFF)
 
 if(DEBUG)
@@ -17,6 +18,11 @@ endif()
 if(BUILD_INSTALLER)
     file(GLOB installersrc src/installer/**/*.cpp src/settings.cpp)
     add_executable(installer ${installersrc} src/installer/main.cpp)
+endif()
+
+if(BUILD_SERVER)
+    file(GLOB serversrc src/server/*.cpp src/settings.cpp)
+    add_executable(server ${serversrc})
 endif()
 
 #Linux libs
