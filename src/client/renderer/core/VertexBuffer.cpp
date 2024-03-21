@@ -38,6 +38,7 @@ VertexBuffer::VertexBuffer(std::vector<VkVertexInputAttributeDescription> attrib
           stagingBuffer, stagingBufferMemory);
 
         void* mappedData;
+        std::cerr << stagingBufferMemory<< std::endl;
         vkMapMemory(Device::GetDevice(), stagingBufferMemory, 0, size, 0, &mappedData);
         memcpy(mappedData, data, size);
         vkUnmapMemory(Device::GetDevice(), stagingBufferMemory);
@@ -109,10 +110,12 @@ void VertexBuffer::CreateBuffer(VkDeviceSize size, VkBufferUsageFlags usage, VkM
         throw std::runtime_error("Failed to create vertex buffer");
     }
 
+    
+
     AllocateMemory(bufferMemory, size, properties);
 }
 
-void VertexBuffer::AllocateMemory(VkDeviceMemory memory, size_t size,
+void VertexBuffer::AllocateMemory(VkDeviceMemory& memory, size_t size,
  VkMemoryPropertyFlags properties){
     VkMemoryRequirements memRequirements;
     vkGetBufferMemoryRequirements(Device::GetDevice(), buffer, &memRequirements);
@@ -127,11 +130,11 @@ void VertexBuffer::AllocateMemory(VkDeviceMemory memory, size_t size,
             allocInfo.allocationSize = memRequirements.size;
             allocInfo.memoryTypeIndex = i;
 
-            if(vkAllocateMemory(Device::GetDevice(), &allocInfo, nullptr, &bufferMemory) != VK_SUCCESS){
+            if(vkAllocateMemory(Device::GetDevice(), &allocInfo, nullptr, &memory) != VK_SUCCESS){
                 throw std::runtime_error("Failed to allocate vertex buffer memory");
             }
 
-            vkBindBufferMemory(Device::GetDevice(), buffer, bufferMemory, 0);
+            vkBindBufferMemory(Device::GetDevice(), buffer, memory, 0);
             break;
         }
     }

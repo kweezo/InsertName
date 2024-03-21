@@ -33,7 +33,7 @@ public:
     VertexBuffer operator=(const VertexBuffer& other);
     ~VertexBuffer();
 private:
-    void AllocateMemory(VkDeviceMemory memory, size_t size, VkMemoryPropertyFlags properties);
+    void AllocateMemory(VkDeviceMemory& memory, size_t size, VkMemoryPropertyFlags properties);
     void CreateBuffer(VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties, VkBuffer& buffer,
      VkDeviceMemory& bufferMemory);
 
