@@ -29,7 +29,7 @@ public:
 
     void CopyFromBuffer(VkBuffer srcBuffer, VkDeviceSize size);
 
-    void UpdateCommandBuffer();
+    static void UpdateCommandBuffer();
 
     VertexBuffer(const VertexBuffer& other);
     VertexBuffer operator=(const VertexBuffer& other);

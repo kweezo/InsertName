@@ -10,7 +10,7 @@ void Renderer::InitRenderer(){
 }
 
 void Renderer::RenderFrame(){
-    // Render frame
+    VertexBuffer::UpdateCommandBuffer();
 }
 
 void Renderer::DestroyRenderer(){

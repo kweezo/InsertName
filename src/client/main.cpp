@@ -192,6 +192,7 @@ int main(){
         Renderer::RenderFrame();
 
         imageIndex = (imageIndex + 1) % 2;
+
     }
 
     vkDeviceWaitIdle(Device::GetDevice());

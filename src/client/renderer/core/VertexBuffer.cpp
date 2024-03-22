@@ -137,7 +137,7 @@ void VertexBuffer::AllocateMemory(VkDeviceMemory& memory, size_t size,
         if((memRequirements.memoryTypeBits & (1 << i)) && (memProperties.memoryTypes[i].propertyFlags & properties) == properties){
             VkMemoryAllocateInfo allocInfo{};
             allocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
-            allocInfo.allocationSize = memRequirements.size;
+            allocInfo.allocationSize = memRequirements.size ;
             allocInfo.memoryTypeIndex = i;
 
             if(vkAllocateMemory(Device::GetDevice(), &allocInfo, nullptr, &memory) != VK_SUCCESS){
@@ -151,13 +151,38 @@ void VertexBuffer::AllocateMemory(VkDeviceMemory& memory, size_t size,
 }
 
 void VertexBuffer::UpdateCommandBuffer(){
+
+    std::vector<VkCommandBuffer> executeList;
+    for(SecondaryCommandBuffer& buff : secondaryCommandBuffers){
+        if(!buff.free){
+            executeList.push_back(buff.commandBuffer.GetCommandBuffer());
+            buff.free = true;
+        }
+    }
+
+    if(executeList.size() == 0){
+        return;
+    }
+
     primaryCommandBuffer.BeginCommandBuffer(0, nullptr);
+    vkCmdExecuteCommands(primaryCommandBuffer.GetCommandBuffer(), executeList.size(), executeList.data());
+    primaryCommandBuffer.EndCommandBuffer();
+
+
+    VkSubmitInfo submitInfo{};
+    submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+    submitInfo.commandBufferCount = 1;
+    VkCommandBuffer rawBuff = primaryCommandBuffer.GetCommandBuffer();
+    submitInfo.pCommandBuffers = &rawBuff;
+    submitInfo.waitSemaphoreCount = 0;
+    submitInfo.signalSemaphoreCount = 0;
+
+    vkQueueSubmit(Device::GetTransferQueue(), 1, &submitInfo, VK_NULL_HANDLE);
 }
 
 BufferDescriptions VertexBuffer::GetDescriptions(){
     return descriptions;
 }
-
 VertexBuffer::VertexBuffer(const VertexBuffer& other){
     buffer = other.buffer;
     bufferMemory = other.bufferMemory;
