@@ -13,7 +13,12 @@ void Swapchain::CreateSwapchain(){
 
     createInfo.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
     createInfo.surface = Window::GetVulkanSurface();
-    createInfo.minImageCount = std::min(surfaceCapabilities.maxImageCount, PREFERRED_IMAGE_COUNT);
+    if(surfaceCapabilities.maxImageCount == 0){ //no upper bound
+        createInfo.minImageCount = PREFERRED_IMAGE_COUNT;
+    }
+    else{
+        createInfo.minImageCount = std::min(surfaceCapabilities.maxImageCount, PREFERRED_IMAGE_COUNT);
+    }
     createInfo.imageFormat = ChooseSwapchainImageFormat();
     createInfo.imageColorSpace = VK_COLOR_SPACE_SRGB_NONLINEAR_KHR;
     createInfo.imageExtent = surfaceCapabilities.currentExtent;

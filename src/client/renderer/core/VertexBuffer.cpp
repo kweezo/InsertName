@@ -20,11 +20,12 @@ VertexBuffer::VertexBuffer(std::vector<VkVertexInputAttributeDescription> attrib
             }
     }
 
-    VkBufferUsageFlagBits usage = (VkBufferUsageFlagBits)(VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | transferToLocalDevMem ?
-     VK_BUFFER_USAGE_TRANSFER_DST_BIT : 0);
+    VkBufferUsageFlagBits usage = (VkBufferUsageFlagBits)(VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | (transferToLocalDevMem ?
+     VK_BUFFER_USAGE_TRANSFER_DST_BIT : 0));
 
     VkBufferCreateFlags properties = (VkBufferCreateFlagBits)(transferToLocalDevMem ?
      VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT : 0);  
+
    
 
     CreateBuffer(size, usage, properties, buffer, bufferMemory);
@@ -38,7 +39,6 @@ VertexBuffer::VertexBuffer(std::vector<VkVertexInputAttributeDescription> attrib
           stagingBuffer, stagingBufferMemory);
 
         void* mappedData;
-        std::cerr << stagingBufferMemory<< std::endl;
         vkMapMemory(Device::GetDevice(), stagingBufferMemory, 0, size, 0, &mappedData);
         memcpy(mappedData, data, size);
         vkUnmapMemory(Device::GetDevice(), stagingBufferMemory);
@@ -52,7 +52,8 @@ VertexBuffer::VertexBuffer(std::vector<VkVertexInputAttributeDescription> attrib
         vkUnmapMemory(Device::GetDevice(), bufferMemory);
     }
 
-   
+
+
 
     descriptions.attributeDescriptions = attributeDescriptions;
     descriptions.bindingDescriptions = bindingDescriptions;
@@ -67,7 +68,7 @@ void VertexBuffer::CopyFromBuffer(VkBuffer srcBuffer, VkDeviceSize size){
         if(buff.free){ 
             buff.free = false;
             foundFreeBuffer = true;
-            secondaryCommandBuffer.reset(&secondaryCommandBuffers[secondaryCommandBuffers.size() - 1]);
+            secondaryCommandBuffer = &secondaryCommandBuffers[secondaryCommandBuffers.size() - 1];
             break;
         }
     }
@@ -76,21 +77,28 @@ void VertexBuffer::CopyFromBuffer(VkBuffer srcBuffer, VkDeviceSize size){
         secondaryCommandBuffers[secondaryCommandBuffers.size() - 1].commandBuffer = CommandBuffer(VK_COMMAND_BUFFER_LEVEL_SECONDARY,
          COMMAND_BUFFER_TRANSFER_FLAG, nullptr);
          secondaryCommandBuffers[secondaryCommandBuffers.size() - 1].free = false;
-         secondaryCommandBuffer.reset(&secondaryCommandBuffers[secondaryCommandBuffers.size() - 1]);
+         secondaryCommandBuffer = &secondaryCommandBuffers[secondaryCommandBuffers.size() - 1];
     }
 
-    secondaryCommandBuffer.get()->commandBuffer.BeginCommandBuffer(0);
+
+    VkCommandBufferInheritanceInfo inheritanceInfo{};
+    inheritanceInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_INFO;
+    inheritanceInfo.occlusionQueryEnable = VK_FALSE;
+
+    secondaryCommandBuffer->commandBuffer.BeginCommandBuffer(0, &inheritanceInfo);
 
     VkBufferCopy copyRegion{};
     copyRegion.size = size;
 
-    vkCmdCopyBuffer(secondaryCommandBuffer.get()->commandBuffer.GetCommandBuffer(), srcBuffer, buffer, 1, &copyRegion);
-    secondaryCommandBuffer.get()->commandBuffer.EndCommandBuffer();
+    vkCmdCopyBuffer(secondaryCommandBuffer->commandBuffer.GetCommandBuffer(), srcBuffer, buffer, 1, &copyRegion);
+
+    secondaryCommandBuffer->commandBuffer.EndCommandBuffer();
 
 
 }
 
-void VertexBuffer::CreateBuffer(VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties, VkBuffer& buffer, VkDeviceMemory& bufferMemory){
+void VertexBuffer::CreateBuffer(VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties,
+ VkBuffer& buffer, VkDeviceMemory& bufferMemory){
     VkBufferCreateInfo bufferInfo{};
     bufferInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
     bufferInfo.size = size;
@@ -113,6 +121,8 @@ void VertexBuffer::CreateBuffer(VkDeviceSize size, VkBufferUsageFlags usage, VkM
     
 
     AllocateMemory(bufferMemory, size, properties);
+
+    vkBindBufferMemory(Device::GetDevice(), buffer, bufferMemory, 0);
 }
 
 void VertexBuffer::AllocateMemory(VkDeviceMemory& memory, size_t size,
@@ -134,11 +144,14 @@ void VertexBuffer::AllocateMemory(VkDeviceMemory& memory, size_t size,
                 throw std::runtime_error("Failed to allocate vertex buffer memory");
             }
 
-            vkBindBufferMemory(Device::GetDevice(), buffer, memory, 0);
             break;
         }
     }
 
+}
+
+void VertexBuffer::UpdateCommandBuffer(){
+    primaryCommandBuffer.BeginCommandBuffer(0, nullptr);
 }
 
 BufferDescriptions VertexBuffer::GetDescriptions(){

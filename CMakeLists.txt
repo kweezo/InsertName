@@ -14,7 +14,6 @@ option(DEBUG "Build with debug flags" OFF)
 if(DEBUG)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g -DNDEBUG")
 endif()
-
 if(BUILD_INSTALLER)
     file(GLOB installersrc src/installer/**/*.cpp src/settings.cpp)
     add_executable(installer ${installersrc} src/installer/main.cpp)

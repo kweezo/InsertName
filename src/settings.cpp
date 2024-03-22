@@ -1,6 +1,6 @@
 #include "settings.hpp"
 
-void ReadSettings(Settings& settings, const std::string& filename) {
+void ReadSettings(Settings& settings, const std::string& filename){
     std::ifstream in(filename, std::ios::binary);
     if (!in) {
         throw std::runtime_error("Failed to open settings file for reading");

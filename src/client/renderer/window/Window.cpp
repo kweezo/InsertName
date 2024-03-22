@@ -6,7 +6,7 @@ VkSurfaceKHR Window::surface = VK_NULL_HANDLE;
 
 void Window::CreateWindowContext(int width, int height, const char* title){
     if (glfwInitialized) {
-        std::runtime_error("GLFW already initialized");
+        throw std::runtime_error("GLFW already initialized");
     }
 
     if (!glfwInit()) {

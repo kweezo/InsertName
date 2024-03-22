@@ -1,6 +1,9 @@
 #include "CommandBuffer.hpp"
 
-CommandBuffer::CommandBuffer(): commandBuffer(VK_NULL_HANDLE) {}
+CommandBuffer::CommandBuffer(): commandBuffer(VK_NULL_HANDLE) {
+    useCount = new uint32_t;
+    useCount[0] = 1;
+}
 
 CommandBuffer::CommandBuffer(VkCommandBufferLevel level, uint32_t flags, GraphicsPipeline* pipeline){
     VkCommandBufferAllocateInfo allocInfo = {};
@@ -18,11 +21,11 @@ CommandBuffer::CommandBuffer(VkCommandBufferLevel level, uint32_t flags, Graphic
     useCount[0] = 1;
 
     this->flags = flags;
-    this->pipeline.reset(pipeline);
+    this->pipeline = pipeline;
     this->level = level;
 }
 
-void CommandBuffer::BeginCommandBuffer(uint32_t imageIndex){
+void CommandBuffer::BeginCommandBuffer(uint32_t imageIndex, VkCommandBufferInheritanceInfo* inheritanceInfo){
     if(level == VK_COMMAND_BUFFER_LEVEL_SECONDARY){
         throw std::runtime_error("Tried to record a secondary command buffer, aborting!");
     }
@@ -32,20 +35,20 @@ void CommandBuffer::BeginCommandBuffer(uint32_t imageIndex){
     VkCommandBufferBeginInfo beginInfo = {};
     beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
     beginInfo.flags = 0;
-    beginInfo.pInheritanceInfo = nullptr;
+    beginInfo.pInheritanceInfo = inheritanceInfo;
 
     if(vkBeginCommandBuffer(commandBuffer, &beginInfo) != VK_SUCCESS){
         throw std::runtime_error("Failed to begin recording command buffer");
     }
 
     if(flags & COMMAND_BUFFER_GRAPHICS_FLAG == COMMAND_BUFFER_GRAPHICS_FLAG){
-        pipeline.get()->BeginRenderPassAndBindPipeline(imageIndex, commandBuffer);
+        pipeline->BeginRenderPassAndBindPipeline(imageIndex, commandBuffer);
     }
 }
 
 void CommandBuffer::EndCommandBuffer(){
     if(flags & COMMAND_BUFFER_GRAPHICS_FLAG == COMMAND_BUFFER_GRAPHICS_FLAG){
-        pipeline.get()->EndRenderPass(commandBuffer);
+        pipeline->EndRenderPass(commandBuffer);
     }
 
     if(vkEndCommandBuffer(commandBuffer) != VK_SUCCESS){
@@ -58,9 +61,10 @@ VkCommandBuffer CommandBuffer::GetCommandBuffer(){
     return commandBuffer;
 }
 
-CommandBuffer::CommandBuffer(const CommandBuffer& other) : pipeline(other.pipeline){
+CommandBuffer::CommandBuffer(const CommandBuffer& other){
     commandBuffer = other.commandBuffer;
     useCount = other.useCount;
+    pipeline = other.pipeline;
     useCount[0]++;
 }
 
@@ -77,8 +81,16 @@ CommandBuffer CommandBuffer::operator=(const CommandBuffer& other) {
 }
 
 CommandBuffer::~CommandBuffer(){
-    if(useCount[0] == 1){
-        vkFreeCommandBuffers(Device::GetDevice(), CommandPool::GetGraphicsCommandPool(), 1, &commandBuffer);
+    if(useCount[0] <= 1){
+        if(flags & COMMAND_BUFFER_GRAPHICS_FLAG == COMMAND_BUFFER_GRAPHICS_FLAG){
+            vkFreeCommandBuffers(Device::GetDevice(), CommandPool::GetGraphicsCommandPool(), 1, &commandBuffer);
+        }else{
+            if(Device::GetQueueFamilyInfo().transferFamilyFound){
+                vkFreeCommandBuffers(Device::GetDevice(), CommandPool::GetGraphicsCommandPool(), 1, &commandBuffer);
+            }else{
+                vkFreeCommandBuffers(Device::GetDevice(), CommandPool::GetTransferCommandPool(), 1, &commandBuffer);
+            }
+        }
         delete[] useCount;
     }
     else{

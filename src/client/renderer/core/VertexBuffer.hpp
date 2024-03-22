@@ -29,6 +29,8 @@ public:
 
     void CopyFromBuffer(VkBuffer srcBuffer, VkDeviceSize size);
 
+    void UpdateCommandBuffer();
+
     VertexBuffer(const VertexBuffer& other);
     VertexBuffer operator=(const VertexBuffer& other);
     ~VertexBuffer();
@@ -46,7 +48,7 @@ private:
 
     static CommandBuffer primaryCommandBuffer;
     static std::vector<SecondaryCommandBuffer> secondaryCommandBuffers;
-    std::shared_ptr<SecondaryCommandBuffer> secondaryCommandBuffer;
+    SecondaryCommandBuffer* secondaryCommandBuffer;
 };
 
 

@@ -150,7 +150,7 @@ int main(){
 
         VkDeviceSize offsets[] = {0};
 
-        buffer.BeginCommandBuffer(imageIndex);
+        buffer.BeginCommandBuffer(imageIndex, nullptr);
         VkBuffer buff = vertexBuffer.GetBuffer();
         vkCmdBindVertexBuffers(buffer.GetCommandBuffer(), 0, 1, &buff, offsets);
         vkCmdDraw(buffer.GetCommandBuffer(), 3, 1, 0, 0);

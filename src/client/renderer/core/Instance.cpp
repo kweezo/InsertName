@@ -22,6 +22,8 @@ VKAPI_ATTR VkBool32 VKAPI_CALL debugCallback(
 
     std::cerr << "validation layer: " << pCallbackData->pMessage << std::endl;
 
+    throw std::runtime_error("no warning only error >:(");
+
     return VK_FALSE;
 }
 
