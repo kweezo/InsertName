@@ -85,7 +85,7 @@ void VertexBuffer::CopyFromBuffer(VkBuffer srcBuffer, VkDeviceSize size){
     inheritanceInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_INFO;
     inheritanceInfo.occlusionQueryEnable = VK_FALSE;
 
-    secondaryCommandBuffer->commandBuffer.BeginCommandBuffer(0, &inheritanceInfo);
+    secondaryCommandBuffer->commandBuffer.BeginCommandBuffer(0, &inheritanceInfo, VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
 
     VkBufferCopy copyRegion{};
     copyRegion.size = size;
@@ -164,7 +164,7 @@ void VertexBuffer::UpdateCommandBuffer(){
         return;
     }
 
-    primaryCommandBuffer.BeginCommandBuffer(0, nullptr);
+    primaryCommandBuffer.BeginCommandBuffer(0, nullptr, (VkCommandBufferUsageFlagBits)0);
     vkCmdExecuteCommands(primaryCommandBuffer.GetCommandBuffer(), executeList.size(), executeList.data());
     primaryCommandBuffer.EndCommandBuffer();
 
