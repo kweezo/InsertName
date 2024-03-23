@@ -6,6 +6,10 @@ CommandBuffer::CommandBuffer(): commandBuffer(VK_NULL_HANDLE) {
 }
 
 CommandBuffer::CommandBuffer(VkCommandBufferLevel level, uint32_t flags, GraphicsPipeline* pipeline){
+    if(flags & COMMAND_BUFFER_GRAPHICS_FLAG == COMMAND_BUFFER_GRAPHICS_FLAG && pipeline == nullptr){
+        throw std::runtime_error("Graphics pipeline must be provided to the graphics command buffer");
+    }
+    
     VkCommandBufferAllocateInfo allocInfo = {};
     allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
     allocInfo.commandPool = (flags & COMMAND_BUFFER_GRAPHICS_FLAG == COMMAND_BUFFER_GRAPHICS_FLAG)
@@ -25,16 +29,12 @@ CommandBuffer::CommandBuffer(VkCommandBufferLevel level, uint32_t flags, Graphic
     this->level = level;
 }
 
-void CommandBuffer::BeginCommandBuffer(uint32_t imageIndex, VkCommandBufferInheritanceInfo* inheritanceInfo){
-    if(level == VK_COMMAND_BUFFER_LEVEL_SECONDARY){
-        throw std::runtime_error("Tried to record a secondary command buffer, aborting!");
-    }
-
+void CommandBuffer::BeginCommandBuffer(uint32_t imageIndex, VkCommandBufferInheritanceInfo* inheritanceInfo, VkCommandBufferUsageFlagBits usageFlags){
     vkResetCommandBuffer(commandBuffer, 0);
 
     VkCommandBufferBeginInfo beginInfo = {};
     beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-    beginInfo.flags = 0;
+    beginInfo.flags = usageFlags;
     beginInfo.pInheritanceInfo = inheritanceInfo;
 
     if(vkBeginCommandBuffer(commandBuffer, &beginInfo) != VK_SUCCESS){
@@ -65,6 +65,8 @@ CommandBuffer::CommandBuffer(const CommandBuffer& other){
     commandBuffer = other.commandBuffer;
     useCount = other.useCount;
     pipeline = other.pipeline;
+    level = other.level;
+    flags = other.flags;
     useCount[0]++;
 }
 
@@ -76,6 +78,8 @@ CommandBuffer CommandBuffer::operator=(const CommandBuffer& other) {
     commandBuffer = other.commandBuffer;
     pipeline = other.pipeline;
     useCount = other.useCount;
+    level = other.level;
+    flags = other.flags;
     useCount[0]++;
     return *this;
 }

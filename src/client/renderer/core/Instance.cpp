@@ -20,9 +20,13 @@ VKAPI_ATTR VkBool32 VKAPI_CALL debugCallback(
         return VK_FALSE;
     }
 
-    std::cerr << "validation layer: " << pCallbackData->pMessage << std::endl;
+    std::cerr << pCallbackData->pMessage << std::endl;
 
-//    throw std::runtime_error("no warning only error >:(");
+    if(messageSeverity >= VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT){
+        throw std::runtime_error("Severe Vulkan validation layer error, aborting...");/*god dammit i love validation layers i mean what else allows you
+        to pull shit like this??*/
+    }
+
 
     return VK_FALSE;
 }
