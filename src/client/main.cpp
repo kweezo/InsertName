@@ -1,3 +1,5 @@
+#include "network/NetworkManager.hpp"
+#include "../settings.hpp"
 #include "renderer/window/Window.hpp"
 #include "renderer/core/Renderer.hpp"
 #include "renderer/core/CommandBuffer.hpp"
@@ -5,8 +7,6 @@
 #include "renderer/core/Shader.hpp"
 #include "renderer/core/GraphicsPipeline.hpp"
 #include "renderer/core/VertexBuffer.hpp"
-#include "../settings.hpp"
-#include "network/NetworkManager.hpp"
 
 //implement staging and index buffer support (I am going to kill myself)
 

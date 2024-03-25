@@ -27,5 +27,5 @@ public:
 private:
     std::string serverIP;
     int port;
-    int sock;
+    SOCKET sock;
 };
