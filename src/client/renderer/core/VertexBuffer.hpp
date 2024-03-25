@@ -48,7 +48,7 @@ private:
 
     static CommandBuffer primaryCommandBuffer;
     static std::vector<SecondaryCommandBuffer> secondaryCommandBuffers;
-    SecondaryCommandBuffer* secondaryCommandBuffer;
+    SecondaryCommandBuffer secondaryCommandBuffer;
 };
 
 

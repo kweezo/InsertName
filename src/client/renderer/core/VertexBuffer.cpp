@@ -27,7 +27,6 @@ VertexBuffer::VertexBuffer(std::vector<VkVertexInputAttributeDescription> attrib
      VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT : 0);  
 
    
-
     CreateBuffer(size, usage, properties, buffer, bufferMemory);
 
    if(transferToLocalDevMem){
@@ -64,11 +63,12 @@ VertexBuffer::VertexBuffer(std::vector<VkVertexInputAttributeDescription> attrib
 
 void VertexBuffer::CopyFromBuffer(VkBuffer srcBuffer, VkDeviceSize size){
     bool foundFreeBuffer = false;
-    for(SecondaryCommandBuffer& buff : secondaryCommandBuffers){
+    for(int i = 0; i < secondaryCommandBuffers.size(); i++){
+        SecondaryCommandBuffer& buff = secondaryCommandBuffers[i];
         if(buff.free){ 
             buff.free = false;
             foundFreeBuffer = true;
-            secondaryCommandBuffer = &secondaryCommandBuffers[secondaryCommandBuffers.size() - 1];
+            secondaryCommandBuffer = buff;
             break;
         }
     }
@@ -77,7 +77,7 @@ void VertexBuffer::CopyFromBuffer(VkBuffer srcBuffer, VkDeviceSize size){
         secondaryCommandBuffers[secondaryCommandBuffers.size() - 1].commandBuffer = CommandBuffer(VK_COMMAND_BUFFER_LEVEL_SECONDARY,
          COMMAND_BUFFER_TRANSFER_FLAG, nullptr);
          secondaryCommandBuffers[secondaryCommandBuffers.size() - 1].free = false;
-         secondaryCommandBuffer = &secondaryCommandBuffers[secondaryCommandBuffers.size() - 1];
+         secondaryCommandBuffer = secondaryCommandBuffers[secondaryCommandBuffers.size() - 1];
     }
 
 
@@ -85,14 +85,14 @@ void VertexBuffer::CopyFromBuffer(VkBuffer srcBuffer, VkDeviceSize size){
     inheritanceInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_INFO;
     inheritanceInfo.occlusionQueryEnable = VK_FALSE;
 
-    secondaryCommandBuffer->commandBuffer.BeginCommandBuffer(0, &inheritanceInfo, VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
+    secondaryCommandBuffer.commandBuffer.BeginCommandBuffer(0, &inheritanceInfo, VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
 
     VkBufferCopy copyRegion{};
     copyRegion.size = size;
 
-    vkCmdCopyBuffer(secondaryCommandBuffer->commandBuffer.GetCommandBuffer(), srcBuffer, buffer, 1, &copyRegion);
+    vkCmdCopyBuffer(secondaryCommandBuffer.commandBuffer.GetCommandBuffer(), srcBuffer, buffer, 1, &copyRegion);
 
-    secondaryCommandBuffer->commandBuffer.EndCommandBuffer();
+    secondaryCommandBuffer.commandBuffer.EndCommandBuffer();
 
 
 }
@@ -156,6 +156,7 @@ void VertexBuffer::UpdateCommandBuffer(){
     for(SecondaryCommandBuffer& buff : secondaryCommandBuffers){
         if(!buff.free){
             executeList.push_back(buff.commandBuffer.GetCommandBuffer());
+            std::cerr << buff.commandBuffer.GetCommandBuffer() << std::endl;
             buff.free = true;
         }
     }

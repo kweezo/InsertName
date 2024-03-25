@@ -1,7 +1,8 @@
 #include "Instance.hpp"
 
 const std::vector<const char*> validationLayers = {
-    "VK_LAYER_KHRONOS_validation"
+    "VK_LAYER_KHRONOS_validation",
+//    "VK_LAYER_LUNARG_api_dump",
 };
 
 std::vector<const char*> instanceExtensions = {
@@ -23,8 +24,8 @@ VKAPI_ATTR VkBool32 VKAPI_CALL debugCallback(
     std::cerr << pCallbackData->pMessage << std::endl;
 
     if(messageSeverity >= VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT){
-        throw std::runtime_error("Severe Vulkan validation layer error, aborting...");/*god dammit i love validation layers i mean what else allows you
-        to pull shit like this??*/
+        //throw std::runtime_error("Severe Vulkan validation layer error, aborting...");/*god dammit i love validation layers i mean what else allows you
+        //to pull shit like this??*/
     }
 
 
