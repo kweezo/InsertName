@@ -155,7 +155,6 @@ void VertexBuffer::UpdateCommandBuffer(){
     for(SecondaryCommandBuffer& buff : secondaryCommandBuffers){
         if(!buff.free){
             executeList.push_back(buff.commandBuffer.GetCommandBuffer());
-            std::cerr << buff.commandBuffer.GetCommandBuffer() << std::endl;
             buff.free = true;
         }
     }

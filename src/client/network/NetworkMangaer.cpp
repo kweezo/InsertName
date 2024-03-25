@@ -29,7 +29,11 @@ bool NetworkManager::connectToServer() {
     sock = socket(AF_INET, SOCK_STREAM, 0);
     if (sock == INVALID_SOCKET)
     {
-        std::cerr << "Can't create socket, Err #" << WSAGetLastError() << '\n';
+        #ifdef _WIN32
+            std::cerr << "Can't create socket, Err #" << WSAGetLastError() << '\n';
+        #else
+            std::cerr << "Can't create socket, Err #" << errno << '\n';
+        #endif
         return false;
     }
 
@@ -43,7 +47,11 @@ bool NetworkManager::connectToServer() {
     int connResult = connect(sock, (sockaddr*)&hint, sizeof(hint));
     if (connResult == SOCKET_ERROR)
     {
-        std::cerr << "Can't connect to server, Err #" << WSAGetLastError() << '\n';
+        #ifdef _WIN32
+            std::cerr << "Can't connect to server, Err #" << WSAGetLastError() << '\n';
+        #else
+            std::cerr << "Can't connect to server, Err #" << errno << '\n';
+        #endif
         return false;
     }
 
@@ -67,7 +75,6 @@ bool NetworkManager::sendAndReceiveData() {
             int sendResult = send(sock, userInput.c_str(), userInput.size() + 1, 0);
             if (sendResult != SOCKET_ERROR)
             {
-                // Wait for response
                 memset(buf, 0, 4096);
                 int bytesReceived = recv(sock, buf, 4096, 0);
                 if (bytesReceived > 0)

@@ -26,7 +26,7 @@ endif()
 
 #Linux libs
 if(BUILD_CLIENT)    
-    file(GLOB clientsrc src/client/renderer/core/*.cpp src/client/renderer/ext/*.cpp src/client/renderer/window/*.cpp)
+    file(GLOB clientsrc src/client/renderer/core/*.cpp src/client/renderer/ext/*.cpp src/client/renderer/window/*.cpp src/client/network/*.cpp)
     add_executable(client ${clientsrc} src/client/main.cpp src/settings.cpp)
     
     target_link_libraries(client PUBLIC glfw)
