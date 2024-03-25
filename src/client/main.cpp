@@ -6,12 +6,21 @@
 #include "renderer/core/GraphicsPipeline.hpp"
 #include "renderer/core/VertexBuffer.hpp"
 #include "../settings.hpp"
+#include "network/NetworkManager.hpp"
 
 //implement staging and index buffer support (I am going to kill myself)
+
+void networkTemp(){
+    NetworkManager nm("127.0.0.1", 12345);
+    if (nm.connectToServer()) {
+        nm.sendAndReceiveData();
+    }
+}
 
 int main(){
     Settings settings;
     ReadSettings(settings, "src/settings.bin");
+    networkTemp();
 
     Window::CreateWindowContext(settings.width, settings.height, "Vulkan");
     Renderer::InitRenderer();
