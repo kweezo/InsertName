@@ -91,7 +91,6 @@ void VertexBuffer::CopyFromBuffer(VkBuffer srcBuffer, VkDeviceSize size){
     copyRegion.size = size;
 
     vkCmdCopyBuffer(secondaryCommandBuffer.commandBuffer.GetCommandBuffer(), srcBuffer, buffer, 1, &copyRegion);
-
     secondaryCommandBuffer.commandBuffer.EndCommandBuffer();
 
 
