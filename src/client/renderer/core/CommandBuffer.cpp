@@ -86,9 +86,9 @@ CommandBuffer::~CommandBuffer(){
             vkFreeCommandBuffers(Device::GetDevice(), CommandPool::GetGraphicsCommandPool(), 1, &commandBuffer);
         }else{
             if(Device::GetQueueFamilyInfo().transferFamilyFound){
-                vkFreeCommandBuffers(Device::GetDevice(), CommandPool::GetGraphicsCommandPool(), 1, &commandBuffer);
+               // vkFreeCommandBuffers(Device::GetDevice(), CommandPool::GetTransferCommandPool(), 1, &commandBuffer);
             }else{
-                vkFreeCommandBuffers(Device::GetDevice(), CommandPool::GetTransferCommandPool(), 1, &commandBuffer);
+                vkFreeCommandBuffers(Device::GetDevice(), CommandPool::GetGraphicsCommandPool(), 1, &commandBuffer);
             }
         }
         delete[] useCount;
