@@ -11,7 +11,7 @@
 //implement staging and index buffer support (I am going to kill myself)
 
 void networkTemp(){
-    NetworkManager nm("172.31.2.51", 12345);
+    NetworkManager nm("127.0.0.1", 12345);
     if (nm.connectToServer()) {
         nm.sendData("Hello World");
     }
