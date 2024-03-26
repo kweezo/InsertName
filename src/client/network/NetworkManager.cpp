@@ -58,7 +58,7 @@ bool NetworkManager::connectToServer() {
 }
 
 bool NetworkManager::sendData(const std::string& str1, const std::string& str2) {
-    std::string message = "1 " + str1 + " " + str2;
+    std::string message = std::string(1, (char)1) + ch0 + str1 + ch0 + str2;
 
     // Send the message
     int sendResult = send(sock, message.c_str(), message.size() + 1, 0);
@@ -68,12 +68,15 @@ bool NetworkManager::sendData(const std::string& str1, const std::string& str2) 
     }
 
     // Receive the response
-    char buf[4096];
-    memset(buf, 0, 4096);
-    int bytesReceived = recv(sock, buf, 4096, 0);
+    char buf[1024];
+    memset(buf, 0, 1024);
+    int bytesReceived = recv(sock, buf, 1024, 0);
     if (bytesReceived > 0) {
-        std::cout << "SERVER> " << std::string(buf, 0, bytesReceived) << '\n';
+        std::string response(buf, 0, bytesReceived);
+        std::cout << "SERVER> " << response << '\n';
+        if (response == std::string(1, (char)1) + std::string(1, (char)0)) {
+            return true;
+        }
     }
-
-    return true;
+    return false;
 }

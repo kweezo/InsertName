@@ -18,6 +18,9 @@
 #endif
 
 
+#define ch0 std::string(1, (char)0)
+
+
 class NetworkManager {
 public:
     NetworkManager(const std::string& serverIP, int port);
