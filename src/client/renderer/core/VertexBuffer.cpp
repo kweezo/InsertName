@@ -45,14 +45,15 @@ VertexBuffer::VertexBuffer(std::vector<VkVertexInputAttributeDescription> attrib
 
 
         CopyFromBuffer(stagingBuffer, size);
+        
+        vkDestroyBuffer(Device::GetDevice(), stagingBuffer, nullptr);
+        vkFreeMemory(Device::GetDevice(), stagingBufferMemory, nullptr);
     }else{
         void* mappedData;
         vkMapMemory(Device::GetDevice(), bufferMemory, 0, size, 0, &mappedData);
         memcpy(mappedData, data, size);
         vkUnmapMemory(Device::GetDevice(), bufferMemory);
     }
-
-
 
 
     descriptions.attributeDescriptions = attributeDescriptions;

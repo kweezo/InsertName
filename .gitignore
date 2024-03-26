@@ -11,3 +11,4 @@ Makefile
 .vscode
 src/settings.bin
 notes
+shaders/bin/*

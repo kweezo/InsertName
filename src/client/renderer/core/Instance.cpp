@@ -8,6 +8,9 @@ std::vector<const char*> instanceExtensions = {
 #ifdef NDEBUG
     "VK_EXT_debug_utils",
 #endif
+#ifdef GFX_RECONSTRUCT
+    //"VK_LAYER_LUNARG_gfxreconstruct",
+#endif
 };
 
 VKAPI_ATTR VkBool32 VKAPI_CALL debugCallback(
