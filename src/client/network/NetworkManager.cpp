@@ -57,31 +57,23 @@ bool NetworkManager::connectToServer() {
     return true;
 }
 
-bool NetworkManager::sendAndReceiveData() {
-    // Do-while loop to send and receive data
+bool NetworkManager::sendData(const std::string& str1, const std::string& str2) {
+    std::string message = "1 " + str1 + " " + str2;
+
+    // Send the message
+    int sendResult = send(sock, message.c_str(), message.size() + 1, 0);
+    if (sendResult == SOCKET_ERROR) {
+        std::cerr << "Failed to send message\n";
+        return false;
+    }
+
+    // Receive the response
     char buf[4096];
-    std::string userInput;
-
-    do {
-        // Prompt the user for some text
-        std::cout << "> ";
-        std::getline(std::cin, userInput);
-
-        if (userInput.size() > 0) {
-            // Send the text
-            int sendResult = send(sock, userInput.c_str(), userInput.size() + 1, 0);
-            if (sendResult != SOCKET_ERROR)
-            {
-                memset(buf, 0, 4096);
-                int bytesReceived = recv(sock, buf, 4096, 0);
-                if (bytesReceived > 0) {
-                    // Echo response to console
-                    std::cout << "SERVER> " << std::string(buf, 0, bytesReceived) << '\n';
-                }
-            }
-        }
-
-    } while (userInput.size() > 0);
+    memset(buf, 0, 4096);
+    int bytesReceived = recv(sock, buf, 4096, 0);
+    if (bytesReceived > 0) {
+        std::cout << "SERVER> " << std::string(buf, 0, bytesReceived) << '\n';
+    }
 
     return true;
 }

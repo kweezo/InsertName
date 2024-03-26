@@ -13,7 +13,7 @@
 void networkTemp(){
     NetworkManager nm("127.0.0.1", 12345);
     if (nm.connectToServer()) {
-        nm.sendAndReceiveData();
+        nm.sendData("Hello", "World");
     }
 }
 

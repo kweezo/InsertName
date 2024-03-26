@@ -23,7 +23,7 @@ public:
     NetworkManager(const std::string& serverIP, int port);
     ~NetworkManager();
     bool connectToServer();
-    bool sendAndReceiveData();
+    bool NetworkManager::sendData(const std::string& str1, const std::string& str2);
 
 private:
     std::string serverIP;
