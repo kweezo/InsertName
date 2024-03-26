@@ -52,19 +52,19 @@ bool NetworkManager::connectToServer() {
             std::cerr << "Can't connect to server, Err #" << errno << '\n';
         #endif
         return false;
+    } else {
+        std::cout << "Connected to server\n";
     }
 
     return true;
 }
 
-bool NetworkManager::sendData(const std::string& str1, const std::string& str2) {
-    std::string message = std::string(1, (char)1) + ch0 + str1 + ch0 + str2;
-
+std::string NetworkManager::sendData(const std::string& message) {
     // Send the message
     int sendResult = send(sock, message.c_str(), message.size() + 1, 0);
     if (sendResult == SOCKET_ERROR) {
         std::cerr << "Failed to send message\n";
-        return false;
+        return "";
     }
 
     // Receive the response
@@ -74,9 +74,8 @@ bool NetworkManager::sendData(const std::string& str1, const std::string& str2) 
     if (bytesReceived > 0) {
         std::string response(buf, 0, bytesReceived);
         std::cout << "SERVER> " << response << '\n';
-        if (response == std::string(1, (char)1) + std::string(1, (char)0)) {
-            return true;
-        }
+        return response;
     }
-    return false;
+    
+    return "";
 }

@@ -18,15 +18,12 @@
 #endif
 
 
-#define ch0 std::string(1, (char)0)
-
-
 class NetworkManager {
 public:
     NetworkManager(const std::string& serverIP, int port);
     ~NetworkManager();
     bool connectToServer();
-    bool NetworkManager::sendData(const std::string& str1, const std::string& str2);
+    std::string sendData(const std::string& message);
 
 private:
     std::string serverIP;
