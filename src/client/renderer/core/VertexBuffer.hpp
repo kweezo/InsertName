@@ -12,6 +12,12 @@
 #include "CommandBuffer.hpp"
 
 
+typedef struct StagingBufferCopyCMDInfo{
+    VkBuffer buffer;
+    VkDeviceMemory bufferMemory;
+    SecondaryCommandBuffer commandBuffer;
+} StagingBuffer;
+
 typedef struct BufferDescriptions{
     std::vector<VkVertexInputAttributeDescription> attributeDescriptions;
     std::vector<VkVertexInputBindingDescription> bindingDescriptions;
@@ -47,7 +53,7 @@ private:
     VkDeviceMemory bufferMemory;
 
     static CommandBuffer primaryCommandBuffer;
-    static std::vector<SecondaryCommandBuffer> secondaryCommandBuffers;
+    static std::vector<StagingBufferCopyCMDInfo> stagingBufferCMDInfoList;
     SecondaryCommandBuffer* secondaryCommandBuffer;
 };
 
