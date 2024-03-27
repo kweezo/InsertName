@@ -1,4 +1,4 @@
-#include "network/NetworkManager.hpp"
+#include "account/UserManager.hpp"
 #include "../settings.hpp"
 #include "renderer/window/Window.hpp"
 #include "renderer/core/Renderer.hpp"
@@ -10,17 +10,17 @@
 
 //implement staging and index buffer support (I am going to kill myself)
 
-void networkTemp(){
-    NetworkManager nm("127.0.0.1", 12345);
-    if (nm.connectToServer()) {
-        nm.sendData("Hello World");
+void userTemp(){
+    UserManager userManager("127.0.0.1", 12345);
+    if (userManager.connectToServer()) {
+        userManager.loginUser('r', "username", "password");
     }
 }
 
 int main(){
     Settings settings;
     ReadSettings(settings, "src/settings.bin");
-    networkTemp();
+    //userTemp();
 
     Window::CreateWindowContext(settings.width, settings.height, "Vulkan");
     Renderer::InitRenderer();
