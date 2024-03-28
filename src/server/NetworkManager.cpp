@@ -63,5 +63,45 @@ int NetworkManager::acceptClient() {
 }
 
 void NetworkManager::handleClientConnection() {
-    //TODO: Implement this function
+    char buffer[4096];
+
+    while (true) {
+        // Clear the buffer
+        memset(buffer, 0, 4096);
+
+        // Wait for client to send data
+        int bytesReceived = recv(clientSocket, buffer, 4096, 0);
+        if (bytesReceived == -1) {
+            std::cerr << "Error in recv(). Quitting" << std::endl;
+            return;
+        }
+
+        if (bytesReceived == 0) {
+            std::cout << "Client disconnected " << std::endl;
+            return;
+        }
+
+        std::string receivedMsg = std::string(buffer, 0, bytesReceived);
+        std::cout << "Received: " << receivedMsg << std::endl;
+
+        // Handle the received message and get a response
+        std::string response = handleMsg(receivedMsg);
+
+        // Send the response back to the client
+        send(clientSocket, response.c_str(), response.size() + 1, 0);
+    }
+}
+
+std::string NetworkManager::handleMsg(const std::string& receivedMsg) {
+    std::string response = "";
+
+    if (receivedMsg[0] == 'r') {
+        response = "r";
+    } else if (receivedMsg[0] == 'l') {
+        response = "l";
+    } else {
+        response = "e";
+    }
+
+    return response;
 }

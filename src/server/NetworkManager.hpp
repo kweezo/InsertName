@@ -23,6 +23,8 @@ public:
     int acceptClient();
     void handleClientConnection();
 
+    std::string handleMsg(const std::string& receivedMsg);
+
 private:
     #ifdef _WIN32
         SOCKET serverSocket;

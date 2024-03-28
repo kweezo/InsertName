@@ -9,10 +9,6 @@ UserManager::~UserManager() {
 
 }
 
-std::string UserManager::stickMessage(const char dataType, const std::string &str1, const std::string &str2) {
-    return dataType + str1 + (char)0 + str2;
-}
-
 int UserManager::loginUser(const char loginType,const std::string &username, const std::string &password) {
     std::string message = stickMessage(loginType, username, password);
     std::string response = sendData(message);
@@ -28,4 +24,8 @@ int UserManager::loginUser(const char loginType,const std::string &username, con
     // maybe will add more cases
 
     return returnMsg;
+}
+
+std::string UserManager::stickMessage(const char dataType, const std::string &str1, const std::string &str2) {
+    return dataType + str1 + (char)0 + str2;
 }
