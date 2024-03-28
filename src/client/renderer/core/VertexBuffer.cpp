@@ -14,9 +14,18 @@ VertexBuffer::VertexBuffer(std::vector<VkVertexInputAttributeDescription> attrib
          COMMAND_BUFFER_TRANSFER_FLAG, nullptr);
          stagingBufferCMDInfoList.resize(MAX_FREE_COMMAND_BUFFER_COUNT);
             for(StagingBufferCopyCMDInfo& info : stagingBufferCMDInfoList){
-                info.commandBuffer.commandBuffer = CommandBuffer(VK_COMMAND_BUFFER_LEVEL_SECONDARY,
-                COMMAND_BUFFER_TRANSFER_FLAG, nullptr);
-            }
+                info.commandBuffer.commandBuffer = CommandBuffer(VK_COMMAND_BUFFER_LEVEL_SECONDARY, COMMAND_BUFFER_TRANSFER_FLAG, nullptr);
+
+            VkBuffer stagingBuffer;
+            VkDeviceMemory stagingBufferMemory;
+            
+            CreateBuffer(size, VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+             VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+                  stagingBuffer, stagingBufferMemory);
+
+            info.buffer = stagingBuffer;
+            info.bufferMemory = stagingBufferMemory;
+        }
     }
 
     VkBufferUsageFlagBits usage = (VkBufferUsageFlagBits)(VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | (transferToLocalDevMem ?
@@ -33,9 +42,30 @@ VertexBuffer::VertexBuffer(std::vector<VkVertexInputAttributeDescription> attrib
         VkBuffer stagingBuffer;
         VkDeviceMemory stagingBufferMemory;
 
-        CreateBuffer(size, VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
-         VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
-          stagingBuffer, stagingBufferMemory);
+        bool foundFreeBuffer = false;
+        for(StagingBufferCopyCMDInfo& info : stagingBufferCMDInfoList){
+            if(info.commandBuffer.free){            
+
+                info.commandBuffer.free = false;
+                info.bufferMemory = bufferMemory;
+                stagingBuffer = info.buffer;
+                stagingBufferMemory = info.bufferMemory;
+                foundFreeBuffer = true;
+                secondaryCommandBuffer = &stagingBufferCMDInfoList[stagingBufferCMDInfoList.size() - 1].commandBuffer;
+                break;
+            }
+        }
+        if(!foundFreeBuffer){
+            stagingBufferCMDInfoList.push_back({});
+            stagingBufferCMDInfoList[stagingBufferCMDInfoList.size() - 1].commandBuffer.commandBuffer = CommandBuffer(VK_COMMAND_BUFFER_LEVEL_SECONDARY,
+             COMMAND_BUFFER_TRANSFER_FLAG, nullptr);
+            stagingBufferCMDInfoList[stagingBufferCMDInfoList.size() - 1].commandBuffer.free = false;
+            secondaryCommandBuffer = &stagingBufferCMDInfoList[stagingBufferCMDInfoList.size() - 1].commandBuffer;
+
+
+            stagingBufferCMDInfoList[stagingBufferCMDInfoList.size() - 1].buffer = stagingBuffer;
+            stagingBufferCMDInfoList[stagingBufferCMDInfoList.size() - 1].bufferMemory = stagingBufferMemory;
+        }
 
         void* mappedData;
         vkMapMemory(Device::GetDevice(), stagingBufferMemory, 0, size, 0, &mappedData);
@@ -45,7 +75,8 @@ VertexBuffer::VertexBuffer(std::vector<VkVertexInputAttributeDescription> attrib
 
         CopyFromBuffer(stagingBuffer, size);
 
-    }else{
+    }
+    else{
         void* mappedData;
         vkMapMemory(Device::GetDevice(), bufferMemory, 0, size, 0, &mappedData);
         memcpy(mappedData, data, size);
@@ -61,23 +92,6 @@ VertexBuffer::VertexBuffer(std::vector<VkVertexInputAttributeDescription> attrib
 }
 
 void VertexBuffer::CopyFromBuffer(VkBuffer srcBuffer, VkDeviceSize size){
-    bool foundFreeBuffer = false;
-    for(StagingBufferCopyCMDInfo& info : stagingBufferCMDInfoList){
-        if(info.commandBuffer.free){ 
-            info.commandBuffer.free = false;
-            info.bufferMemory = bufferMemory;
-            foundFreeBuffer = true;
-            secondaryCommandBuffer = &stagingBufferCMDInfoList[stagingBufferCMDInfoList.size() - 1].commandBuffer;
-            break;
-        }
-    }
-    if(!foundFreeBuffer){
-        stagingBufferCMDInfoList.push_back({VK_NULL_HANDLE, {}});
-        stagingBufferCMDInfoList[stagingBufferCMDInfoList.size() - 1].commandBuffer.commandBuffer = CommandBuffer(VK_COMMAND_BUFFER_LEVEL_SECONDARY,
-         COMMAND_BUFFER_TRANSFER_FLAG, nullptr);
-         stagingBufferCMDInfoList[stagingBufferCMDInfoList.size() - 1].commandBuffer.free = false;
-         secondaryCommandBuffer = &stagingBufferCMDInfoList[stagingBufferCMDInfoList.size() - 1].commandBuffer;
-    }
 
 
     VkCommandBufferInheritanceInfo inheritanceInfo{};
