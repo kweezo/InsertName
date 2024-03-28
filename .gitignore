@@ -12,3 +12,6 @@ Makefile
 src/settings.bin
 notes
 shaders/bin/*
+.ninja_deps
+.ninja_log
+build.ninja
