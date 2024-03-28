@@ -1,6 +1,6 @@
 #pragma once
 
-#include "../network/NetworkManager.hpp"
+#include "NetworkManager.hpp"
 #include <string>
 
 class UserManager : public NetworkManager {

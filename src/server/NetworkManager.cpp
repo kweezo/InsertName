@@ -55,7 +55,7 @@ int NetworkManager::acceptClient() {
     #endif
 
     if (clientSocket == -1) {
-        throw std::runtime_error("Failed to accept client connection");
+        std::cerr << "Failed to accept client connection";
     }
 
     std::cout << "Accepted client connection\n";
@@ -63,6 +63,8 @@ int NetworkManager::acceptClient() {
 }
 
 void NetworkManager::handleClientConnection() {
+    HandleClient client("./server/accounts");
+
     char buffer[4096];
 
     while (true) {
@@ -85,23 +87,9 @@ void NetworkManager::handleClientConnection() {
         std::cout << "Received: " << receivedMsg << std::endl;
 
         // Handle the received message and get a response
-        std::string response = handleMsg(receivedMsg);
+        std::string response = client.handleMsg(receivedMsg);
 
         // Send the response back to the client
         send(clientSocket, response.c_str(), response.size() + 1, 0);
     }
-}
-
-std::string NetworkManager::handleMsg(const std::string& receivedMsg) {
-    std::string response = "";
-
-    if (receivedMsg[0] == 'r') {
-        response = "r";
-    } else if (receivedMsg[0] == 'l') {
-        response = "l";
-    } else {
-        response = "e";
-    }
-
-    return response;
 }

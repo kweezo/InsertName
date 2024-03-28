@@ -1,5 +1,7 @@
 #pragma once
 
+#include "HandleClient.hpp"
+
 #include <stdexcept>
 #include <iostream>
 
@@ -22,8 +24,6 @@ public:
     int initNetwork();
     int acceptClient();
     void handleClientConnection();
-
-    std::string handleMsg(const std::string& receivedMsg);
 
 private:
     #ifdef _WIN32
