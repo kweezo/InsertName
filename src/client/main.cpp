@@ -20,7 +20,7 @@ void userTemp(){
 int main(){
     Settings settings;
     ReadSettings(settings, "src/settings.bin");
-    //userTemp();
+    userTemp();
 
     Window::CreateWindowContext(settings.width, settings.height, "Vulkan");
     Renderer::InitRenderer();

@@ -12,11 +12,11 @@ set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED True)
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY bin)
 
-option(BUILD_CLIENT "Build the client executable" ON)
-option(BUILD_INSTALLER "Build the installer executable" ON)
-option(BUILD_SERVER "Build the installer executable" ON)
+option(BUILD_CLIENT "Build the client executable" OFF)
+option(BUILD_INSTALLER "Build the installer executable" OFF)
+option(BUILD_SERVER "Build the server executable" OFF)
 option(DEBUG "Build with debug flags" OFF)
-option (GFX_RECONSTRUCT "Build with graphics reconstruction" OFF)
+option(GFX_RECONSTRUCT "Build with graphics reconstruction" OFF)
 
 if(DEBUG)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g -DNDEBUG")
@@ -32,15 +32,14 @@ if(BUILD_INSTALLER)
 endif()
 
 if(BUILD_SERVER)
-    file(GLOB serversrc src/server/*.cpp src/settings.cpp)
-    add_executable(server ${serversrc})
+    file(GLOB serversrc src/server/*.cpp)
+    add_executable(server ${serversrc} src/server/main.cpp)
 
     if(WIN32)
         target_link_libraries(server PUBLIC ws2_32)
     endif()
 endif()
 
-#Linux libs
 if(BUILD_CLIENT)    
     file(GLOB clientsrc src/client/renderer/core/*.cpp src/client/renderer/ext/*.cpp src/client/renderer/window/*.cpp src/client/account/*.cpp)
     add_executable(client ${clientsrc} src/client/main.cpp src/settings.cpp)

@@ -27,5 +27,5 @@ int UserManager::loginUser(const char loginType,const std::string &username, con
 }
 
 std::string UserManager::stickMessage(const char dataType, const std::string &str1, const std::string &str2) {
-    return dataType + str1 + (char)0 + str2;
+    return dataType + str1 + (char)30 + str2;
 }

@@ -77,7 +77,6 @@ void NetworkManager::handleClientConnection() {
             std::cerr << "Error in recv(). Quitting" << std::endl;
             return;
         }
-
         if (bytesReceived == 0) {
             std::cout << "Client disconnected " << std::endl;
             return;
