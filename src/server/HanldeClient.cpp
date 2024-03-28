@@ -25,7 +25,6 @@ std::string HandleClient::handleMsg(const std::string& receivedMsg) {
 }
 
 char HandleClient::registerUser(const std::string& username, const std::string& password) {
-    this->username = username;
     std::cout << "Registering user: " << username << std::endl;
     userDir = dir + '/' + username;
 
