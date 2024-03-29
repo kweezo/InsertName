@@ -35,6 +35,11 @@ if(BUILD_SERVER)
     file(GLOB serversrc src/server/*.cpp)
     add_executable(server ${serversrc} src/server/main.cpp)
 
+    add_library(sqlite3 "./lib/win/SQLite3/sqlite3.c")
+    target_include_directories(sqlite3 PUBLIC "./lib/win/SQLite3/")
+
+    target_link_libraries(server PUBLIC sqlite3)
+
     if(WIN32)
         target_link_libraries(server PUBLIC ws2_32)
     endif()
