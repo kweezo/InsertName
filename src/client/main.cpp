@@ -13,7 +13,11 @@
 void userTemp(){
     UserManager userManager("127.0.0.1", 12345);
     if (userManager.connectToServer()) {
-        userManager.loginUser('r', "username", "password");
+        std::string username;
+        std::string password;
+        char loginType;
+        std::cin >> loginType >> username >> password;
+        userManager.loginUser(loginType, username, password);
     }
 }
 

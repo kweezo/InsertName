@@ -19,13 +19,15 @@
 class NetworkManager {
 
 public:
-    NetworkManager();
+    NetworkManager(int port);
     ~NetworkManager();
     int initNetwork();
     int acceptClient();
     void handleClientConnection();
 
 private:
+    int port;
+
     #ifdef _WIN32
         SOCKET serverSocket;
         SOCKET clientSocket;

@@ -3,7 +3,7 @@
 #include <vector>
 
 int main() {
-    NetworkManager networkManager;
+    NetworkManager networkManager(12345);
     networkManager.initNetwork();
 
     std::vector<std::thread> clientThreads;

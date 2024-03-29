@@ -16,7 +16,9 @@ std::string HandleClient::handleMsg(const std::string& receivedMsg) {
         std::string password = getNextArg(msg);
         response = registerUser(username, password);
     } else if (receivedMsg[0] == 'l') {
-        response = "l";
+        username = getNextArg(msg);
+        std::string password = getNextArg(msg);
+        response = loginUser(username, password);
     } else {
         response = "e";
     }
@@ -40,6 +42,28 @@ char HandleClient::registerUser(const std::string& username, const std::string& 
             std::cerr << "Failed to create password file\n";
         }
         return 'r';
+    }
+}
+
+char HandleClient::loginUser(const std::string& username, const std::string& password) {
+    std::cout << "Logging in user: " << username << std::endl;
+    userDir = dir + '/' + username;
+
+    if (!std::filesystem::exists(userDir)) {
+        return 'f';
+    } else {
+        std::ifstream passwordFile(userDir + "/password.bin", std::ios::binary);
+        if (passwordFile.is_open()) {
+            std::string storedPassword((std::istreambuf_iterator<char>(passwordFile)), std::istreambuf_iterator<char>());
+            if (storedPassword == password) {
+                return 'l';
+            } else {
+                return 'w';
+            }
+        } else {
+            std::cerr << "Failed to open password file\n";
+            return 'e';
+        }
     }
 }
 

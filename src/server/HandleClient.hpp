@@ -11,6 +11,7 @@ public:
 
     std::string handleMsg(const std::string& receivedMsg);
     char registerUser(const std::string& username, const std::string& password);
+    char loginUser(const std::string& username, const std::string& password);
     std::string getNextArg(std::string& msg);
 
 private:
