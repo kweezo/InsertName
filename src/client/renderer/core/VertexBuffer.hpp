@@ -51,6 +51,7 @@ private:
     static bool createdStagingBuffers;
 
     static CommandBuffer commandBuffer;
+    static VkFence finishedCopyingFence;
 
     uint32_t* useCount;
 
@@ -58,6 +59,7 @@ private:
     VkDeviceMemory mem;
 
     BufferDescriptions descriptions;
+
 };
 
 

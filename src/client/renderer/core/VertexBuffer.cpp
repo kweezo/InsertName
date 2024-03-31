@@ -5,6 +5,7 @@
 std::vector<StagingBufferCopyCMDInfo> VertexBuffer::stagingBuffers = {};
 bool VertexBuffer::createdStagingBuffers = false;
 CommandBuffer VertexBuffer::commandBuffer = CommandBuffer();
+VkFence VertexBuffer::finishedCopyingFence = VK_NULL_HANDLE;
 
 VertexBuffer::VertexBuffer(std::vector<VkVertexInputAttributeDescription> attributeDescriptions,
  std::vector<VkVertexInputBindingDescription> bindingDescriptions, size_t size,
@@ -14,6 +15,13 @@ VertexBuffer::VertexBuffer(std::vector<VkVertexInputAttributeDescription> attrib
         CreateStagingBuffers();
 
         commandBuffer = CommandBuffer(VK_COMMAND_BUFFER_LEVEL_PRIMARY, COMMAND_BUFFER_TRANSFER_FLAG, nullptr);
+
+        VkFenceCreateInfo fenceInfo{};
+        fenceInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
+
+        if(vkCreateFence(Device::GetDevice(), &fenceInfo, nullptr, &finishedCopyingFence) != VK_SUCCESS){
+            throw std::runtime_error("Failed to create transfer command buffer fence");
+        }
     }
 
     if(transferToLocalDevMem){
@@ -168,12 +176,26 @@ void VertexBuffer::UpdateCommandBuffer(){
     commandBuffer.EndCommandBuffer();
 
 
+
+    VkSubmitInfo submitInfo{};
+    submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+    submitInfo.commandBufferCount = 1;
+    VkCommandBuffer commandBufferHandle = commandBuffer.GetCommandBuffer();
+    submitInfo.pCommandBuffers = &commandBufferHandle;
+    submitInfo.waitSemaphoreCount = 0;
+    submitInfo.signalSemaphoreCount = 0;
+
+    if(vkQueueSubmit(Device::GetTransferQueue(), 1, &submitInfo, finishedCopyingFence) != VK_SUCCESS){
+        throw std::runtime_error("Failed to submit transfer command buffer");
+    }
+    
+    vkWaitForFences(Device::GetDevice(), 1, &finishedCopyingFence, VK_TRUE, UINT64_MAX);
+
     for(uint32_t i : cleanupList){
         stagingBuffers[i].free = true;
         vkDestroyBuffer(Device::GetDevice(), stagingBuffers[i].buffer, nullptr);
         vkFreeMemory(Device::GetDevice(), stagingBuffers[i].bufferMemory, nullptr);
     }
-
 
 }
 

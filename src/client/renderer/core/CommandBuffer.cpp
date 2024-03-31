@@ -26,9 +26,13 @@ CommandBuffer::CommandBuffer(VkCommandBufferLevel level, uint32_t flags, Graphic
 }
 
 void CommandBuffer::BeginCommandBuffer(uint32_t imageIndex, VkCommandBufferInheritanceInfo* inheritanceInfo){
-    if(level == VK_COMMAND_BUFFER_LEVEL_SECONDARY){
-        throw std::runtime_error("Tried to record a secondary command buffer, aborting!");
-    }
+//    if(level == VK_COMMAND_BUFFER_LEVEL_SECONDARY){
+//        throw std::runtime_error("Tried to record a secondary command buffer, aborting!");
+//    }
+//I am going to leave this here commented outas a testament to my stupidity and retardation, I already removed it once after I figured out that
+// it was the cause of the problem and it came back to bite me in the ass again, I have no idea how or when it reappeared but it did
+//it is a minor inconvenience but one that will probably be mentioned in my suicide note lol
+//so done with this typa bullshit
 
     vkResetCommandBuffer(commandBuffer, 0);
 
