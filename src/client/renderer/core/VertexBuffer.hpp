@@ -15,7 +15,8 @@
 typedef struct StagingBufferCopyCMDInfo{
     VkBuffer buffer;
     VkDeviceMemory bufferMemory;
-    SecondaryCommandBuffer commandBuffer;
+    CommandBuffer commandBuffer;
+    bool free;
 } StagingBuffer;
 
 typedef struct BufferDescriptions{
@@ -33,7 +34,7 @@ public:
     VkBuffer GetBuffer();
     BufferDescriptions GetDescriptions();
 
-    void CopyFromBuffer(VkBuffer srcBuffer, VkDeviceSize size);
+    void CopyFromBuffer(StagingBufferCopyCMDInfo stagingBuffer, VkDeviceSize size);
 
     static void UpdateCommandBuffer();
 
@@ -41,20 +42,22 @@ public:
     VertexBuffer operator=(const VertexBuffer& other);
     ~VertexBuffer();
 private:
-    void AllocateMemory(VkDeviceMemory& memory, size_t size, VkMemoryPropertyFlags properties);
-    void CreateBuffer(VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties, VkBuffer& buffer,
-     VkDeviceMemory& bufferMemory);
+    static void AllocateMemory(VkDeviceMemory& memory, VkBuffer buffer, size_t size, VkMemoryPropertyFlags properties);
+    static void CreateBuffer(VkBuffer& buffer, VkBufferUsageFlags usage, VkDeviceSize size);
+
+    static void CreateStagingBuffers();
+
+    static std::vector<StagingBufferCopyCMDInfo> stagingBuffers;
+    static bool createdStagingBuffers;
+
+    static CommandBuffer commandBuffer;
 
     uint32_t* useCount;
 
+    VkBuffer buff;
+    VkDeviceMemory mem;
+
     BufferDescriptions descriptions;
-
-    VkBuffer buffer;
-    VkDeviceMemory bufferMemory;
-
-    static CommandBuffer primaryCommandBuffer;
-    static std::vector<StagingBufferCopyCMDInfo> stagingBufferCMDInfoList;
-    SecondaryCommandBuffer* secondaryCommandBuffer;
 };
 
 

@@ -2,120 +2,101 @@
 
 #define MAX_FREE_COMMAND_BUFFER_COUNT 3 //probably needs to be adjusted for performance but idk
 
-CommandBuffer VertexBuffer::primaryCommandBuffer = CommandBuffer();
-std::vector<StagingBufferCopyCMDInfo> VertexBuffer::stagingBufferCMDInfoList = {};
+std::vector<StagingBufferCopyCMDInfo> VertexBuffer::stagingBuffers = {};
+bool VertexBuffer::createdStagingBuffers = false;
+CommandBuffer VertexBuffer::commandBuffer = CommandBuffer();
 
 VertexBuffer::VertexBuffer(std::vector<VkVertexInputAttributeDescription> attributeDescriptions,
  std::vector<VkVertexInputBindingDescription> bindingDescriptions, size_t size,
  void* data, bool transferToLocalDevMem){
 
-    if(primaryCommandBuffer.GetCommandBuffer() == VK_NULL_HANDLE){
-        primaryCommandBuffer = CommandBuffer(VK_COMMAND_BUFFER_LEVEL_PRIMARY,
-         COMMAND_BUFFER_TRANSFER_FLAG, nullptr);
-         stagingBufferCMDInfoList.resize(MAX_FREE_COMMAND_BUFFER_COUNT);
-            for(StagingBufferCopyCMDInfo& info : stagingBufferCMDInfoList){
-                info.commandBuffer.commandBuffer = CommandBuffer(VK_COMMAND_BUFFER_LEVEL_SECONDARY, COMMAND_BUFFER_TRANSFER_FLAG, nullptr);
+    if(!createdStagingBuffers){
+        CreateStagingBuffers();
 
-            VkBuffer stagingBuffer;
-            VkDeviceMemory stagingBufferMemory;
-            
-            CreateBuffer(size, VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
-             VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
-                  stagingBuffer, stagingBufferMemory);
-
-            info.buffer = stagingBuffer;
-            info.bufferMemory = stagingBufferMemory;
-        }
+        commandBuffer = CommandBuffer(VK_COMMAND_BUFFER_LEVEL_PRIMARY, COMMAND_BUFFER_TRANSFER_FLAG, nullptr);
     }
 
-    VkBufferUsageFlagBits usage = (VkBufferUsageFlagBits)(VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | (transferToLocalDevMem ?
-     VK_BUFFER_USAGE_TRANSFER_DST_BIT : 0));
+    if(transferToLocalDevMem){
+        CreateBuffer(buff, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, size);
+        AllocateMemory(mem, buff, size, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
 
-    VkBufferCreateFlags properties = (VkBufferCreateFlagBits)(transferToLocalDevMem ?
-     VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT : 0);  
+        StagingBufferCopyCMDInfo *stagingBuffer;
 
-   
+        bool foundFreeBuff = false;
+        for(StagingBufferCopyCMDInfo& currStagingBuffer : stagingBuffers){
+            if(currStagingBuffer.free){
+                currStagingBuffer.free = false;
+                foundFreeBuff = true;
+                stagingBuffer = &currStagingBuffer;
+                CreateBuffer(stagingBuffer->buffer, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, size);
 
-    CreateBuffer(size, usage, properties, buffer, bufferMemory);
-
-   if(transferToLocalDevMem){
-        VkBuffer stagingBuffer;
-        VkDeviceMemory stagingBufferMemory;
-
-        bool foundFreeBuffer = false;
-        for(StagingBufferCopyCMDInfo& info : stagingBufferCMDInfoList){
-            if(info.commandBuffer.free){            
-
-                info.commandBuffer.free = false;
-                info.bufferMemory = bufferMemory;
-                stagingBuffer = info.buffer;
-                stagingBufferMemory = info.bufferMemory;
-                foundFreeBuffer = true;
-                secondaryCommandBuffer = &stagingBufferCMDInfoList[stagingBufferCMDInfoList.size() - 1].commandBuffer;
                 break;
             }
         }
-        if(!foundFreeBuffer){
-            stagingBufferCMDInfoList.push_back({});
-            stagingBufferCMDInfoList[stagingBufferCMDInfoList.size() - 1].commandBuffer.commandBuffer = CommandBuffer(VK_COMMAND_BUFFER_LEVEL_SECONDARY,
-             COMMAND_BUFFER_TRANSFER_FLAG, nullptr);
-            stagingBufferCMDInfoList[stagingBufferCMDInfoList.size() - 1].commandBuffer.free = false;
-            secondaryCommandBuffer = &stagingBufferCMDInfoList[stagingBufferCMDInfoList.size() - 1].commandBuffer;
+        if(!foundFreeBuff){
+            StagingBufferCopyCMDInfo tmpStagingBuffer;
+            tmpStagingBuffer.free = true;
+            tmpStagingBuffer.commandBuffer = CommandBuffer(VK_COMMAND_BUFFER_LEVEL_SECONDARY, COMMAND_BUFFER_TRANSFER_FLAG, nullptr);
+        
+            CreateBuffer(tmpStagingBuffer.buffer, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, size);
 
+            stagingBuffers.push_back(tmpStagingBuffer);
 
-            stagingBufferCMDInfoList[stagingBufferCMDInfoList.size() - 1].buffer = stagingBuffer;
-            stagingBufferCMDInfoList[stagingBufferCMDInfoList.size() - 1].bufferMemory = stagingBufferMemory;
+            stagingBuffer = &stagingBuffers[stagingBuffers.size() - 1];
         }
 
-        void* mappedData;
-        vkMapMemory(Device::GetDevice(), stagingBufferMemory, 0, size, 0, &mappedData);
-        memcpy(mappedData, data, size);
-        vkUnmapMemory(Device::GetDevice(), stagingBufferMemory);
+        AllocateMemory(stagingBuffer->bufferMemory, stagingBuffer->buffer, size,
+         VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
 
+        void *stagingData;
+        if(vkMapMemory(Device::GetDevice(), stagingBuffer->bufferMemory, 0, size, 0, &stagingData) != VK_SUCCESS){
+            throw std::runtime_error("Failed to map vertex buffer memory");
+        }
+        memcpy(stagingData, data, size);
+        vkUnmapMemory(Device::GetDevice(), stagingBuffer->bufferMemory);
+        
 
-        CopyFromBuffer(stagingBuffer, size);
+        CreateBuffer(buff, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, size);
 
+        CopyFromBuffer(stagingBuffer[0], size);
     }
     else{
-        void* mappedData;
-        vkMapMemory(Device::GetDevice(), bufferMemory, 0, size, 0, &mappedData);
-        memcpy(mappedData, data, size);
-        vkUnmapMemory(Device::GetDevice(), bufferMemory);
+        //TODO
     }
-
-
-    descriptions.attributeDescriptions = attributeDescriptions;
-    descriptions.bindingDescriptions = bindingDescriptions;
 
     useCount = new uint32_t;
     useCount[0] = 1;
 }
 
-void VertexBuffer::CopyFromBuffer(VkBuffer srcBuffer, VkDeviceSize size){
+void VertexBuffer::CreateStagingBuffers(){
+    for(int i = 0; i < MAX_FREE_COMMAND_BUFFER_COUNT; i++){
+        StagingBufferCopyCMDInfo stagingBuffer;
+        stagingBuffer.free = true;
+        stagingBuffer.commandBuffer = CommandBuffer(VK_COMMAND_BUFFER_LEVEL_SECONDARY, COMMAND_BUFFER_TRANSFER_FLAG, nullptr);
+        
+        stagingBuffers.push_back(stagingBuffer);
+    }
+    createdStagingBuffers = true;
+}
 
-
+void VertexBuffer::CopyFromBuffer(StagingBufferCopyCMDInfo stagingBuffer, VkDeviceSize size){
     VkCommandBufferInheritanceInfo inheritanceInfo{};
     inheritanceInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_INFO;
-    inheritanceInfo.occlusionQueryEnable = VK_FALSE;
 
-    secondaryCommandBuffer->commandBuffer.BeginCommandBuffer(0, &inheritanceInfo);
+    stagingBuffer.commandBuffer.BeginCommandBuffer(0, &inheritanceInfo);
 
     VkBufferCopy copyRegion{};
     copyRegion.size = size;
+    vkCmdCopyBuffer(stagingBuffer.commandBuffer.GetCommandBuffer(), stagingBuffer.buffer, buff, 1, &copyRegion);
 
-    vkCmdCopyBuffer(secondaryCommandBuffer->commandBuffer.GetCommandBuffer(), srcBuffer, buffer, 1, &copyRegion);
-
-    secondaryCommandBuffer->commandBuffer.EndCommandBuffer();
-
-
+    stagingBuffer.commandBuffer.EndCommandBuffer();
 }
 
-void VertexBuffer::CreateBuffer(VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties,
- VkBuffer& buffer, VkDeviceMemory& bufferMemory){
+void VertexBuffer::CreateBuffer(VkBuffer& buffer, VkBufferUsageFlags usage, VkDeviceSize size){
     VkBufferCreateInfo bufferInfo{};
     bufferInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
-    bufferInfo.size = size;
     bufferInfo.usage = usage;
+    bufferInfo.size = size;
     
     if(Device::GetQueueFamilyInfo().transferFamilyFound){
         bufferInfo.sharingMode = VK_SHARING_MODE_CONCURRENT;
@@ -130,15 +111,9 @@ void VertexBuffer::CreateBuffer(VkDeviceSize size, VkBufferUsageFlags usage, VkM
     if(vkCreateBuffer(Device::GetDevice(), &bufferInfo, nullptr, &buffer) != VK_SUCCESS){
         throw std::runtime_error("Failed to create vertex buffer");
     }
-
-    
-
-    AllocateMemory(bufferMemory, size, properties);
-
-    vkBindBufferMemory(Device::GetDevice(), buffer, bufferMemory, 0);
 }
 
-void VertexBuffer::AllocateMemory(VkDeviceMemory& memory, size_t size,
+void VertexBuffer::AllocateMemory(VkDeviceMemory& memory, VkBuffer buffer, size_t size,
  VkMemoryPropertyFlags properties){
     VkMemoryRequirements memRequirements;
     vkGetBufferMemoryRequirements(Device::GetDevice(), buffer, &memRequirements);
@@ -161,52 +136,40 @@ void VertexBuffer::AllocateMemory(VkDeviceMemory& memory, size_t size,
         }
     }
 
+    vkBindBufferMemory(Device::GetDevice(), buffer, memory, 0);
 }
 
 void VertexBuffer::UpdateCommandBuffer(){
-
-    std::vector<VkCommandBuffer> executeList;
-    std::vector<uint32_t> toRemove;
-    uint32_t i = 0;
-    for(StagingBufferCopyCMDInfo& info : stagingBufferCMDInfoList){
-        if(!info.commandBuffer.free){
-            executeList.push_back(info.commandBuffer.commandBuffer.GetCommandBuffer());
-            info.commandBuffer.free = true;
-            toRemove.push_back(i);
+    std::vector<uint32_t> cleanupList;
+    std::vector<VkCommandBuffer> commandBuffers;
+    for(int i = 0; i < stagingBuffers.size(); i++){
+        if(!stagingBuffers[i].free){
+            cleanupList.push_back(i);
+            commandBuffers.push_back(stagingBuffers[i].commandBuffer.GetCommandBuffer());
         }
-        i++;
     }
+    
+    commandBuffer.BeginCommandBuffer(0, nullptr);
+    vkCmdExecuteCommands(commandBuffer.GetCommandBuffer(), commandBuffers.size(), commandBuffers.data());
+    commandBuffer.EndCommandBuffer();
 
-    if(executeList.size() == 0){
+    if(commandBuffers.empty()){
         return;
     }
 
-    primaryCommandBuffer.BeginCommandBuffer(0, nullptr);
-    vkCmdExecuteCommands(primaryCommandBuffer.GetCommandBuffer(), executeList.size(), executeList.data());
-    primaryCommandBuffer.EndCommandBuffer();
-
-
-    VkSubmitInfo submitInfo{};
-    submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
-    submitInfo.commandBufferCount = 1;
-    VkCommandBuffer rawBuff = primaryCommandBuffer.GetCommandBuffer();
-    submitInfo.pCommandBuffers = &rawBuff;
-    submitInfo.waitSemaphoreCount = 0;
-    submitInfo.signalSemaphoreCount = 0;
-
-    vkQueueSubmit(Device::GetTransferQueue(), 1, &submitInfo, VK_NULL_HANDLE);
-
-    for(i = 0; i < toRemove.size(); i++){
-        vkFreeMemory(Device::GetDevice(), stagingBufferCMDInfoList[toRemove[i]].bufferMemory, nullptr);
+    for(uint32_t i : cleanupList){
+        stagingBuffers[i].free = true;
+        vkDestroyBuffer(Device::GetDevice(), stagingBuffers[i].buffer, nullptr);
+        vkFreeMemory(Device::GetDevice(), stagingBuffers[i].bufferMemory, nullptr);
     }
+
+
 }
 
-BufferDescriptions VertexBuffer::GetDescriptions(){
-    return descriptions;
-}
 VertexBuffer::VertexBuffer(const VertexBuffer& other){
-    buffer = other.buffer;
-    bufferMemory = other.bufferMemory;
+    buff = other.buff;
+    mem = other.mem;
+    descriptions = other.descriptions;
     useCount = other.useCount;
     useCount[0]++;
 }
@@ -216,8 +179,9 @@ VertexBuffer VertexBuffer::operator=(const VertexBuffer& other){
         return *this;
     }
 
-    buffer = other.buffer;
-    bufferMemory = other.bufferMemory;
+    buff = other.buff;
+    mem = other.mem;
+    descriptions = other.descriptions;
     useCount = other.useCount;
     useCount[0]++;
 
@@ -227,12 +191,16 @@ VertexBuffer VertexBuffer::operator=(const VertexBuffer& other){
 VertexBuffer::~VertexBuffer(){
     useCount[0]--;
     if(useCount[0] == 0){
-        vkDestroyBuffer(Device::GetDevice(), buffer, nullptr);
-        vkFreeMemory(Device::GetDevice(), bufferMemory, nullptr);
+        vkDestroyBuffer(Device::GetDevice(), buff, nullptr);
+        vkFreeMemory(Device::GetDevice(), mem, nullptr);
         delete useCount;
     }
 }
 
 VkBuffer VertexBuffer::GetBuffer(){
-    return buffer;
+    return buff;
+}
+
+BufferDescriptions VertexBuffer::GetDescriptions(){
+    return descriptions;
 }

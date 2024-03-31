@@ -64,13 +64,15 @@ void Device::CreateLogicalDevice(){
 
     std::vector<float> graphicsQueuePriorities(queueFamilyInfo.graphicsQueueCreateInfo.queueCount, 1.0f);
     queueFamilyInfo.graphicsQueueCreateInfo.pQueuePriorities = graphicsQueuePriorities.data();
+    queueFamilyInfo.graphicsQueueCreateInfo.queueCount = queueFamilyInfo.graphicsQueueCreateInfo.queueCount;
 
     queueCreateInfos.push_back(queueFamilyInfo.graphicsQueueCreateInfo);
 
+    std::vector<float> transferQueuePriorities(queueFamilyInfo.transferQueueCreateInfo.queueCount, 1.0f);
     if(queueFamilyInfo.transferFamilyFound){
-        std::vector<float> transferQueuePriorities(queueFamilyInfo.transferQueueCreateInfo.queueCount, 1.0f);
         queueFamilyInfo.transferQueueCreateInfo.pQueuePriorities = transferQueuePriorities.data();
         queueCreateInfos.push_back(queueFamilyInfo.transferQueueCreateInfo);
+
     }
 
 

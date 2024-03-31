@@ -1,15 +1,16 @@
 #include "Instance.hpp"
 
 const std::vector<const char*> validationLayers = {
-    "VK_LAYER_KHRONOS_validation"
+    "VK_LAYER_KHRONOS_validation",
+//    "VK_LAYER_LUNARG_api_dump",
+#ifdef GFX_RECONSTRUCT
+    //"VK_LAYER_LUNARG_gfxreconstruct",
+#endif
 };
 
 std::vector<const char*> instanceExtensions = {
 #ifdef NDEBUG
     "VK_EXT_debug_utils",
-#endif
-#ifdef GFX_RECONSTRUCT
-    //"VK_LAYER_LUNARG_gfxreconstruct",
 #endif
 };
 
@@ -23,9 +24,11 @@ VKAPI_ATTR VkBool32 VKAPI_CALL debugCallback(
         return VK_FALSE;
     }
 
-    std::cerr << "validation layer: " << pCallbackData->pMessage << std::endl;
+    std::cerr << pCallbackData->pMessage << std::endl;
 
-//    throw std::runtime_error("no warning only error >:(");
+    if(messageSeverity >= VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT){
+        throw std::runtime_error("Validation error too severe, aborting");
+    }
 
     return VK_FALSE;
 }

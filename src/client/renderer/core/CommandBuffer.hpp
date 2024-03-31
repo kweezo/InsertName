@@ -39,7 +39,3 @@ private:
     VkCommandBuffer commandBuffer;
 };
 
-typedef struct SecondaryCommandBuffer{
-    CommandBuffer commandBuffer = CommandBuffer();
-    bool free = true;
-} SecondaryCommandBuffer;
