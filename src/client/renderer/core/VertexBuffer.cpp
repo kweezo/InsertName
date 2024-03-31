@@ -59,7 +59,15 @@ VertexBuffer::VertexBuffer(std::vector<VkVertexInputAttributeDescription> attrib
         CopyFromBuffer(stagingBuffer[0], size);
     }
     else{
-        //TODO
+        CreateBuffer(buff, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, size);
+        AllocateMemory(mem, buff, size, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+
+        void *stagingData;
+        if(vkMapMemory(Device::GetDevice(), mem, 0, size, 0, &stagingData) != VK_SUCCESS){
+            throw std::runtime_error("Failed to map vertex buffer memory");
+        }
+        memcpy(stagingData, data, size);
+        vkUnmapMemory(Device::GetDevice(), mem);
     }
 
 
@@ -73,7 +81,8 @@ void VertexBuffer::CreateStagingBuffers(){
     for(int i = 0; i < MAX_FREE_COMMAND_BUFFER_COUNT; i++){
         StagingBufferCopyCMDInfo stagingBuffer;
         stagingBuffer.free = true;
-        stagingBuffer.commandBuffer = CommandBuffer(VK_COMMAND_BUFFER_LEVEL_SECONDARY, COMMAND_BUFFER_TRANSFER_FLAG, nullptr);
+        stagingBuffer.commandBuffer = CommandBuffer(VK_COMMAND_BUFFER_LEVEL_SECONDARY,
+         COMMAND_BUFFER_TRANSFER_FLAG | VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT, nullptr);
         
         stagingBuffers.push_back(stagingBuffer);
     }
