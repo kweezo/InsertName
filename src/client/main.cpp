@@ -7,6 +7,7 @@
 #include "renderer/core/Shader.hpp"
 #include "renderer/core/GraphicsPipeline.hpp"
 #include "renderer/core/VertexBuffer.hpp"
+#include "renderer/core/Fence.hpp"
 
 //implement staging and index buffer support (I am going to kill myself)
 
@@ -138,6 +139,7 @@ int main(){
     VkSemaphoreCreateInfo semaphoreInfo = {};
     semaphoreInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
 
+    //all temp code, not gonna bother implementing the fence wrapper haha
     VkFenceCreateInfo fenceInfo{};
     fenceInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
     fenceInfo.flags = VK_FENCE_CREATE_SIGNALED_BIT;
