@@ -56,13 +56,14 @@ VertexBuffer::VertexBuffer(std::vector<VkVertexInputAttributeDescription> attrib
         vkUnmapMemory(Device::GetDevice(), stagingBuffer->bufferMemory);
         
 
-        CreateBuffer(buff, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, size);
-
         CopyFromBuffer(stagingBuffer[0], size);
     }
     else{
         //TODO
     }
+
+
+    descriptions = {attributeDescriptions, bindingDescriptions};
 
     useCount = new uint32_t;
     useCount[0] = 1;
@@ -149,13 +150,14 @@ void VertexBuffer::UpdateCommandBuffer(){
         }
     }
     
+    if(commandBuffers.empty()){
+        return;
+    }
+
     commandBuffer.BeginCommandBuffer(0, nullptr);
     vkCmdExecuteCommands(commandBuffer.GetCommandBuffer(), commandBuffers.size(), commandBuffers.data());
     commandBuffer.EndCommandBuffer();
 
-    if(commandBuffers.empty()){
-        return;
-    }
 
     for(uint32_t i : cleanupList){
         stagingBuffers[i].free = true;
