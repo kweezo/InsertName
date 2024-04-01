@@ -4,6 +4,7 @@ namespace renderer{
 CommandBuffer::CommandBuffer(): commandBuffer(VK_NULL_HANDLE) {
     useCount = new uint32_t;
     useCount[0] = 1;
+    flags = 0;
 }
 
 CommandBuffer::CommandBuffer(VkCommandBufferLevel level, uint32_t flags, GraphicsPipeline* pipeline){
@@ -89,9 +90,9 @@ CommandBuffer::~CommandBuffer(){
     if(useCount[0] <= 1){
         if(flags & COMMAND_BUFFER_GRAPHICS_FLAG == COMMAND_BUFFER_GRAPHICS_FLAG){
             vkFreeCommandBuffers(Device::GetDevice(), CommandPool::GetGraphicsCommandPool(), 1, &commandBuffer);
-        }else{
+        }else if(flags & COMMAND_BUFFER_TRANSFER_FLAG == COMMAND_BUFFER_TRANSFER_FLAG){
             if(Device::GetQueueFamilyInfo().transferFamilyFound){
-               // vkFreeCommandBuffers(Device::GetDevice(), CommandPool::GetTransferCommandPool(), 1, &commandBuffer);
+                vkFreeCommandBuffers(Device::GetDevice(), CommandPool::GetTransferCommandPool(), 1, &commandBuffer);
             }else{
                 vkFreeCommandBuffers(Device::GetDevice(), CommandPool::GetGraphicsCommandPool(), 1, &commandBuffer);
             }

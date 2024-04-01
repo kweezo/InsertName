@@ -154,6 +154,13 @@ int main(){
         throw std::runtime_error("Failed to create semaphores");
     }
 
+    std::vector<VertexBuffer> buffers(5);
+    float val = 1.0f;
+    for(VertexBuffer& buff : buffers){
+        buff = VertexBuffer({}, {}, sizeof(vertices),
+        vertices, true);
+    }
+
  
 
     while(!glfwWindowShouldClose(Window::GetGLFWwindow())){
