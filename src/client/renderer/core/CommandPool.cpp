@@ -1,9 +1,10 @@
 #include "CommandPool.hpp"
 
-VkCommandPool CommandPool::graphicsCommandPool = VK_NULL_HANDLE;
-VkCommandPool CommandPool::transferCommandPool = VK_NULL_HANDLE;
 
 namespace renderer{
+
+VkCommandPool CommandPool::graphicsCommandPool = VK_NULL_HANDLE;
+VkCommandPool CommandPool::transferCommandPool = VK_NULL_HANDLE;
 
 void CommandPool::CreateCommandPools(){
     VkCommandPoolCreateInfo poolInfo = {};

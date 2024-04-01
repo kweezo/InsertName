@@ -50,7 +50,7 @@ void Window::CreateVulkanSurface(){
             throw std::runtime_error("failed to create window surface!");
         }
     #else
-        if(glfwCreateWindowSurface(Instance::GetInstance(), window, nullptr, &surface) != VK_SUCCESS){
+        if(glfwCreateWindowSurface(renderer::Instance::GetInstance(), window, nullptr, &surface) != VK_SUCCESS){
             throw std::runtime_error("Failed to create window surface!");
         }
     #endif
