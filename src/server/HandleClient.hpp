@@ -1,11 +1,9 @@
 #pragma once
 
 #include <string>
-#include <filesystem>
-#include <fstream>
 #include <iostream>
 
-#include <SQLite3/sqlite3.h>
+#include <pqxx/pqxx>
 
 class HandleClient {
 public:
@@ -18,9 +16,7 @@ public:
     std::string getNextArg(std::string& msg);
 
 private:
-    std::string username;
     static std::string dir;
-    std::string userDir;
-
-    sqlite3* db = nullptr;
+    pqxx::connection c;
+    std::string username;
 };

@@ -3,9 +3,11 @@ cmake_minimum_required(VERSION 3.10)
 project(InsertName)
 if(WIN32)
     include_directories(".\\lib\\win\\")
+    include_directories(".\\lib\\win\\libpqxx-master\\build\\install\\include")
     link_directories(".\\lib\\win\\GLFW\\lib-mingw-w64")
     link_directories(".\\lib\\win\\x86_64-w64-mingw32\\lib")
     link_directories(".\\lib\\win\\VulkanSDK\\1.3.275.0\\Lib")
+    link_directories(".\\lib\\win\\libpqxx-master\\build\\install\\lib")
 endif()
 
 set(CMAKE_CXX_STANDARD 23)
@@ -35,13 +37,10 @@ if(BUILD_SERVER)
     file(GLOB serversrc src/server/*.cpp)
     add_executable(server ${serversrc} src/server/main.cpp)
 
-    add_library(sqlite3 "./lib/win/SQLite3/sqlite3.c")
-    target_include_directories(sqlite3 PUBLIC "./lib/win/SQLite3/")
-
-    target_link_libraries(server PUBLIC sqlite3)
-
     if(WIN32)
-        target_link_libraries(server PUBLIC ws2_32)
+    target_link_libraries(server PUBLIC pqxx)
+    target_link_libraries(server PUBLIC pq)
+    target_link_libraries(server PUBLIC ws2_32)
     endif()
 endif()
 

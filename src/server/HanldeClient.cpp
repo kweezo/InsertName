@@ -1,37 +1,36 @@
 #include "HandleClient.hpp"
 
-
 std::string HandleClient::dir = "";
 
 HandleClient::HandleClient(const std::string& directory) {
     dir = directory;
 
-    // Create the database
-    int rc = sqlite3_open(dir.c_str(), &db);
-    if (rc) {
-        std::cerr << "Can't open database: " << sqlite3_errmsg(db) << std::endl;
-        return;
-    } else {
-        std::cout << "Opened database successfully" << std::endl;
-    }
+    // Create the database connection
+    try {
+        pqxx::connection c{"dbname=posgres user=postgres password=password hostaddr=127.0.0.1 port=5432"};
+        if (c.is_open()) {
+            std::cout << "Opened database successfully: " << c.dbname() << std::endl;
+        } else {
+            std::cerr << "Can't open database" << std::endl;
+            return;
+        }
 
-    // Create the table
-    std::string sql = "CREATE TABLE IF NOT EXISTS Users ("
-                      "Username TEXT PRIMARY KEY NOT NULL,"
-                      "PasswordHash TEXT NOT NULL);";
-    char *errMsg = 0;
-    rc = sqlite3_exec(db, sql.c_str(), nullptr, 0, &errMsg);  // Removed 'int' here
-
-    if (rc != SQLITE_OK) {
-        std::cerr << "SQL error: " << errMsg << std::endl;
-        sqlite3_free(errMsg);
-    } else {
+        // Create the table
+        pqxx::work W(c);
+        std::string sql = "CREATE TABLE IF NOT EXISTS Users ("
+                          "Username TEXT PRIMARY KEY NOT NULL,"
+                          "PasswordHash TEXT NOT NULL);";
+        W.exec(sql);
+        W.commit();
         std::cout << "Table created successfully" << std::endl;
+    } catch (const std::exception &e) {
+        std::cerr << e.what() << std::endl;
+        return;
     }
 }
 
 HandleClient::~HandleClient() {
-    sqlite3_close(db);
+    // PostgreSQL connection is closed automatically when the pqxx::connection object is destroyed
 }
 
 std::string HandleClient::handleMsg(const std::string& receivedMsg) {
@@ -52,47 +51,39 @@ std::string HandleClient::handleMsg(const std::string& receivedMsg) {
 
     return response;
 }
-
 char HandleClient::registerUser(const std::string& username, const std::string& password) {
     std::cout << "Registering user: " << username << std::endl;
 
-    std::string sql = "INSERT INTO Users (Username, PasswordHash) VALUES (?, ?);";
-    sqlite3_stmt* stmt;
-    sqlite3_prepare_v2(db, sql.c_str(), -1, &stmt, nullptr);
+    try {
+        pqxx::work W(c);
 
-    sqlite3_bind_text(stmt, 1, username.c_str(), -1, SQLITE_STATIC);
-    sqlite3_bind_text(stmt, 2, password.c_str(), -1, SQLITE_STATIC);
-
-    if (sqlite3_step(stmt) != SQLITE_DONE) {
-        std::cerr << "Failed to register user: " << sqlite3_errmsg(db) << std::endl;
+        std::string sql = "INSERT INTO Users (Username, PasswordHash) VALUES ($1, $2);";
+        W.exec_params(sql, username, password);
+        W.commit();
+    } catch (const std::exception &e) {
+        std::cerr << "Failed to register user: " << e.what() << std::endl;
         return 'e';
     }
 
-    sqlite3_finalize(stmt);
     return 'r';
 }
 
 char HandleClient::loginUser(const std::string& username, const std::string& password) {
     std::cout << "Logging in user: " << username << std::endl;
 
-    std::string sql = "SELECT PasswordHash FROM Users WHERE Username = ?;";
-    sqlite3_stmt* stmt;
-    sqlite3_prepare_v2(db, sql.c_str(), -1, &stmt, nullptr);
+    try {
+        pqxx::work W(c);
 
-    sqlite3_bind_text(stmt, 1, username.c_str(), -1, SQLITE_STATIC);
+        std::string sql = "SELECT PasswordHash FROM Users WHERE Username = $1;";
+        pqxx::result R = W.exec_params(sql, username);
 
-    if (sqlite3_step(stmt) == SQLITE_ROW) {
-        std::string storedPassword = reinterpret_cast<const char*>(sqlite3_column_text(stmt, 0));
-        if (storedPassword == password) {
-            sqlite3_finalize(stmt);
+        if (!R.empty() && R[0][0].as<std::string>() == password) {
             return 'l';
         } else {
-            sqlite3_finalize(stmt);
             return 'w';
         }
-    } else {
-        std::cerr << "Failed to login user: " << sqlite3_errmsg(db) << std::endl;
-        sqlite3_finalize(stmt);
+    } catch (const std::exception &e) {
+        std::cerr << "Failed to login user: " << e.what() << std::endl;
         return 'f';
     }
 }
