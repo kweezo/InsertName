@@ -29,6 +29,7 @@ typedef struct BufferDescriptions{
 
 class VertexBuffer : public Buffer{
 public:
+    VertexBuffer();
     VertexBuffer(std::vector<VkVertexInputAttributeDescription> attributeDescriptions,
      std::vector<VkVertexInputBindingDescription> bindingDescriptions, size_t size,
      void* data, bool transferToLocalDevMem);

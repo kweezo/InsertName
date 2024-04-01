@@ -9,6 +9,8 @@ bool VertexBuffer::createdStagingBuffers = false;
 CommandBuffer VertexBuffer::commandBuffer = CommandBuffer();
 Fence VertexBuffer::finishedCopyingFence = Fence();
 
+VertexBuffer::VertexBuffer(){}
+
 VertexBuffer::VertexBuffer(std::vector<VkVertexInputAttributeDescription> attributeDescriptions,
  std::vector<VkVertexInputBindingDescription> bindingDescriptions, size_t size,
  void* data, bool transferToLocalDevMem){
@@ -149,6 +151,12 @@ void VertexBuffer::UpdateCommandBuffer(){
         vkFreeMemory(Device::GetDevice(), stagingBuffers[i].bufferMemory, nullptr);
     }
 
+    while(stagingBuffers.size() > MAX_FREE_COMMAND_BUFFER_COUNT){
+        vkDestroyBuffer(Device::GetDevice(), stagingBuffers[0].buffer, nullptr);
+        vkFreeMemory(Device::GetDevice(), stagingBuffers[0].bufferMemory, nullptr);
+        stagingBuffers.erase(stagingBuffers.begin());
+    }
+
 }
 
 void VertexBuffer::Cleanup(){
@@ -159,6 +167,7 @@ void VertexBuffer::Cleanup(){
             vkFreeMemory(Device::GetDevice(), stagingBuffer.bufferMemory, nullptr);
         }
     }
+    stagingBuffers.clear();
     finishedCopyingFence.~Fence();
 }
 
