@@ -13,6 +13,7 @@
 #include "Buffer.hpp"
 #include "Fence.hpp"
 
+namespace renderer{
 
 typedef struct StagingBufferCopyCMDInfo{
     VkBuffer buffer;
@@ -60,4 +61,4 @@ private:
 
 };
 
-
+}

@@ -1,5 +1,7 @@
 #include "Fence.hpp"
 
+namespace renderer{
+
 Fence::Fence(){
     useCount = new uint32_t;
     useCount[0] = 1;
@@ -46,4 +48,6 @@ Fence::~Fence(){
     }else{
         useCount[0]--;
     }
+}
+
 }

@@ -6,6 +6,8 @@
 
 #include "Device.hpp"
 
+namespace renderer{
+
 class CommandPool{
 public:
     static void CreateCommandPools();
@@ -18,3 +20,5 @@ private:
     static VkCommandPool graphicsCommandPool;
     static VkCommandPool transferCommandPool;
 };
+
+}

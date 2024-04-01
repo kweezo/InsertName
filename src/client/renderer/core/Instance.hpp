@@ -9,6 +9,8 @@
 
 #include "../window/Window.hpp"
 
+namespace renderer{
+
 class Instance{
 public:
     static void CreateInstance();

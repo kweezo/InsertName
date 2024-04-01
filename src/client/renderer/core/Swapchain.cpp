@@ -1,5 +1,7 @@
 #include "Swapchain.hpp"
 
+namespace renderer{
+
 VkSwapchainKHR Swapchain::swapchain = VK_NULL_HANDLE;
 std::vector<VkImageView> Swapchain::swapchainImageViews = {};
 
@@ -124,4 +126,6 @@ void Swapchain::DestroySwapchain(){
     }
 
     vkDestroySwapchainKHR(Device::GetDevice(), swapchain, nullptr);
+}
+
 }

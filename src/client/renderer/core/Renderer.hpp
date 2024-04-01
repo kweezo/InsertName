@@ -9,6 +9,7 @@
 #include "CommandPool.hpp"
 #include "VertexBuffer.hpp"
 
+namespace renderer{
 
 class Renderer{
 public:
@@ -18,3 +19,5 @@ public:
     static void RenderFrame();
 private:
 };
+
+}

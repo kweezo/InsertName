@@ -3,6 +3,8 @@
 VkCommandPool CommandPool::graphicsCommandPool = VK_NULL_HANDLE;
 VkCommandPool CommandPool::transferCommandPool = VK_NULL_HANDLE;
 
+namespace renderer{
+
 void CommandPool::CreateCommandPools(){
     VkCommandPoolCreateInfo poolInfo = {};
     poolInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
@@ -35,4 +37,6 @@ VkCommandPool CommandPool::GetTransferCommandPool(){
 void CommandPool::DestroyCommandPools(){
     vkDestroyCommandPool(Device::GetDevice(), graphicsCommandPool, nullptr);
     vkDestroyCommandPool(Device::GetDevice(), transferCommandPool, nullptr);
+}
+
 }

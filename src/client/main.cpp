@@ -9,6 +9,8 @@
 #include "renderer/core/VertexBuffer.hpp"
 #include "renderer/core/Fence.hpp"
 
+using namespace renderer;//here beacuse this is again, all temp and i cant be bothered to actually refactor this properly
+
 //implement staging and index buffer support (I am going to kill myself)
 
 void userTemp(){

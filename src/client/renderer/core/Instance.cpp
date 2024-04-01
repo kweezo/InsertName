@@ -14,6 +14,8 @@ std::vector<const char*> instanceExtensions = {
 #endif
 };
 
+namespace renderer{
+
 VKAPI_ATTR VkBool32 VKAPI_CALL debugCallback(
     VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,
     VkDebugUtilsMessageTypeFlagsEXT messageType,
@@ -125,4 +127,6 @@ void Instance::DestroyInstance(){
         throw std::runtime_error("Vulkan instance not created");
     }
     vkDestroyInstance(instance, nullptr);
+}
+
 }

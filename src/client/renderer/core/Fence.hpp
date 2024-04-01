@@ -9,6 +9,8 @@
 
 #include "Device.hpp"
 
+namespace renderer{
+
 class Fence{
 public:
     Fence();
@@ -23,3 +25,5 @@ private:
     VkFence fence;
     uint32_t* useCount;
 };
+
+}

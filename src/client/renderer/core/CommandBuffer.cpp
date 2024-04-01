@@ -1,4 +1,5 @@
 #include "CommandBuffer.hpp"
+namespace renderer{
 
 CommandBuffer::CommandBuffer(): commandBuffer(VK_NULL_HANDLE) {
     useCount = new uint32_t;
@@ -100,4 +101,6 @@ CommandBuffer::~CommandBuffer(){
     else{
         useCount[0]--;
     }
+}
+
 }
