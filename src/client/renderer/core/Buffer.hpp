@@ -11,6 +11,8 @@
 #include "CommandPool.hpp"
 #include "CommandBuffer.hpp"
 
+namespace renderer{
+
 class Buffer{
 public:
     VkBuffer GetBuffer();
@@ -21,3 +23,5 @@ protected:
     VkBuffer buff;
     VkDeviceMemory mem;
 };
+
+}

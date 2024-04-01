@@ -1,5 +1,7 @@
 #include "Device.hpp"
 
+namespace renderer{
+
 const std::vector<const char*> deviceExtensions = {
     VK_KHR_SWAPCHAIN_EXTENSION_NAME
 };
@@ -160,4 +162,6 @@ VkDevice Device::GetDevice(){
 
 void Device::DestroyDevice(){
     vkDestroyDevice(device, nullptr);
+}
+
 }

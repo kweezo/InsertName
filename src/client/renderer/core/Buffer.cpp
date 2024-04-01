@@ -1,5 +1,6 @@
 #include "Buffer.hpp"
 
+namespace renderer{
 
 void Buffer::CreateBuffer(VkBuffer& buffer, VkBufferUsageFlags usage, VkDeviceSize size){
     VkBufferCreateInfo bufferInfo{};
@@ -50,4 +51,6 @@ void Buffer::AllocateMemory(VkDeviceMemory& memory, VkBuffer buffer, size_t size
 
 VkBuffer Buffer::GetBuffer(){
     return buff;
+}
+
 }

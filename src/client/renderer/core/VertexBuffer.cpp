@@ -2,6 +2,8 @@
 
 #define MAX_FREE_COMMAND_BUFFER_COUNT 3 //probably needs to be adjusted for performance but idk
 
+namespace renderer{
+
 std::vector<StagingBufferCopyCMDInfo> VertexBuffer::stagingBuffers = {};
 bool VertexBuffer::createdStagingBuffers = false;
 CommandBuffer VertexBuffer::commandBuffer = CommandBuffer();
@@ -194,4 +196,6 @@ VertexBuffer::~VertexBuffer(){
 
 BufferDescriptions VertexBuffer::GetDescriptions(){
     return descriptions;
+}
+
 }

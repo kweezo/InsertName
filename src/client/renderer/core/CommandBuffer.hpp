@@ -13,6 +13,7 @@
 #define COMMAND_BUFFER_GRAPHICS_FLAG 1
 #define COMMAND_BUFFER_TRANSFER_FLAG 2
 
+namespace renderer{
 
 class CommandBuffer{
 public:
@@ -39,3 +40,4 @@ private:
     VkCommandBuffer commandBuffer;
 };
 
+}

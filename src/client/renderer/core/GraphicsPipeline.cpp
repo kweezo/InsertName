@@ -1,5 +1,7 @@
 #include "GraphicsPipeline.hpp"
 
+namespace renderer{
+
 GraphicsPipeline::GraphicsPipeline(VkPipelineVertexInputStateCreateInfo vertexInputInfo, VkPrimitiveTopology topology,
     VkPolygonMode polygonMode, VkPipelineMultisampleStateCreateInfo multisampling,
      VkPipelineDepthStencilStateCreateInfo depthStencilInfo,
@@ -163,4 +165,6 @@ GraphicsPipeline::~GraphicsPipeline(){
     else{
         useCount[0]--;
     }
+}
+
 }

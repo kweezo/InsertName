@@ -1,5 +1,7 @@
 #include "Shader.hpp"
 
+namespace renderer{
+
 Shader::Shader(const char* vertexShaderPath, const char* fragmentShaderPath){
     useCount = new uint32_t;
     useCount[0] = 1;
@@ -87,4 +89,6 @@ Shader::~Shader(){
     else{
         useCount[0]--;
     }
+}
+
 }

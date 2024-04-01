@@ -8,6 +8,8 @@
 
 #include "Instance.hpp"
 
+namespace renderer{
+
 typedef struct QueueFamilyInfo{
     bool graphicsFamilyFound = false;
     bool transferFamilyFound = false;
@@ -48,3 +50,5 @@ private:
     static void GetQueues();
 
 };
+
+}

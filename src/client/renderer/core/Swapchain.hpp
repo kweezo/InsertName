@@ -10,6 +10,8 @@
 
 #define PREFERRED_IMAGE_COUNT (uint32_t)3
 
+namespace renderer{
+
 class Swapchain{
 public:
     static void CreateSwapchain();
@@ -33,3 +35,5 @@ private:
 
     static void CreateSwapchainImageViews();
 };
+
+}

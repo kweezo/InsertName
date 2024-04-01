@@ -10,6 +10,8 @@
 
 #include "Device.hpp"
 
+namespace renderer{
+
 class Shader{
 public:
     Shader(const char* vertexShaderPath, const char* fragmentShaderPath);
@@ -29,3 +31,5 @@ private:
 
     uint32_t* useCount;
 };
+
+}

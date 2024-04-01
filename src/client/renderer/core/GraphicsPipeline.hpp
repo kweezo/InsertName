@@ -10,6 +10,8 @@
 #include "Shader.hpp"
 #include "Swapchain.hpp"
 
+namespace renderer{
+
 class GraphicsPipeline{
 public:
     GraphicsPipeline(VkPipelineVertexInputStateCreateInfo vertexInputInfo, VkPrimitiveTopology topology,
@@ -37,3 +39,5 @@ private:
 
     uint32_t *useCount;
 };
+
+}
