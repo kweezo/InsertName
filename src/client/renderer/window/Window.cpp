@@ -46,7 +46,7 @@ void Window::CreateVulkanSurface(){
         createInfo.hwnd = glfwGetWin32Window(window);
         createInfo.hinstance = GetModuleHandle(nullptr);
 
-        if (vkCreateWin32SurfaceKHR(Instance::GetInstance(), &createInfo, nullptr, &surface) != VK_SUCCESS) {
+        if (vkCreateWin32SurfaceKHR(renderer::Instance::GetInstance(), &createInfo, nullptr, &surface) != VK_SUCCESS) {
             throw std::runtime_error("failed to create window surface!");
         }
     #else
