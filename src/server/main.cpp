@@ -1,22 +1,13 @@
-#include "NetworkManager.hpp"
+#include "Server.hpp"
 #include <thread>
-#include <vector>
 
 int main() {
-    NetworkManager networkManager(12345);
-    networkManager.initNetwork();
-
-    std::vector<std::thread> clientThreads;
+    Server server(12345);
+    server.initNetwork();
 
     while (true) {
-        networkManager.acceptClient();
-        clientThreads.push_back(std::thread(&NetworkManager::handleClientConnection, &networkManager));
-    }
-
-    for (auto& thread : clientThreads) {
-        if (thread.joinable()) {
-            thread.join();
-        }
+        int clientSocket = server.acceptClient();
+        server.handleClient(clientSocket);
     }
 
     return 0;
