@@ -1,0 +1,8 @@
+Command 'foo' not found, did you mean:
+  command 'roo' from snap roo (2.0.3)
+  command 'goo' from deb goo (0.155+ds-4)
+  command 'fio' from deb fio (3.28-1)
+  command 'foot' from deb foot (1.11.0-2)
+  command 'fox' from deb objcryst-fox (1.9.6.0-2.2)
+  command 'fop' from deb fop (1:2.6-2)
+See 'snap info <snapname>' for additional versions.

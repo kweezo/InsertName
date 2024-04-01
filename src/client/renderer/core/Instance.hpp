@@ -23,3 +23,5 @@ private:
     static VkInstance instance;
     static VkDebugUtilsMessengerEXT debugMessenger;
 };
+
+}
