@@ -7,7 +7,7 @@
 #include "../window/Window.hpp"
 #include "Swapchain.hpp"
 #include "CommandPool.hpp"
-#include "VertexBuffer.hpp"
+#include "DataBuffer.hpp"
 
 namespace renderer{
 

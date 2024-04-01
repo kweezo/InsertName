@@ -6,7 +6,7 @@
 #include "renderer/core/Swapchain.hpp"
 #include "renderer/core/Shader.hpp"
 #include "renderer/core/GraphicsPipeline.hpp"
-#include "renderer/core/VertexBuffer.hpp"
+#include "renderer/core/DataBuffer.hpp"
 #include "renderer/core/Fence.hpp"
 
 using namespace renderer;//here beacuse this is again, all temp and i cant be bothered to actually refactor this properly
@@ -38,28 +38,36 @@ int main(){
 
     attributeDescriptions[0].binding = 0;
     attributeDescriptions[0].location = 0;
-    attributeDescriptions[0].format = VK_FORMAT_R32G32B32_SFLOAT;
+    attributeDescriptions[0].format = VK_FORMAT_R32G32_SFLOAT;
     attributeDescriptions[0].offset = 0;
 
     attributeDescriptions[1].binding = 0;
     attributeDescriptions[1].location = 1;
     attributeDescriptions[1].format = VK_FORMAT_R32G32B32_SFLOAT;
-    attributeDescriptions[1].offset = sizeof(float)  * 3;
+    attributeDescriptions[1].offset = sizeof(float)* 2;
     
 
     VkVertexInputBindingDescription bindingDescription = {};
     bindingDescription.binding = 0;
-    bindingDescription.stride = 6 * sizeof(float);
+    bindingDescription.stride = 5 * sizeof(float);
     bindingDescription.inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
 
     float vertices[] = {
-        0.0f, -0.5f, 0.0f, 1.0f, 1.0f, 1.0f,
-        0.5f, 0.5f, 0.0f, 1.0f, 0.0f, 1.0f,
-        -0.5f, 0.5f, 0.0f, 1.0f, 1.0f, 1.0f
+        -0.5f, -0.5f, 1.0f, 1.0f, 1.0f,
+        0.5f, -0.5f, 1.0f, 0.0f, 1.0f,
+        0.5f, 0.5f, 0.0f, 1.0f, 1.0f,
+        -0.5f, 0.5f, 0.0f, 1.0f, 1.0f
     };
 
-    VertexBuffer vertexBuffer = VertexBuffer(attributeDescriptions, {bindingDescription}, sizeof(vertices),
-     vertices, true);
+    uint32_t indices[] = {
+        0, 1, 2,
+        2, 3, 0
+    };
+
+    DataBuffer vertexBuffer = DataBuffer(attributeDescriptions, {bindingDescription}, sizeof(vertices),
+     vertices, true, DATA_BUFFER_VERTEX_BIT);
+
+    DataBuffer indexBuffer = DataBuffer({}, {}, sizeof(indices), indices, true, DATA_BUFFER_INDEX_BIT);
 
     BufferDescriptions buffDescription = vertexBuffer.GetDescriptions();
 
@@ -154,14 +162,6 @@ int main(){
         throw std::runtime_error("Failed to create semaphores");
     }
 
-    std::vector<VertexBuffer> buffers(5);
-    float val = 1.0f;
-    for(VertexBuffer& buff : buffers){
-        buff = VertexBuffer({}, {}, sizeof(vertices),
-        vertices, true);
-    }
-
- 
 
     while(!glfwWindowShouldClose(Window::GetGLFWwindow())){
         glfwPollEvents();
@@ -177,7 +177,8 @@ int main(){
         buffer.BeginCommandBuffer(imageIndex, nullptr);
         VkBuffer buff = vertexBuffer.GetBuffer();
         vkCmdBindVertexBuffers(buffer.GetCommandBuffer(), 0, 1, &buff, offsets);
-        vkCmdDraw(buffer.GetCommandBuffer(), 3, 1, 0, 0);
+        vkCmdBindIndexBuffer(buffer.GetCommandBuffer(), indexBuffer.GetBuffer(), 0, VK_INDEX_TYPE_UINT32);
+        vkCmdDrawIndexed(buffer.GetCommandBuffer(), 6, 1, 0, 0, 0);
         buffer.EndCommandBuffer();
 
         VkSubmitInfo submitInfo = {};

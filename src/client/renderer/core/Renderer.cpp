@@ -11,16 +11,15 @@ void Renderer::InitRenderer(){
 }
 
 void Renderer::RenderFrame(){
-    VertexBuffer::UpdateCommandBuffer();
+    DataBuffer::UpdateCommandBuffer();
 }
 
 void Renderer::DestroyRenderer(){
-    Swapchain::DestroySwapchain();
-    VertexBuffer::Cleanup();
     CommandPool::DestroyCommandPools();
+    Swapchain::DestroySwapchain();
+    DataBuffer::Cleanup();
     vkDestroySurfaceKHR(Instance::GetInstance(), Window::GetVulkanSurface(), nullptr);
     Device::DestroyDevice();
     Instance::DestroyInstance();
 }
-
 }

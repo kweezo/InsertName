@@ -8,6 +8,11 @@ CommandBuffer::CommandBuffer(): commandBuffer(VK_NULL_HANDLE) {
 }
 
 CommandBuffer::CommandBuffer(VkCommandBufferLevel level, uint32_t flags, GraphicsPipeline* pipeline){
+
+    if(pipeline == nullptr && flags & COMMAND_BUFFER_GRAPHICS_FLAG == COMMAND_BUFFER_GRAPHICS_FLAG){
+        throw std::runtime_error("Tried to create a graphics command buffer without a pipeline");
+    }
+
     VkCommandBufferAllocateInfo allocInfo = {};
     allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
     allocInfo.commandPool = (flags & COMMAND_BUFFER_GRAPHICS_FLAG == COMMAND_BUFFER_GRAPHICS_FLAG)
@@ -25,6 +30,7 @@ CommandBuffer::CommandBuffer(VkCommandBufferLevel level, uint32_t flags, Graphic
     this->flags = flags;
     this->pipeline = pipeline;
     this->level = level;
+
 }
 
 void CommandBuffer::BeginCommandBuffer(uint32_t imageIndex, VkCommandBufferInheritanceInfo* inheritanceInfo){
@@ -42,6 +48,8 @@ void CommandBuffer::BeginCommandBuffer(uint32_t imageIndex, VkCommandBufferInher
     beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
     beginInfo.flags = 0;
     beginInfo.pInheritanceInfo = inheritanceInfo;
+    beginInfo.flags = (flags & COMMAND_BUFFER_ONE_TIME_SUBMIT_FLAG == COMMAND_BUFFER_TRANSFER_FLAG)
+     ? VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT : 0;
 
     if(vkBeginCommandBuffer(commandBuffer, &beginInfo) != VK_SUCCESS){
         throw std::runtime_error("Failed to begin recording command buffer");
@@ -71,6 +79,7 @@ CommandBuffer::CommandBuffer(const CommandBuffer& other){
     commandBuffer = other.commandBuffer;
     useCount = other.useCount;
     pipeline = other.pipeline;
+    flags = other.flags;
     useCount[0]++;
 }
 
@@ -82,6 +91,7 @@ CommandBuffer CommandBuffer::operator=(const CommandBuffer& other) {
     commandBuffer = other.commandBuffer;
     pipeline = other.pipeline;
     useCount = other.useCount;
+    flags = other.flags;
     useCount[0]++;
     return *this;
 }
