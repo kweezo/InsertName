@@ -14,6 +14,7 @@
 
 #define DATA_BUFFER_VERTEX_BIT 1
 #define DATA_BUFFER_INDEX_BIT 2
+#define DATA_BUFFER_UNIFORM_BIT 3
 
 namespace renderer{
 
@@ -42,6 +43,8 @@ public:
 
     void CopyFromBuffer(StagingBufferCopyCMDInfo stagingBuffer, VkDeviceSize size);
 
+    void UpdateData(void* data, size_t size);
+
     static void UpdateCommandBuffer();
 
     static void Cleanup();
@@ -62,11 +65,16 @@ private:
 
     static void AllocateMemory(VkDeviceMemory& memory, VkBuffer buffer, size_t size, VkMemoryPropertyFlags properties);
     static void CreateBuffer(VkBuffer& buffer, VkBufferUsageFlags usage, VkDeviceSize size);
+
+    static StagingBufferCopyCMDInfo GetStagingBuffer(size_t size);
     
     VkBuffer buff;
     VkDeviceMemory mem;
 
     BufferDescriptions descriptions;
+
+    size_t size;
+    bool transferToLocalDevMem;
 
 };
 

@@ -216,7 +216,10 @@ int main(){
 
         Renderer::RenderFrame();
 
-        imageIndex = (imageIndex + 1) % 2;
+        imageIndex = (imageIndex + 1) % 2; 
+
+        vertices[0] = glfwGetTime();
+        vertexBuffer.UpdateData(vertices, sizeof(vertices));
 
     }
 
