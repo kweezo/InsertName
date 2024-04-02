@@ -28,13 +28,13 @@ typedef struct StagingBufferCopyCMDInfo{
 typedef struct BufferDescriptions{
     std::vector<VkVertexInputAttributeDescription> attributeDescriptions;
     std::vector<VkVertexInputBindingDescription> bindingDescriptions;
+   // std::vector
 } BufferDescriptions;
 
 class DataBuffer{
 public:
     DataBuffer();
-    DataBuffer(std::vector<VkVertexInputAttributeDescription> attributeDescriptions,
-     std::vector<VkVertexInputBindingDescription> bindingDescriptions, size_t size,
+    DataBuffer(BufferDescriptions bufferDescriptions, size_t size,
      void* data, bool transferToLocalDevMem, uint32_t flags);
 
     VkBuffer GetBuffer();

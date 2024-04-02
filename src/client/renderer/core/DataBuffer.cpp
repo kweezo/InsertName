@@ -11,8 +11,7 @@ Fence DataBuffer::finishedCopyingFence = Fence();
 
 DataBuffer::DataBuffer(){}
 
-DataBuffer::DataBuffer(std::vector<VkVertexInputAttributeDescription> attributeDescriptions,
- std::vector<VkVertexInputBindingDescription> bindingDescriptions, size_t size,
+DataBuffer::DataBuffer(BufferDescriptions bufferDescriptions, size_t size,
  void* data, bool transferToLocalDevMem, uint32_t flags){
 
     if(!createdStagingBuffers){
@@ -53,7 +52,7 @@ DataBuffer::DataBuffer(std::vector<VkVertexInputAttributeDescription> attributeD
     }
 
 
-    descriptions = {attributeDescriptions, bindingDescriptions};
+    descriptions = bufferDescriptions;
 
     useCount = new uint32_t;
     useCount[0] = 1;
