@@ -2,7 +2,7 @@
 #include <thread>
 
 int main() {
-    Server server(12345);
+    Server server(12345, "./server");
     server.initNetwork();
 
     while (true) {

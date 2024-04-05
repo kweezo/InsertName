@@ -3,6 +3,9 @@
 #include <string>
 #include <iostream>
 
+#include <openssl/ssl.h>
+#include <openssl/err.h>
+
 #ifdef _WIN32
     #include <WS2tcpip.h>
     #pragma comment(lib, "ws2_32.lib")
@@ -29,4 +32,6 @@ private:
     std::string serverIP;
     int port;
     SOCKET sock;
+    SSL_CTX* ctx;
+    SSL* ssl;
 };

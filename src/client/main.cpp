@@ -15,7 +15,9 @@ using namespace renderer;//here beacuse this is again, all temp and i cant be bo
 
 void userTemp(){
     UserManager userManager("127.0.0.1", 12345);
+    std::cerr << "//bugTest 0";
     if (userManager.connectToServer()) {
+        std::cerr << "//bugTest 1";
         std::string username;
         std::string password;
         char loginType;
