@@ -18,7 +18,7 @@ public:
     VkPolygonMode polygonMode, VkPipelineMultisampleStateCreateInfo multisampling,
      VkPipelineDepthStencilStateCreateInfo depthStencilInfo,
       VkPipelineColorBlendStateCreateInfo colorBlendAttachment,
-       VkRenderPassCreateInfo renderPassInfo,
+       VkRenderPassCreateInfo renderPassInfo, VkPipelineLayoutCreateInfo pipelineLayoutInfo,
         Shader& shader);
     
     ~GraphicsPipeline();

@@ -11,8 +11,7 @@ Fence DataBuffer::finishedCopyingFence = Fence();
 
 DataBuffer::DataBuffer(){}
 
-DataBuffer::DataBuffer(std::vector<VkVertexInputAttributeDescription> attributeDescriptions,
- std::vector<VkVertexInputBindingDescription> bindingDescriptions, size_t size,
+DataBuffer::DataBuffer(BufferDescriptions bufferDescriptions, size_t size,
  void* data, bool transferToLocalDevMem, uint32_t flags){
 
     if(!createdStagingBuffers){
@@ -24,48 +23,21 @@ DataBuffer::DataBuffer(std::vector<VkVertexInputAttributeDescription> attributeD
     }
 
     VkBufferUsageFlagBits bufferType = (flags & DATA_BUFFER_VERTEX_BIT) ? VK_BUFFER_USAGE_VERTEX_BUFFER_BIT : VK_BUFFER_USAGE_INDEX_BUFFER_BIT;
-
     if(transferToLocalDevMem){
-        CreateBuffer(buff, VK_BUFFER_USAGE_TRANSFER_DST_BIT | bufferType, size);
+        CreateBuffer(buff, bufferType | VK_BUFFER_USAGE_TRANSFER_DST_BIT, size);
         AllocateMemory(mem, buff, size, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
 
-        StagingBufferCopyCMDInfo *stagingBuffer;
-
-        bool foundFreeBuff = false;
-        for(StagingBufferCopyCMDInfo& currStagingBuffer : stagingBuffers){
-            if(currStagingBuffer.free){
-                currStagingBuffer.free = false;
-                foundFreeBuff = true;
-                stagingBuffer = &currStagingBuffer;
-                CreateBuffer(stagingBuffer->buffer, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, size);
-
-                break;
-            }
-        }
-        if(!foundFreeBuff){
-            StagingBufferCopyCMDInfo tmpStagingBuffer;
-            tmpStagingBuffer.free = false;
-            tmpStagingBuffer.commandBuffer = CommandBuffer(VK_COMMAND_BUFFER_LEVEL_SECONDARY, COMMAND_BUFFER_TRANSFER_FLAG, nullptr);
-        
-            CreateBuffer(tmpStagingBuffer.buffer, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, size);
-
-            stagingBuffers.push_back(tmpStagingBuffer);
-
-            stagingBuffer = &stagingBuffers[stagingBuffers.size() - 1];
-        }
-
-        AllocateMemory(stagingBuffer->bufferMemory, stagingBuffer->buffer, size,
-         VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+        StagingBufferCopyCMDInfo stagingBuffer = GetStagingBuffer(size);
 
         void *stagingData;
-        if(vkMapMemory(Device::GetDevice(), stagingBuffer->bufferMemory, 0, size, 0, &stagingData) != VK_SUCCESS){
+        if(vkMapMemory(Device::GetDevice(), stagingBuffer.bufferMemory, 0, size, 0, &stagingData) != VK_SUCCESS){
             throw std::runtime_error("Failed to map vertex buffer memory");
         }
         memcpy(stagingData, data, size);
-        vkUnmapMemory(Device::GetDevice(), stagingBuffer->bufferMemory);
+        vkUnmapMemory(Device::GetDevice(), stagingBuffer.bufferMemory);
         
 
-        CopyFromBuffer(stagingBuffer[0], size);
+        CopyFromBuffer(stagingBuffer, size);
     }
     else{
         CreateBuffer(buff, bufferType, size);
@@ -80,10 +52,45 @@ DataBuffer::DataBuffer(std::vector<VkVertexInputAttributeDescription> attributeD
     }
 
 
-    descriptions = {attributeDescriptions, bindingDescriptions};
+    descriptions = bufferDescriptions;
 
     useCount = new uint32_t;
     useCount[0] = 1;
+
+    this->size = size;
+    this->transferToLocalDevMem = transferToLocalDevMem;
+}
+
+StagingBufferCopyCMDInfo DataBuffer::GetStagingBuffer(size_t size){
+        StagingBufferCopyCMDInfo *stagingBuffer;
+        bool foundFreeBuff = false;
+        for(StagingBufferCopyCMDInfo& currStagingBuffer : stagingBuffers){
+            if(currStagingBuffer.free){
+                currStagingBuffer.free = false;
+                foundFreeBuff = true;
+                stagingBuffer = &currStagingBuffer;
+                CreateBuffer(stagingBuffer->buffer, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, size);
+                AllocateMemory(stagingBuffer->bufferMemory, stagingBuffer->buffer, size,
+                 VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+
+                break;
+            }
+        }
+        if(!foundFreeBuff){
+            StagingBufferCopyCMDInfo tmpStagingBuffer;
+            tmpStagingBuffer.free = false;
+            tmpStagingBuffer.commandBuffer = CommandBuffer(VK_COMMAND_BUFFER_LEVEL_SECONDARY, COMMAND_BUFFER_TRANSFER_FLAG, nullptr);
+        
+            CreateBuffer(tmpStagingBuffer.buffer, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, size);
+            AllocateMemory(stagingBuffer->bufferMemory, stagingBuffer->buffer, size,
+             VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+
+            stagingBuffers.push_back(tmpStagingBuffer);
+
+            stagingBuffer = &stagingBuffers[stagingBuffers.size() - 1];
+        }
+
+    return *stagingBuffer;
 }
 
 void DataBuffer::CreateStagingBuffers(){
@@ -96,6 +103,31 @@ void DataBuffer::CreateStagingBuffers(){
         stagingBuffers.push_back(stagingBuffer);
     }
     createdStagingBuffers = true;
+}
+
+void DataBuffer::UpdateData(void* data, size_t size){
+    if(this->size == size){
+        if(transferToLocalDevMem){
+            StagingBufferCopyCMDInfo stagingBuffer = GetStagingBuffer(size);
+
+            void *stagingData;
+            if(vkMapMemory(Device::GetDevice(), stagingBuffer.bufferMemory, 0, size, 0, &stagingData) != VK_SUCCESS){
+                throw std::runtime_error("Failed to map vertex buffer memory");
+            }
+            memcpy(stagingData, data, size);
+            vkUnmapMemory(Device::GetDevice(), stagingBuffer.bufferMemory);
+
+            CopyFromBuffer(stagingBuffer, size);
+        }else{
+            void *mappedData;
+            if(vkMapMemory(Device::GetDevice(), mem, 0, size, 0, &mappedData) != VK_SUCCESS){
+                throw std::runtime_error("Failed to map vertex buffer memory");
+            }
+        }
+    }
+    else{
+        throw std::runtime_error("Size of data does not match size of buffer, you need to create a new buffer for this");
+    }
 }
 
 void DataBuffer::CopyFromBuffer(StagingBufferCopyCMDInfo stagingBuffer, VkDeviceSize size){
@@ -125,6 +157,10 @@ void DataBuffer::UpdateCommandBuffer(){
     if(commandBuffers.empty()){
         return;
     }
+
+    VkFence fence = finishedCopyingFence.GetFence();
+
+    vkResetFences(Device::GetDevice(), 1, &fence);
 
     commandBuffer.BeginCommandBuffer(0, nullptr);
     vkCmdExecuteCommands(commandBuffer.GetCommandBuffer(), commandBuffers.size(), commandBuffers.data());

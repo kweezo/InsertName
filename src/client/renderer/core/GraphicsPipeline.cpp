@@ -5,7 +5,7 @@ namespace renderer{
 GraphicsPipeline::GraphicsPipeline(VkPipelineVertexInputStateCreateInfo vertexInputInfo, VkPrimitiveTopology topology,
     VkPolygonMode polygonMode, VkPipelineMultisampleStateCreateInfo multisampling,
      VkPipelineDepthStencilStateCreateInfo depthStencilInfo,
-      VkPipelineColorBlendStateCreateInfo colorBlending, VkRenderPassCreateInfo renderPassInfo,
+      VkPipelineColorBlendStateCreateInfo colorBlending, VkRenderPassCreateInfo renderPassInfo, VkPipelineLayoutCreateInfo pipelineLayoutInfo,
        Shader& shader){
     std::vector<VkDynamicState> dynamicStates = {VK_DYNAMIC_STATE_VIEWPORT, VK_DYNAMIC_STATE_SCISSOR};
 
@@ -31,13 +31,8 @@ GraphicsPipeline::GraphicsPipeline(VkPipelineVertexInputStateCreateInfo vertexIn
     rasterizer.polygonMode = polygonMode;
     rasterizer.lineWidth = 1.0f;
     rasterizer.cullMode = VK_CULL_MODE_BACK_BIT;
-    rasterizer.frontFace = VK_FRONT_FACE_CLOCKWISE;
+    rasterizer.frontFace = VK_FRONT_FACE_COUNTER_CLOCKWISE;
     rasterizer.depthBiasEnable = VK_FALSE;
-
-    VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
-    pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
-    pipelineLayoutInfo.setLayoutCount = 0;
-    pipelineLayoutInfo.pushConstantRangeCount = 0;
 
     if(vkCreatePipelineLayout(Device::GetDevice(), &pipelineLayoutInfo, nullptr, &pipelineLayout) != VK_SUCCESS){
         throw std::runtime_error("Failed to create pipeline layout");

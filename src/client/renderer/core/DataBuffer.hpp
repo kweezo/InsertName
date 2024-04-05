@@ -14,6 +14,7 @@
 
 #define DATA_BUFFER_VERTEX_BIT 1
 #define DATA_BUFFER_INDEX_BIT 2
+#define DATA_BUFFER_UNIFORM_BIT 3
 
 namespace renderer{
 
@@ -27,13 +28,13 @@ typedef struct StagingBufferCopyCMDInfo{
 typedef struct BufferDescriptions{
     std::vector<VkVertexInputAttributeDescription> attributeDescriptions;
     std::vector<VkVertexInputBindingDescription> bindingDescriptions;
+   // std::vector
 } BufferDescriptions;
 
 class DataBuffer{
 public:
     DataBuffer();
-    DataBuffer(std::vector<VkVertexInputAttributeDescription> attributeDescriptions,
-     std::vector<VkVertexInputBindingDescription> bindingDescriptions, size_t size,
+    DataBuffer(BufferDescriptions bufferDescriptions, size_t size,
      void* data, bool transferToLocalDevMem, uint32_t flags);
 
     VkBuffer GetBuffer();
@@ -41,6 +42,8 @@ public:
     BufferDescriptions GetDescriptions();
 
     void CopyFromBuffer(StagingBufferCopyCMDInfo stagingBuffer, VkDeviceSize size);
+
+    void UpdateData(void* data, size_t size);
 
     static void UpdateCommandBuffer();
 
@@ -62,11 +65,16 @@ private:
 
     static void AllocateMemory(VkDeviceMemory& memory, VkBuffer buffer, size_t size, VkMemoryPropertyFlags properties);
     static void CreateBuffer(VkBuffer& buffer, VkBufferUsageFlags usage, VkDeviceSize size);
+
+    static StagingBufferCopyCMDInfo GetStagingBuffer(size_t size);
     
     VkBuffer buff;
     VkDeviceMemory mem;
 
     BufferDescriptions descriptions;
+
+    size_t size;
+    bool transferToLocalDevMem;
 
 };
 

@@ -15,9 +15,7 @@ using namespace renderer;//here beacuse this is again, all temp and i cant be bo
 
 void userTemp(){
     UserManager userManager("127.0.0.1", 12345);
-    std::cerr << "//bugTest 0";
     if (userManager.connectToServer()) {
-        std::cerr << "//bugTest 1";
         std::string username;
         std::string password;
         char loginType;
@@ -66,12 +64,62 @@ int main(){
         2, 3, 0
     };
 
-    DataBuffer vertexBuffer = DataBuffer(attributeDescriptions, {bindingDescription}, sizeof(vertices),
+    DataBuffer vertexBuffer = DataBuffer({attributeDescriptions, {bindingDescription}}, sizeof(vertices),
      vertices, true, DATA_BUFFER_VERTEX_BIT);
 
-    DataBuffer indexBuffer = DataBuffer({}, {}, sizeof(indices), indices, true, DATA_BUFFER_INDEX_BIT);
+    DataBuffer indexBuffer = DataBuffer({}, sizeof(indices), indices, true, DATA_BUFFER_INDEX_BIT);
 
     BufferDescriptions buffDescription = vertexBuffer.GetDescriptions();
+
+
+//////
+    VkDescriptorSetLayoutBinding layoutBinding{};
+    layoutBinding.binding = 0;
+    layoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+    layoutBinding.descriptorCount = 1;
+    layoutBinding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
+    layoutBinding.pImmutableSamplers = nullptr;
+
+    VkDescriptorPoolSize poolSize{};
+    poolSize.type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+    poolSize.descriptorCount = 1;
+
+    VkDescriptorSetLayoutCreateInfo layoutInfo{};
+    layoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
+    layoutInfo.bindingCount = 1;
+    layoutInfo.pBindings = &layoutBinding;
+
+    VkDescriptorSetLayout descriptorSetLayout;
+    if(vkCreateDescriptorSetLayout(Device::GetDevice(), &layoutInfo, nullptr, &descriptorSetLayout) != VK_SUCCESS){
+        throw std::runtime_error("Failed to create descriptor set layout");
+    }
+
+    VkDescriptorPoolCreateInfo poolInfo{};
+    poolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
+    poolInfo.poolSizeCount = 1;
+    poolInfo.pPoolSizes = &poolSize;
+    poolInfo.maxSets = Swapchain::GetImageCount();
+
+    VkDescriptorPool descriptorPool;
+
+    if(vkCreateDescriptorPool(Device::GetDevice(), &poolInfo, nullptr, &descriptorPool) != VK_SUCCESS){
+        throw std::runtime_error("Failed to create descriptor pool");
+    }
+
+    std::vector<VkDescriptorSetLayout> layouts(Swapchain::GetImageCount(), descriptorSetLayout);
+
+    VkDescriptorSetAllocateInfo allocInfo{};
+    allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
+    allocInfo.descriptorPool = descriptorPool;
+    allocInfo.descriptorSetCount = Swapchain::GetImageCount();
+    allocInfo.pSetLayouts = layouts.data();
+
+    std::vector<VkDescriptorSet> descriptorSets(Swapchain::GetImageCount());
+    if(vkAllocateDescriptorSets(Device::GetDevice(), &allocInfo, descriptorSets.data()) != VK_SUCCESS){
+        throw std::runtime_error("Failed to allocate descriptor sets");
+    }
+
+////
 
     VkPipelineVertexInputStateCreateInfo vertexInputInfo{};
     vertexInputInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
@@ -137,8 +185,14 @@ int main(){
     colorBlending.attachmentCount = 1;
     colorBlending.pAttachments = &colorBlendAttachment;
 
+    VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
+    pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
+    pipelineLayoutInfo.setLayoutCount = layouts.size();
+    pipelineLayoutInfo.pSetLayouts = layouts.data();
+    pipelineLayoutInfo.pushConstantRangeCount = 0;
+
     GraphicsPipeline pipeline = GraphicsPipeline(vertexInputInfo, VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, VK_POLYGON_MODE_FILL, multisampling,
-     depthStencilInfo, colorBlending, renderPassInfo, shader);
+     depthStencilInfo, colorBlending, renderPassInfo, pipelineLayoutInfo, shader);
 
     CommandBuffer buffer = CommandBuffer(VK_COMMAND_BUFFER_LEVEL_PRIMARY, COMMAND_BUFFER_GRAPHICS_FLAG, &pipeline);
 
@@ -218,12 +272,13 @@ int main(){
 
         Renderer::RenderFrame();
 
-        imageIndex = (imageIndex + 1) % 2;
-
+        imageIndex = (imageIndex + 1) % Swapchain::GetImageCount(); 
     }
 
     vkDeviceWaitIdle(Device::GetDevice());
 
+
+    vkDestroyDescriptorSetLayout(Device::GetDevice(), descriptorSetLayout, nullptr);
     vkDestroySemaphore(Device::GetDevice(), renderFinishedSemaphore, nullptr);
     vkDestroySemaphore(Device::GetDevice(), imageAvailableSemaphore, nullptr);
     vkDestroyFence(Device::GetDevice(), inFlightFence, nullptr);
