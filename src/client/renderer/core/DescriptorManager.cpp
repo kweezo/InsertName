@@ -16,7 +16,7 @@ void DescriptorManager::Initialize(std::vector<VkDescriptorSetLayoutCreateInfo> 
     }
 }
 
-void DescriptorManager::CreateDescriptors(std::vector<DescriptorBatchInfo> batchInfos){
+std::vector<DescriptorHandle> DescriptorManager::CreateDescriptors(std::vector<DescriptorBatchInfo> batchInfos){
     uint32_t setCount = 0;
     for(const DescriptorBatchInfo& batchInfo : batchInfos){
         setCount += batchInfo.setCount;
@@ -43,6 +43,7 @@ void DescriptorManager::CreateDescriptors(std::vector<DescriptorBatchInfo> batch
     uint32_t i = 0;
 
     batch.sets.resize(setCount);
+    std::vector<DescriptorHandle> handles(setCount);
     for(const DescriptorBatchInfo& batchInfo : batchInfos){
         VkDescriptorSetAllocateInfo allocInfo{};
         allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
@@ -50,12 +51,21 @@ void DescriptorManager::CreateDescriptors(std::vector<DescriptorBatchInfo> batch
         allocInfo.descriptorSetCount = batchInfo.setCount;
         allocInfo.pSetLayouts = &layouts[batchInfo.layoutIndex];
 
+        handles[i].batchIndex = batches.size()-1;
+        handles[i].index = i;
+
         if(vkAllocateDescriptorSets(Device::GetDevice(), &allocInfo, batch.sets.data()+(i * sizeof(VkDescriptorSet))) != VK_SUCCESS){
             throw std::runtime_error("Failed to allocate descriptor sets");
         }
 
         i += batchInfo.setCount;
     }
+
+    return handles;
+}
+
+VkDescriptorSet DescriptorManager::GetDescriptorSet(DescriptorHandle handles){
+    return batches[handles.batchIndex].sets[handles.index];
 }
 
 std::vector<VkDescriptorSetLayout>* DescriptorManager::GetLayouts(){

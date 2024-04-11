@@ -20,11 +20,18 @@ typedef struct {
     uint32_t setCount;
 }DescriptorBatchInfo;
 
+typedef struct{
+    uint32_t batchIndex;
+    uint32_t index;
+}DescriptorHandle;
+
 class DescriptorManager{
 public:
     static void Initialize(std::vector<VkDescriptorSetLayoutCreateInfo> layoutInfos);
-    static void CreateDescriptors(std::vector<DescriptorBatchInfo> batchInfos); //TODO implement support for othre VkDescriptorTypes
+    static std::vector<DescriptorHandle> CreateDescriptors(std::vector<DescriptorBatchInfo> batchInfos); //TODO implement support for othre VkDescriptorTypes
     static void CreateDescriptor(uint32_t layoutIndex); //TODO implement once I figure out how to batch this mf
+
+    static VkDescriptorSet GetDescriptorSet(DescriptorHandle handles);
 
     static std::vector<VkDescriptorSetLayout>* GetLayouts();
 

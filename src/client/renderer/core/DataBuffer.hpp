@@ -14,7 +14,7 @@
 
 #define DATA_BUFFER_VERTEX_BIT 1
 #define DATA_BUFFER_INDEX_BIT 2
-#define DATA_BUFFER_UNIFORM_BIT 3
+#define DATA_BUFFER_UNIFORM_BIT 4
 
 namespace renderer{
 
