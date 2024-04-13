@@ -19,7 +19,19 @@ NetworkManager::NetworkManager(const std::string& serverIP, int port)
 
 NetworkManager::~NetworkManager() {
     // Gracefully close down everything
-    SSL_shutdown(ssl);
+    int shutdownResult = SSL_shutdown(ssl);
+    if (shutdownResult == 0) {
+        // The shutdown is not yet finished. Call SSL_shutdown() again
+        shutdownResult = SSL_shutdown(ssl);
+        if (shutdownResult != 1) {
+            // handle error
+            ERR_print_errors_fp(stderr);
+        }
+    } else if (shutdownResult == -1) {
+        // handle error
+        ERR_print_errors_fp(stderr);
+    }
+
     SSL_free(ssl);
     SSL_CTX_free(ctx);
     closesocket(sock);
@@ -77,8 +89,12 @@ bool NetworkManager::connectToServer() {
         return false;
     }
 
-    // Associate the socket with the SSL connection
-    SSL_set_fd(ssl, sock);
+    // Associate the socket with the SSL structure
+    if (SSL_set_fd(ssl, sock) == 0) {
+        // handle error
+        ERR_print_errors_fp(stderr);
+        return false;
+    }
 
     // Perform the SSL/TLS handshake
     int ret = SSL_connect(ssl);

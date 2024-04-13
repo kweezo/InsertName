@@ -115,9 +115,6 @@ int main(){
     allocInfo.pSetLayouts = layouts.data();
 
     std::vector<VkDescriptorSet> descriptorSets(Swapchain::GetImageCount());
-    if(vkAllocateDescriptorSets(Device::GetDevice(), &allocInfo, descriptorSets.data()) != VK_SUCCESS){
-        throw std::runtime_error("Failed to allocate descriptor sets");                                     //! BUG HERE
-    }
 
 ////
 

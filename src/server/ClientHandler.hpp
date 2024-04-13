@@ -10,13 +10,16 @@
 #include <pqxx/pqxx>
 #include <string>
 #include <iostream>
-
 #include <openssl/ssl.h>
 #include <openssl/err.h>
+#include <openssl/sha.h>
+#include <openssl/rand.h>
+#include <sstream>
+#include <iomanip>
 
 class ClientHandler {
 public:
-    ClientHandler(int clientSocket, SSL* ssl);
+    ClientHandler(int clientSocket, SSL* ssl, pqxx::connection& c);
     ~ClientHandler();
 
     void handleConnection();
@@ -26,10 +29,14 @@ public:
     std::string getNextArg(std::string& msg);
 
 
+    std::string generateSalt();
+    std::string generateHash(const std::string& password, const std::string& salt);
+
+
 private:
     int clientSocket;
     SSL* ssl;
     bool dbConnectionFailed;
-    std::unique_ptr<pqxx::connection> c;
+    pqxx::connection& c;
     std::string username;
 };
