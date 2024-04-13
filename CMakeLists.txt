@@ -6,10 +6,20 @@ if(WIN32)
     include_directories("C:\\Program Files (x86)\\libpqxx\\include")
     include_directories("C:\\Strawberry\\c\\include")
     link_directories("lib\\win\\GLFW\\lib-mingw-w64")
-    link_directories("lib\\win\\x86_64-w64-mingw32\\lib")
     link_directories("lib\\win\\VulkanSDK\\1.3.275.0\\Lib")
     link_directories("C:\\Program Files (x86)\\libpqxx\\lib")
-    link_directories("C:\\Strawberry\\c\\lib")
+    find_library(SSL_LIBRARY
+        NAMES libssl.a
+        PATHS C:\\Strawberry\\c\\lib
+    )
+    find_library(CRYPTO_LIBRARY
+        NAMES libcrypto.a
+        PATHS C:\\Strawberry\\c\\lib
+    )
+    find_library(PQ_LIBRARY
+        NAMES libpq.lib
+        PATHS "C:\\Program Files\\PostgreSQL\\16\\lib"
+    )
 endif()
 
 set(CMAKE_CXX_STANDARD 20)
@@ -41,11 +51,13 @@ if(BUILD_SERVER)
     add_executable(server ${serversrc} src/server/main.cpp)
 
     if(WIN32)
-        target_link_libraries(server PUBLIC pqxx)
-        target_link_libraries(server PUBLIC pq)
-        target_link_libraries(server PUBLIC ws2_32)
-        target_link_libraries(server PUBLIC ssl)
-        target_link_libraries(server PUBLIC crypto)
+        target_link_libraries(server PUBLIC
+            pqxx
+            ${PQ_LIBRARY}
+            ws2_32
+            ${SSL_LIBRARY}
+            ${CRYPTO_LIBRARY}
+        )
     endif()
 endif()
 
@@ -54,13 +66,15 @@ if(BUILD_CLIENT)
     add_executable(client ${clientsrc} src/client/main.cpp src/settings.cpp)
     
     if(WIN32)
-        target_link_libraries(client PUBLIC glfw3)
-        target_link_libraries(client PUBLIC glfw3dll)
-        target_link_libraries(client PUBLIC gdi32)
-        target_link_libraries(client PUBLIC vulkan-1)
-        target_link_libraries(client PUBLIC ws2_32)
-        target_link_libraries(client PUBLIC ssl)
-        target_link_libraries(client PUBLIC crypto)
+        target_link_libraries(client PRIVATE
+            glfw3
+            glfw3dll
+            gdi32
+            vulkan-1
+            ws2_32
+            ${SSL_LIBRARY}
+            ${CRYPTO_LIBRARY}
+        )
     elseif(UNIX AND NOT APPLE)
         target_link_libraries(client PUBLIC glfw)
         target_link_libraries(client PUBLIC assimp)

@@ -1,16 +1,14 @@
-<<<<<<< HEAD
-lib/win/*
-lib/lnx/*
-bin/*
-=======
->>>>>>> a8d8c7a336b688e2f7b85ac8782e63cff16e8422
 cmake_install.cmake
 CMakeCache.txt
 CMakeFiles
 Makefile
 .vscode
-src/settings.bin
 notes
 shaders/bin/*
 build
-server
+server_data
+bin
+lib/win/*
+lib/lnx/*
+bin/*
+settings.bin
