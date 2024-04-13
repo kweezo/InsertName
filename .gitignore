@@ -12,3 +12,5 @@ lib/win/*
 lib/lnx/*
 bin/*
 settings.bin
+./server.exe
+./client.exe
