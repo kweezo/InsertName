@@ -19,7 +19,7 @@ void Swapchain::CreateSwapchain(){
         createInfo.minImageCount = PREFERRED_IMAGE_COUNT;
     }
     else{
-        createInfo.minImageCount = std::min(surfaceCapabilities.maxImageCount, PREFERRED_IMAGE_COUNT);
+        createInfo.minImageCount = (std::min)(surfaceCapabilities.maxImageCount, PREFERRED_IMAGE_COUNT);
     }
     createInfo.imageFormat = ChooseSwapchainImageFormat();
     createInfo.imageColorSpace = VK_COLOR_SPACE_SRGB_NONLINEAR_KHR;
