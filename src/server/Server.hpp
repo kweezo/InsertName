@@ -1,6 +1,7 @@
 #pragma once
 
 #include "ClientHandler.hpp"
+#include "Config.hpp"
 
 
 #include <openssl/ssl.h>

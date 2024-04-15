@@ -2,8 +2,15 @@
 
 
 Server::Server(int port, const std::string& dir) : port(port), dir(dir), ctx(nullptr), ssl(nullptr) {
+    Config::GetInstance().LoadConfig(dir + "/config.txt");
+
     // Vzpostavitev povezave z bazo podatkov
-    c = std::make_unique<pqxx::connection>("dbname=postgres user=postgres password=password hostaddr=127.0.0.1 port=5432");
+    std::string conn_str = "dbname=" + Config::GetInstance().dbname +
+                          " user=" + Config::GetInstance().dbuser +
+                          " password=" + Config::GetInstance().dbpassword +
+                          " hostaddr=" + Config::GetInstance().dbhostaddr +
+                          " port=" + Config::GetInstance().dbport;
+    c = std::make_unique<pqxx::connection>(conn_str);
 
     // Ustvarjanje tabele Users
     pqxx::work W(*c);
