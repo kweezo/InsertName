@@ -116,28 +116,27 @@ void DataBuffer::CreateStagingBuffers(){
 }
 
 void DataBuffer::UpdateData(void* data, size_t size){
-    if(this->size == size){
-        if(transferToLocalDevMem){
-            StagingBufferCopyCMDInfo stagingBuffer = GetStagingBuffer(size);
-
-            void *stagingData;
-            if(vkMapMemory(Device::GetDevice(), stagingBuffer.bufferMemory, 0, size, 0, &stagingData) != VK_SUCCESS){
-                throw std::runtime_error("Failed to map vertex buffer memory");
-            }
-            memcpy(stagingData, data, size);
-            vkUnmapMemory(Device::GetDevice(), stagingBuffer.bufferMemory);
-
-            CopyFromBuffer(stagingBuffer, size);
-        }else{
-            void *mappedData;
-            if(vkMapMemory(Device::GetDevice(), mem, 0, size, 0, &mappedData) != VK_SUCCESS){
-                throw std::runtime_error("Failed to map vertex buffer memory");
-            }
-        }
-    }
-    else{
+    if(this->size != size){
         throw std::runtime_error("Size of data does not match size of buffer, you need to create a new buffer for this");
     }
+    if(transferToLocalDevMem){
+        StagingBufferCopyCMDInfo stagingBuffer = GetStagingBuffer(size);
+
+        void *stagingData;
+        if(vkMapMemory(Device::GetDevice(), stagingBuffer.bufferMemory, 0, size, 0, &stagingData) != VK_SUCCESS){
+            throw std::runtime_error("Failed to map vertex buffer memory");
+        }
+        memcpy(stagingData, data, size);
+        vkUnmapMemory(Device::GetDevice(), stagingBuffer.bufferMemory);
+
+        CopyFromBuffer(stagingBuffer, size);
+    }else{
+        void *mappedData;
+        if(vkMapMemory(Device::GetDevice(), mem, 0, size, 0, &mappedData) != VK_SUCCESS){
+            throw std::runtime_error("Failed to map vertex buffer memory");
+        }
+    }
+    
 }
 
 void DataBuffer::CopyFromBuffer(StagingBufferCopyCMDInfo stagingBuffer, VkDeviceSize size){
@@ -272,7 +271,9 @@ DataBuffer::DataBuffer(const DataBuffer& other){
     buff = other.buff;
     mem = other.mem;
     descriptions = other.descriptions;
+    size = other.size;
     useCount = other.useCount;
+    transferToLocalDevMem = other.transferToLocalDevMem;
     useCount[0]++;
 }
 
@@ -284,7 +285,9 @@ DataBuffer DataBuffer::operator=(const DataBuffer& other){
     buff = other.buff;
     mem = other.mem;
     descriptions = other.descriptions;
+    size = other.size;
     useCount = other.useCount;
+    transferToLocalDevMem = other.transferToLocalDevMem;
     useCount[0]++;
 
     return *this;

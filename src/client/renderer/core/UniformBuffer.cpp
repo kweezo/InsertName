@@ -2,16 +2,29 @@
 
 namespace renderer{
 
+
 struct DescriptorCountMapInfo{
     UniformBufferCreateInfo createInfo;
     uint32_t count = 0;
-    std::vector<UniformBuffer*> uniformHandles = {};
+    std::vector<UniformBufferImpl*> uniformHandles = {};
 };
 
-bool UniformBuffer::creationLock = false;
+bool UniformBufferImpl::creationLock = false;
 std::unordered_map<std::string, DescriptorCountMapInfo> descriptorCountPerLayout = {};
 
-UniformBuffer::UniformBuffer(void* data, size_t size, UniformBufferCreateInfo info){
+UniformBufferHandle UniformBuffer::Create(void* data, size_t size, UniformBufferCreateInfo info){
+    return new UniformBufferImpl(data, size, info);
+}
+
+void UniformBuffer::EnableBuffers(){
+    UniformBufferImpl::EnableBuffers();
+}
+
+void UniformBuffer::Free(UniformBufferHandle buffer){
+    delete buffer;
+}
+
+UniformBufferImpl::UniformBufferImpl(void* data, size_t size, UniformBufferCreateInfo info){
     if(creationLock){
         throw std::runtime_error("Tried to create a buffer after enabling them, \n which is thus far not allowed.");
     }
@@ -31,7 +44,7 @@ UniformBuffer::UniformBuffer(void* data, size_t size, UniformBufferCreateInfo in
     name = info.name;
 }
 
-void UniformBuffer::UpdateData(void* data, size_t size){
+void UniformBufferImpl::UpdateData(void* data, size_t size){
     if(dataSize != size){
         throw std::runtime_error("Data size mismatch when trying to update uniform buffer data, expected size: " +
          std::to_string(dataSize) + " actual size: " + std::to_string(size));
@@ -57,7 +70,7 @@ void UniformBuffer::UpdateData(void* data, size_t size){
     vkUpdateDescriptorSets(Device::GetDevice(), 1, &writeDescriptorSet, 0, nullptr);
 }
 
-void UniformBuffer::ForceWriteDescriptorSet(){
+void UniformBufferImpl::ForceWriteDescriptorSet(){
     VkWriteDescriptorSet writeDescriptorSet = {};
     writeDescriptorSet.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
     writeDescriptorSet.dstSet = DescriptorManager::GetDescriptorSet(descriptorHandle);
@@ -76,11 +89,11 @@ void UniformBuffer::ForceWriteDescriptorSet(){
     vkUpdateDescriptorSets(Device::GetDevice(), 1, &writeDescriptorSet, 0, nullptr);
 }
 
-void UniformBuffer::AssignDescriptorHandle(DescriptorHandle handle){
+void UniformBufferImpl::AssignDescriptorHandle(DescriptorHandle handle){
     descriptorHandle = handle;
 }
 
-void UniformBuffer::EnableBuffers(){
+void UniformBufferImpl::EnableBuffers(){
     VkDescriptorSetLayoutCreateInfo layoutInfo = {};
     layoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
     layoutInfo.bindingCount = descriptorCountPerLayout.size();
@@ -106,7 +119,7 @@ void UniformBuffer::EnableBuffers(){
     std::vector<DescriptorHandle> descriptorBatch = DescriptorManager::CreateDescriptors({batchInfo});
 
     for (auto& [name, descriptorCountMapInfo] : descriptorCountPerLayout){
-        for(UniformBuffer* buffer : descriptorCountMapInfo.uniformHandles){
+        for(UniformBufferImpl* buffer : descriptorCountMapInfo.uniformHandles){
             buffer->AssignDescriptorHandle(descriptorBatch[0]);
 
             buffer->ForceWriteDescriptorSet();
@@ -116,7 +129,7 @@ void UniformBuffer::EnableBuffers(){
 
 }
 
-void UniformBuffer::Bind(VkCommandBuffer commandBuffer, VkPipelineLayout layout){
+void UniformBufferImpl::Bind(VkCommandBuffer commandBuffer, VkPipelineLayout layout){
     VkDescriptorSet descriptorSet = DescriptorManager::GetDescriptorSet(descriptorHandle);
     vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, layout, 0, 1, &descriptorSet, 0, nullptr);
 

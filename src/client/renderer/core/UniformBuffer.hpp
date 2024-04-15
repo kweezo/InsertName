@@ -17,10 +17,9 @@ struct UniformBufferCreateInfo{
     uint32_t index;
 };
 
-
-class UniformBuffer{
+class UniformBufferImpl{
 public:
-    UniformBuffer(void* data, size_t size, UniformBufferCreateInfo info);
+    UniformBufferImpl(void* data, size_t size, UniformBufferCreateInfo info);
 
     void Bind(VkCommandBuffer commandBuffer, VkPipelineLayout layout);
 
@@ -41,6 +40,17 @@ private:
 
     static bool creationLock;
 
+};
+
+#define UniformBufferHandle UniformBufferImpl*
+
+
+class UniformBuffer{
+public:
+    static UniformBufferHandle Create(void* data, size_t size, UniformBufferCreateInfo info);
+    static void Free(UniformBufferHandle buffer);
+
+    static void EnableBuffers();
 };
 
 }

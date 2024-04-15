@@ -86,7 +86,7 @@ int main(){
     modelDat.model = glm::mat4(1.0f);
     modelDat.view = glm::lookAt(glm::vec3(0.0f, 0.0f, 2.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
     modelDat.proj = glm::perspective(glm::radians(45.0f), 800.0f / 600.0f, 0.1f, 10.0f);
-    UniformBuffer uniformBuffer = UniformBuffer(reinterpret_cast<void*>(&modelDat), sizeof(modelDat), {"model", 0}); 
+    UniformBufferHandle uniformBuffer = UniformBuffer::Create(reinterpret_cast<void*>(&modelDat), sizeof(modelDat), {"model", 0}); 
 
     UniformBuffer::EnableBuffers();
 
@@ -162,7 +162,8 @@ int main(){
     pipelineLayoutInfo.pSetLayouts = layouts->data();
     pipelineLayoutInfo.pushConstantRangeCount = 0;
 
-    GraphicsPipeline pipeline = GraphicsPipeline(vertexInputInfo, VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, VK_POLYGON_MODE_FILL, multisampling,
+    GraphicsPipeline pipeline = GraphicsPipeline(vertexInputInfo, VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST,
+     VK_POLYGON_MODE_FILL, multisampling,
      depthStencilInfo, colorBlending, renderPassInfo, pipelineLayoutInfo, shader);
 
     CommandBuffer buffer = CommandBuffer(VK_COMMAND_BUFFER_LEVEL_PRIMARY, COMMAND_BUFFER_GRAPHICS_FLAG, &pipeline);
@@ -196,16 +197,20 @@ int main(){
         vkWaitForFences(Device::GetDevice(), 1, &inFlightFence, VK_TRUE, UINT64_MAX);
         vkResetFences(Device::GetDevice(), 1, &inFlightFence);
 
-        vkAcquireNextImageKHR(Device::GetDevice(), Swapchain::GetSwapchain(), UINT64_MAX, imageAvailableSemaphore, VK_NULL_HANDLE, &imageIndex);
+        vkAcquireNextImageKHR(Device::GetDevice(), Swapchain::GetSwapchain(), UINT64_MAX, imageAvailableSemaphore,
+         VK_NULL_HANDLE, &imageIndex);
 
 
         VkDeviceSize offsets[] = {0};
+
+        modelDat.model = glm::rotate(modelDat.model, (float)glm::radians(cos(glfwGetTime())), glm::vec3(0.0f, 0.0f, 1.0f));
+        uniformBuffer->UpdateData(reinterpret_cast<void*>(&modelDat), sizeof(modelDat));
 
         buffer.BeginCommandBuffer(imageIndex, nullptr);
         VkBuffer buff = vertexBuffer.GetBuffer();
         vkCmdBindVertexBuffers(buffer.GetCommandBuffer(), 0, 1, &buff, offsets);
         vkCmdBindIndexBuffer(buffer.GetCommandBuffer(), indexBuffer.GetBuffer(), 0, VK_INDEX_TYPE_UINT32);
-        uniformBuffer.Bind(buffer.GetCommandBuffer(), pipeline.GetPipelineLayout());
+        uniformBuffer->Bind(buffer.GetCommandBuffer(), pipeline.GetPipelineLayout());
         vkCmdDrawIndexed(buffer.GetCommandBuffer(), 6, 1, 0, 0, 0);
         buffer.EndCommandBuffer();
 
@@ -247,8 +252,10 @@ int main(){
         imageIndex = (imageIndex + 1) % Swapchain::GetImageCount(); 
     }
 
+
     vkDeviceWaitIdle(Device::GetDevice());
 
+    UniformBuffer::Free(uniformBuffer);
 
     vkDestroySemaphore(Device::GetDevice(), renderFinishedSemaphore, nullptr);
     vkDestroySemaphore(Device::GetDevice(), imageAvailableSemaphore, nullptr);
