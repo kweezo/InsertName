@@ -6,9 +6,12 @@ Makefile
 notes
 shaders/bin/*
 build
-server_data
+server_data/network
+server_data/config.txt
 bin
 lib/win/*
 lib/lnx/*
 bin/*
 settings.bin
+./server.exe
+./client.exe

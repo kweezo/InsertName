@@ -1,9 +1,8 @@
 #pragma once
 
 #include "ClientHandler.hpp"
+#include "Config.hpp"
 
-#include <stdexcept>
-#include <iostream>
 
 #include <openssl/ssl.h>
 #include <openssl/err.h>
@@ -31,6 +30,7 @@ private:
     std::string dir;
     int port;
     std::vector<std::unique_ptr<ClientHandler>> handlers;
+    std::unique_ptr<pqxx::connection> c;
 
     SSL_CTX* ctx;
     SSL* ssl;

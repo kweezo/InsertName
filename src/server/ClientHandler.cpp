@@ -1,27 +1,14 @@
 #include "ClientHandler.hpp"
 
-ClientHandler::ClientHandler(int clientSocket, SSL* ssl) : clientSocket(clientSocket), ssl(ssl), dbConnectionFailed(false) {
-    try {
-        c = std::make_unique<pqxx::connection>("dbname=postgres user=postgres password=password hostaddr=127.0.0.1 port=5432");
-        if (c->is_open()) {
-            std::cout << "Opened database successfully: " << c->dbname() << std::endl;
-        } else {
-            std::cerr << "Can't open database" << std::endl;
-            dbConnectionFailed = true;
-            return;
-        }
-
-        // Create the table
-        pqxx::work W(*c);
-        std::string sql = "CREATE TABLE IF NOT EXISTS Users ("
-                          "Username TEXT PRIMARY KEY NOT NULL,"
-                          "PasswordHash TEXT NOT NULL);";
-        W.exec(sql);
-        W.commit();
-        std::cout << "Table created/openned successfully" << std::endl;
-    } catch (const std::exception &e) {
-        std::cerr << e.what() << std::endl;
+ClientHandler::ClientHandler(int clientSocket, SSL* ssl, pqxx::connection& c)
+: clientSocket(clientSocket), ssl(ssl), c(c), dbConnectionFailed(false) {
+    // Preverjanje povezave z bazo podatkov
+    if (c.is_open()) {
+        std::cout << "Opened database successfully: " << c.dbname() << std::endl;
+    } else {
+        std::cerr << "Can't open database" << std::endl;
         dbConnectionFailed = true;
+        return;
     }
 }
 
@@ -72,16 +59,22 @@ std::string ClientHandler::handleMsg(const std::string& receivedMsg) {
 char ClientHandler::registerUser(const std::string& username, const std::string& password) {
     std::cout << "Registering user: " << username << std::endl;
 
-    if (dbConnectionFailed || !c) {
-        std::cerr << "Database connection failed. Cannot register user." << std::endl;
-        return 'e';
-    }
-
     try {
-        pqxx::work W(*c);
+        pqxx::work W(c);
 
-        std::string sql = "INSERT INTO Users (Username, PasswordHash) VALUES ($1, $2);";
-        W.exec_params(sql, username, password);
+        std::string salt = generateSalt();
+        std::string passwordHash = generateHash(password, salt);
+
+        // Get current date/time
+        auto now = std::chrono::system_clock::now();
+        std::time_t now_c = std::chrono::system_clock::to_time_t(now);
+        
+        char buffer[26];
+        ctime_s(buffer, sizeof buffer, &now_c);
+        std::string creationDate(buffer);
+
+        std::string sql = "INSERT INTO Users (Username, PasswordHash, Salt, CreationDate) VALUES ($1, $2, $3, $4);";
+        W.exec_params(sql, username, passwordHash, salt, creationDate);
         W.commit();
     } catch (const std::exception &e) {
         std::cerr << "Failed to register user: " << e.what() << std::endl;
@@ -94,19 +87,22 @@ char ClientHandler::registerUser(const std::string& username, const std::string&
 char ClientHandler::loginUser(const std::string& username, const std::string& password) {
     std::cout << "Logging in user: " << username << std::endl;
 
-    if (dbConnectionFailed || !c) {
-        std::cerr << "Database connection failed. Cannot login user." << std::endl;
-        return 'f';
-    }
-
     try {
-        pqxx::work W(*c);
+        pqxx::work W(c);
 
-        std::string sql = "SELECT PasswordHash FROM Users WHERE Username = $1;";
+        std::string sql = "SELECT PasswordHash, Salt FROM Users WHERE Username = $1;";
         pqxx::result R = W.exec_params(sql, username);
 
-        if (!R.empty() && R[0][0].as<std::string>() == password) {
-            return 'l';
+        if (!R.empty()) {
+            std::string storedPasswordHash = R[0][0].as<std::string>();
+            std::string salt = R[0][1].as<std::string>();
+            std::string passwordHash = generateHash(password, salt);
+
+            if (storedPasswordHash == passwordHash) {
+                return 'l';
+            } else {
+                return 'w';
+            }
         } else {
             return 'w';
         }
@@ -128,4 +124,28 @@ std::string ClientHandler::getNextArg(std::string& msg) {
     msg.erase(0, pos); // Erase everything up to and including the next (char)30
 
     return arg;
+}
+
+std::string ClientHandler::generateSalt() {
+    unsigned char salt[16];
+    RAND_bytes(salt, sizeof(salt));
+
+    std::stringstream ss;
+    for(int i = 0; i < sizeof(salt); i++)
+        ss << std::hex << std::setw(2) << std::setfill('0') << (int)salt[i];
+
+    return ss.str();
+}
+
+std::string ClientHandler::generateHash(const std::string& password, const std::string& salt) {
+    unsigned char hash[SHA256_DIGEST_LENGTH];
+    std::string saltedPassword = password + salt;
+
+    SHA256((unsigned char*)saltedPassword.c_str(), saltedPassword.size(), hash);
+
+    std::stringstream ss;
+    for(int i = 0; i < SHA256_DIGEST_LENGTH; i++)
+        ss << std::hex << std::setw(2) << std::setfill('0') << (int)hash[i];
+
+    return ss.str();
 }

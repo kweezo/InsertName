@@ -2,6 +2,26 @@
 
 
 Server::Server(int port, const std::string& dir) : port(port), dir(dir), ctx(nullptr), ssl(nullptr) {
+    Config::GetInstance().LoadConfig(dir + "/config.txt");
+
+    // Vzpostavitev povezave z bazo podatkov
+    std::string conn_str = "dbname=" + Config::GetInstance().dbname +
+                          " user=" + Config::GetInstance().dbuser +
+                          " password=" + Config::GetInstance().dbpassword +
+                          " hostaddr=" + Config::GetInstance().dbhostaddr +
+                          " port=" + Config::GetInstance().dbport;
+    c = std::make_unique<pqxx::connection>(conn_str);
+
+    // Ustvarjanje tabele Users
+    pqxx::work W(*c);
+    std::string sql = "CREATE TABLE IF NOT EXISTS Users ("
+                      "Username TEXT PRIMARY KEY NOT NULL,"
+                      "PasswordHash TEXT NOT NULL,"
+                      "Salt TEXT NOT NULL,"
+                      "CreationDate TEXT NOT NULL);";
+    W.exec(sql);
+    W.commit();
+
     // Initialize OpenSSL
     SSL_load_error_strings();	
     OpenSSL_add_ssl_algorithms();
@@ -67,30 +87,30 @@ int Server::acceptClient() {
     }
 
     ctx = SSL_CTX_new(TLS_server_method());
-if (ctx == nullptr) {
-    // handle error
-    return -1;
-}
+    if (ctx == nullptr) {
+        // handle error
+        return -1;
+    }
 
-// Load the server's private key and certificate
-if (SSL_CTX_use_PrivateKey_file(ctx, (dir + "/network/server.key").c_str(), SSL_FILETYPE_PEM) <= 0) {
-    ERR_print_errors_fp(stderr);
-    // handle error
-    return -1;
-}
+    // Load the server's private key and certificate
+    if (SSL_CTX_use_PrivateKey_file(ctx, (dir + "/network/server.key").c_str(), SSL_FILETYPE_PEM) <= 0) {
+        ERR_print_errors_fp(stderr);
+        // handle error
+        return -1;
+    }
 
-if (SSL_CTX_use_certificate_file(ctx, (dir + "/network/server.crt").c_str(), SSL_FILETYPE_PEM) <= 0) {
-    ERR_print_errors_fp(stderr);
-    // handle error
-    return -1;
-}
+    if (SSL_CTX_use_certificate_file(ctx, (dir + "/network/server.crt").c_str(), SSL_FILETYPE_PEM) <= 0) {
+        ERR_print_errors_fp(stderr);
+        // handle error
+        return -1;
+    }
 
-// Create new SSL connection
-ssl = SSL_new(ctx);
-if (ssl == nullptr) {
-    // handle error
-    return -1;
-}
+    // Create new SSL connection
+    ssl = SSL_new(ctx);
+    if (ssl == nullptr) {
+        // handle error
+        return -1;
+    }
 
     // Associate the socket with the SSL connection
     SSL_set_fd(ssl, clientSocket);
@@ -108,7 +128,7 @@ if (ssl == nullptr) {
 }
 
 void Server::handleClient(int clientSocket) {
-    handlers.push_back(std::make_unique<ClientHandler>(clientSocket, ssl));
+    handlers.push_back(std::make_unique<ClientHandler>(clientSocket, ssl, *c));
     handlers.back()->handleConnection();
     // When you're done with the connection, remove the handler object to close the socket.
     handlers.pop_back();
