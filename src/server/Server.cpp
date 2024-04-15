@@ -17,7 +17,8 @@ Server::Server(int port, const std::string& dir) : port(port), dir(dir), ctx(nul
     std::string sql = "CREATE TABLE IF NOT EXISTS Users ("
                       "Username TEXT PRIMARY KEY NOT NULL,"
                       "PasswordHash TEXT NOT NULL,"
-                      "Salt TEXT NOT NULL);";
+                      "Salt TEXT NOT NULL,"
+                      "CreationDate TEXT NOT NULL);";
     W.exec(sql);
     W.commit();
 

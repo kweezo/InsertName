@@ -65,8 +65,16 @@ char ClientHandler::registerUser(const std::string& username, const std::string&
         std::string salt = generateSalt();
         std::string passwordHash = generateHash(password, salt);
 
-        std::string sql = "INSERT INTO Users (Username, PasswordHash, Salt) VALUES ($1, $2, $3);";
-        W.exec_params(sql, username, passwordHash, salt);
+        // Get current date/time
+        auto now = std::chrono::system_clock::now();
+        std::time_t now_c = std::chrono::system_clock::to_time_t(now);
+        
+        char buffer[26];
+        ctime_s(buffer, sizeof buffer, &now_c);
+        std::string creationDate(buffer);
+
+        std::string sql = "INSERT INTO Users (Username, PasswordHash, Salt, CreationDate) VALUES ($1, $2, $3, $4);";
+        W.exec_params(sql, username, passwordHash, salt, creationDate);
         W.commit();
     } catch (const std::exception &e) {
         std::cerr << "Failed to register user: " << e.what() << std::endl;
