@@ -22,7 +22,17 @@ DataBuffer::DataBuffer(BufferDescriptions bufferDescriptions, size_t size,
         finishedCopyingFence = Fence(false);
     }
 
-    VkBufferUsageFlagBits bufferType = (flags & DATA_BUFFER_VERTEX_BIT) ? VK_BUFFER_USAGE_VERTEX_BUFFER_BIT : VK_BUFFER_USAGE_INDEX_BUFFER_BIT;
+    VkBufferUsageFlagBits bufferType;
+    if(flags == DATA_BUFFER_VERTEX_BIT){
+        bufferType = VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
+    }else if(flags == DATA_BUFFER_INDEX_BIT){
+        bufferType = VK_BUFFER_USAGE_INDEX_BUFFER_BIT;
+    }else if(flags == DATA_BUFFER_UNIFORM_BIT){
+        bufferType = VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT;
+    }else{
+        throw std::runtime_error("Invalid buffer type");
+    }
+
     if(transferToLocalDevMem){
         CreateBuffer(buff, bufferType | VK_BUFFER_USAGE_TRANSFER_DST_BIT, size);
         AllocateMemory(mem, buff, size, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);

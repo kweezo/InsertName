@@ -123,6 +123,10 @@ void GraphicsPipeline::BeginRenderPassAndBindPipeline(uint32_t imageIndex, VkCom
 void GraphicsPipeline::EndRenderPass(VkCommandBuffer commandBuffer){
     vkCmdEndRenderPass(commandBuffer);
 }
+VkPipelineLayout GraphicsPipeline::GetPipelineLayout(){
+    return pipelineLayout;
+}
+
 GraphicsPipeline::GraphicsPipeline(const GraphicsPipeline& other){
     pipeline = other.pipeline;
     pipelineLayout = other.pipelineLayout;

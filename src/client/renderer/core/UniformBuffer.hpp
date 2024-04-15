@@ -3,6 +3,7 @@
 
 #include <vector>
 #include <stdexcept>
+#include <unordered_map>
 
 #include <vulkan/vulkan.h>
 
@@ -10,13 +11,21 @@
 #include "DescriptorManager.hpp"
 
 namespace renderer{
+
+struct UniformBufferCreateInfo{
+    std::string name;
+    uint32_t index;
+};
+
+
 class UniformBuffer{
 public:
-    template<typename T>//templates are a kind of mental retardation and thats why I love them
-    UniformBuffer(T& data, uint32_t index);
+    UniformBuffer(void* data, size_t size, UniformBufferCreateInfo info);
 
-    template<typename T>
-    void UpdateData(T& data);
+    void Bind(VkCommandBuffer commandBuffer, VkPipelineLayout layout);
+
+    void UpdateData(void* data, size_t size);
+    void ForceWriteDescriptorSet();
 
     static void EnableBuffers();
 
@@ -27,10 +36,11 @@ private:
     DescriptorHandle descriptorHandle;
 
     size_t dataSize;
+    std::string name;
+    uint32_t layoutIndex;
 
-    static std::vector<UniformBuffer*> instanceList;
-    static bool creationLock; //i mean we have to do a bunch of shit if we do it after creating descriptor sets, so we ain't gonna allow it (for now)
-    //maybe implement like a soft reintialization for when loading new maps or shit that just resets all of this?
+    static bool creationLock;
+
 };
 
 }

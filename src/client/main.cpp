@@ -8,6 +8,11 @@
 #include "renderer/core/GraphicsPipeline.hpp"
 #include "renderer/core/DataBuffer.hpp"
 #include "renderer/core/Fence.hpp"
+#include "renderer/core/DescriptorManager.hpp"
+#include "renderer/core/UniformBuffer.hpp"
+
+#include <glm/glm.hpp>
+#include <glm/gtc/matrix_transform.hpp>
 
 using namespace renderer;//here beacuse this is again, all temp and i cant be bothered to actually refactor this properly
 
@@ -24,10 +29,16 @@ void userTemp(){
     }
 }
 
+struct ModelDat{
+    glm::mat4 model;
+    glm::mat4 view;
+    glm::mat4 proj;
+};
+
 int main(){
     Settings settings;
     ReadSettings(settings, "src/settings.bin");
-    userTemp();
+   // userTemp();
 
     Window::CreateWindowContext(settings.width, settings.height, "Vulkan");
     Renderer::InitRenderer();
@@ -71,55 +82,13 @@ int main(){
 
     BufferDescriptions buffDescription = vertexBuffer.GetDescriptions();
 
+    ModelDat modelDat;
+    modelDat.model = glm::mat4(1.0f);
+    modelDat.view = glm::lookAt(glm::vec3(0.0f, 0.0f, 2.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+    modelDat.proj = glm::perspective(glm::radians(45.0f), 800.0f / 600.0f, 0.1f, 10.0f);
+    UniformBuffer uniformBuffer = UniformBuffer(reinterpret_cast<void*>(&modelDat), sizeof(modelDat), {"model", 0}); 
 
-//////
-    VkDescriptorSetLayoutBinding layoutBinding{};
-    layoutBinding.binding = 0;
-    layoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-    layoutBinding.descriptorCount = 1;
-    layoutBinding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
-    layoutBinding.pImmutableSamplers = nullptr;
-
-    VkDescriptorPoolSize poolSize{};
-    poolSize.type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-    poolSize.descriptorCount = 1;
-
-    VkDescriptorSetLayoutCreateInfo layoutInfo{};
-    layoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
-    layoutInfo.bindingCount = 1;
-    layoutInfo.pBindings = &layoutBinding;
-
-    VkDescriptorSetLayout descriptorSetLayout;
-    if(vkCreateDescriptorSetLayout(Device::GetDevice(), &layoutInfo, nullptr, &descriptorSetLayout) != VK_SUCCESS){
-        throw std::runtime_error("Failed to create descriptor set layout");
-    }
-
-    VkDescriptorPoolCreateInfo poolInfo{};
-    poolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
-    poolInfo.poolSizeCount = 1;
-    poolInfo.pPoolSizes = &poolSize;
-    poolInfo.maxSets = Swapchain::GetImageCount();
-
-    VkDescriptorPool descriptorPool;
-
-    if(vkCreateDescriptorPool(Device::GetDevice(), &poolInfo, nullptr, &descriptorPool) != VK_SUCCESS){
-        throw std::runtime_error("Failed to create descriptor pool");
-    }
-
-    std::vector<VkDescriptorSetLayout> layouts(Swapchain::GetImageCount(), descriptorSetLayout);
-
-    VkDescriptorSetAllocateInfo allocInfo{};
-    allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
-    allocInfo.descriptorPool = descriptorPool;
-    allocInfo.descriptorSetCount = Swapchain::GetImageCount();
-    allocInfo.pSetLayouts = layouts.data();
-
-    std::vector<VkDescriptorSet> descriptorSets(Swapchain::GetImageCount());
-    if(vkAllocateDescriptorSets(Device::GetDevice(), &allocInfo, descriptorSets.data()) != VK_SUCCESS){
-        throw std::runtime_error("Failed to allocate descriptor sets");                                     //! BUG HERE
-    }
-
-////
+    UniformBuffer::EnableBuffers();
 
     VkPipelineVertexInputStateCreateInfo vertexInputInfo{};
     vertexInputInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
@@ -185,10 +154,12 @@ int main(){
     colorBlending.attachmentCount = 1;
     colorBlending.pAttachments = &colorBlendAttachment;
 
+    std::vector<VkDescriptorSetLayout> *layouts = DescriptorManager::GetLayouts();
+
     VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
     pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
-    pipelineLayoutInfo.setLayoutCount = layouts.size();
-    pipelineLayoutInfo.pSetLayouts = layouts.data();
+    pipelineLayoutInfo.setLayoutCount = layouts->size();
+    pipelineLayoutInfo.pSetLayouts = layouts->data();
     pipelineLayoutInfo.pushConstantRangeCount = 0;
 
     GraphicsPipeline pipeline = GraphicsPipeline(vertexInputInfo, VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, VK_POLYGON_MODE_FILL, multisampling,
@@ -234,6 +205,7 @@ int main(){
         VkBuffer buff = vertexBuffer.GetBuffer();
         vkCmdBindVertexBuffers(buffer.GetCommandBuffer(), 0, 1, &buff, offsets);
         vkCmdBindIndexBuffer(buffer.GetCommandBuffer(), indexBuffer.GetBuffer(), 0, VK_INDEX_TYPE_UINT32);
+        uniformBuffer.Bind(buffer.GetCommandBuffer(), pipeline.GetPipelineLayout());
         vkCmdDrawIndexed(buffer.GetCommandBuffer(), 6, 1, 0, 0, 0);
         buffer.EndCommandBuffer();
 
@@ -278,7 +250,6 @@ int main(){
     vkDeviceWaitIdle(Device::GetDevice());
 
 
-    vkDestroyDescriptorSetLayout(Device::GetDevice(), descriptorSetLayout, nullptr);
     vkDestroySemaphore(Device::GetDevice(), renderFinishedSemaphore, nullptr);
     vkDestroySemaphore(Device::GetDevice(), imageAvailableSemaphore, nullptr);
     vkDestroyFence(Device::GetDevice(), inFlightFence, nullptr);

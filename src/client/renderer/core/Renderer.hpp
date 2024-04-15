@@ -8,6 +8,7 @@
 #include "Swapchain.hpp"
 #include "CommandPool.hpp"
 #include "DataBuffer.hpp"
+#include "DescriptorManager.hpp"
 
 namespace renderer{
 

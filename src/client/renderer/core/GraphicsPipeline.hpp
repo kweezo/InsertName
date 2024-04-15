@@ -29,6 +29,7 @@ public:
     void BeginRenderPassAndBindPipeline(uint32_t imageIndex, VkCommandBuffer commandBuffer);
     void EndRenderPass(VkCommandBuffer commandBuffer);
 
+    VkPipelineLayout GetPipelineLayout();
     VkRenderPass GetRenderPass();
 private:
     VkPipeline pipeline;
