@@ -77,6 +77,14 @@ GraphicsPipeline::GraphicsPipeline(VkPipelineVertexInputStateCreateInfo vertexIn
         framebufferInfo.height = Swapchain::GetExtent().height;
         framebufferInfo.layers = 1;
 
+
+        if(framebufferInfo.width == std::numeric_limits<uint32_t>::max() && framebufferInfo.height == std::numeric_limits<uint32_t>::max()){
+            int width, height;
+            glfwGetWindowSize(Window::GetGLFWwindow(), &width, &height);
+            framebufferInfo.width = width;
+            framebufferInfo.height = height;
+        }
+
         if(vkCreateFramebuffer(Device::GetDevice(), &framebufferInfo, nullptr, &framebuffers[i]) != VK_SUCCESS){
             throw std::runtime_error("Failed to create framebuffer");
         }

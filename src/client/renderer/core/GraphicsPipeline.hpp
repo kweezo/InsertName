@@ -2,6 +2,7 @@
 
 #include <stdexcept>
 #include <iostream>
+#include <limits>
 
 #include <vulkan/vulkan.h>
 

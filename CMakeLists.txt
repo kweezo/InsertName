@@ -43,7 +43,6 @@ endif()
 if(BUILD_INSTALLER)
     file(GLOB installersrc src/installer/**/*.cpp src/settings.cpp )
     add_executable(installer ${installersrc} src/installer/main.cpp)
-target_compile_features(installer  PUBLIC cxx_std_230)
 endif()
 
 if(BUILD_SERVER)
