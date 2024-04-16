@@ -48,7 +48,7 @@ void CommandBuffer::BeginCommandBuffer(uint32_t imageIndex, VkCommandBufferInher
     beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
     beginInfo.flags = 0;
     beginInfo.pInheritanceInfo = inheritanceInfo;
-    beginInfo.flags = (flags & COMMAND_BUFFER_ONE_TIME_SUBMIT_FLAG == COMMAND_BUFFER_TRANSFER_FLAG)
+    beginInfo.flags = ((flags & COMMAND_BUFFER_ONE_TIME_SUBMIT_FLAG) == COMMAND_BUFFER_TRANSFER_FLAG)
      ? VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT : 0;
 
     if(vkBeginCommandBuffer(commandBuffer, &beginInfo) != VK_SUCCESS){
