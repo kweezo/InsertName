@@ -92,7 +92,7 @@ StagingBufferCopyCMDInfo DataBuffer::GetStagingBuffer(size_t size){
             tmpStagingBuffer.commandBuffer = CommandBuffer(VK_COMMAND_BUFFER_LEVEL_SECONDARY, COMMAND_BUFFER_TRANSFER_FLAG, nullptr);
         
             CreateBuffer(tmpStagingBuffer.buffer, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, size);
-            AllocateMemory(stagingBuffer->bufferMemory, stagingBuffer->buffer, size,
+            AllocateMemory(tmpStagingBuffer.bufferMemory, tmpStagingBuffer.buffer, size,
              VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
 
             stagingBuffers.push_back(tmpStagingBuffer);
