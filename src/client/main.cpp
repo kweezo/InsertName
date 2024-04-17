@@ -260,6 +260,8 @@ int main(){
     vkDestroySemaphore(Device::GetDevice(), renderFinishedSemaphore, nullptr);
     vkDestroySemaphore(Device::GetDevice(), imageAvailableSemaphore, nullptr);
     vkDestroyFence(Device::GetDevice(), inFlightFence, nullptr);
+
+    
 }
     Renderer::DestroyRenderer();
     Window::DestroyWindowContext();

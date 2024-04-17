@@ -98,6 +98,8 @@ StagingBufferCopyCMDInfo DataBuffer::GetStagingBuffer(size_t size){
             stagingBuffers.push_back(tmpStagingBuffer);
 
             stagingBuffer = &stagingBuffers[stagingBuffers.size() - 1];
+
+            std::cerr << "oh god we are creating a new staging buffer\n";
         }
 
     return *stagingBuffer;

@@ -15,10 +15,10 @@ void Renderer::RenderFrame(){
 }
 
 void Renderer::DestroyRenderer(){
-    CommandPool::DestroyCommandPools();
     Swapchain::DestroySwapchain();
     DescriptorManager::Cleanup();
     DataBuffer::Cleanup();
+    CommandPool::DestroyCommandPools();
     vkDestroySurfaceKHR(Instance::GetInstance(), Window::GetVulkanSurface(), nullptr);
     Device::DestroyDevice();
     Instance::DestroyInstance();
