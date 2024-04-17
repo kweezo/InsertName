@@ -113,7 +113,7 @@ void UniformBufferImpl::EnableBuffers(){
 
 
     DescriptorBatchInfo batchInfo = {};
-    batchInfo.layoutIndex = layoutIndices[0];
+    batchInfo.layoutIndex = reinterpret_cast<uint32_t*>(layoutIndices.data())[0];
     batchInfo.setCount = descriptorCountPerLayout.size();
 
     std::vector<DescriptorHandle> descriptorBatch = DescriptorManager::CreateDescriptors({batchInfo});
