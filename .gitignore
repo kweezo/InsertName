@@ -13,5 +13,8 @@ lib/win/*
 lib/lnx/*
 bin/*
 settings.bin
-./server.exe
-./client.exe
+server.exe
+client.exe
+InsertName.sln
+*vcxproj
+*vcxproj.filters
