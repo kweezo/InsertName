@@ -35,7 +35,7 @@ option(DEBUG "Build with debug flags" OFF)
 option(GFX_RECONSTRUCT "Build with graphics reconstruction" OFF)
 
 if(DEBUG)
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g -DNDEBUG -fsanitize=address")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g -DNDEBUG ")
 endif()
 
 if(GFX_RECONSTRUCT)
