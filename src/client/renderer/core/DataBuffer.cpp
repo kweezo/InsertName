@@ -147,9 +147,8 @@ void DataBuffer::CopyBufferData(VkBuffer dst, void* data, size_t size){
     vkCmdCopyBuffer(stagingBuffer.commandBuffer.GetCommandBuffer(), stagingBuffer.buffer, dst, 1, &copyRegion);
 
     stagingBuffer.commandBuffer.EndCommandBuffer();
-
-    std::cerr << "leaf\n";
 }
+
 void DataBuffer::UpdateData(void* data, size_t size){
     if(this->size != size){
         throw std::runtime_error("Size of data does not match size of buffer, you need to create a new buffer for this");
