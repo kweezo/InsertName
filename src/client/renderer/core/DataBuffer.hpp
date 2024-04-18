@@ -38,16 +38,16 @@ public:
     DataBuffer(BufferDescriptions bufferDescriptions, size_t size,
      void* data, bool transferToLocalDevMem, uint32_t flags);
 
+    static void LoadDataIntoImage(VkImage image, VkDeviceMemory imageMemory, size_t size, void* data);
+
     VkBuffer GetBuffer();
 
     BufferDescriptions GetDescriptions();
 
     void CopyFromBuffer(StagingBufferCopyCMDInfo stagingBuffer, VkDeviceSize size);
-
     void UpdateData(void* data, size_t size);
 
-    static void CopyBufferData(VkDeviceMemory src, VkDeviceMemory dst, size_t size);
-
+    static void CopyBufferData(VkBuffer dst, void* data, size_t size); // is this needed(obligatory suicide joke)?
     static void UpdateCommandBuffer();
 
     static void Cleanup();

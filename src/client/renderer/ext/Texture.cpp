@@ -55,6 +55,32 @@ void Texture::CreateTextureImage(){
     if(vkCreateImage(Device::GetDevice(), &imageInfo, nullptr, &image) != VK_SUCCESS){
         throw std::runtime_error("Failed to create image");
     }
+
+    VkMemoryRequirements memRequirements;
+    vkGetImageMemoryRequirements(Device::GetDevice(), image, &memRequirements);
+
+    VkPhysicalDeviceMemoryProperties memProperties;
+    vkGetPhysicalDeviceMemoryProperties(Device::GetPhysicalDevice(), &memProperties);
+
+    for(uint32_t i = 0; i < memProperties.memoryTypeCount; i++){
+        if((memRequirements.memoryTypeBits & (1 << i)) && (memProperties.memoryTypes[i].propertyFlags & VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT)
+         == VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT){
+            VkMemoryAllocateInfo allocInfo{};
+            allocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
+            allocInfo.allocationSize = memRequirements.size ;
+            allocInfo.memoryTypeIndex = i;
+
+            if(vkAllocateMemory(Device::GetDevice(), &allocInfo, nullptr, &memory) != VK_SUCCESS){
+                throw std::runtime_error("Failed to allocate vertex buffer memory");
+            }
+
+            break;
+        }
+    }
+
+    vkBindImageMemory(Device::GetDevice(), image, memory, 0);
+
+    DataBuffer::LoadDataIntoImage(image, memory, imageData.width * imageData.height * 4, imageData.dat);
 }
 
 void Texture::CreateTextureImageView(){
