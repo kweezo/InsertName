@@ -10,6 +10,7 @@
 #include "renderer/core/Fence.hpp"
 #include "renderer/core/DescriptorManager.hpp"
 #include "renderer/core/UniformBuffer.hpp"
+#include "renderer/ext/Texture.hpp"
 
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
@@ -189,6 +190,8 @@ int main(){
        vkCreateFence(Device::GetDevice(), &fenceInfo, nullptr, &inFlightFence) != VK_SUCCESS){ //cleanup is for losers anyways (ill do it later maybe lol)
         throw std::runtime_error("Failed to create semaphores");
     }
+
+    Texture texture = Texture("client_data/res/textures/test.jpeg");
 
 
     while(!glfwWindowShouldClose(Window::GetGLFWwindow())){
