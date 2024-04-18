@@ -98,8 +98,6 @@ StagingBufferCopyCMDInfo DataBuffer::GetStagingBuffer(size_t size){
             stagingBuffers.push_back(tmpStagingBuffer);
 
             stagingBuffer = &stagingBuffers[stagingBuffers.size() - 1];
-
-            std::cerr << "oh god we are creating a new staging buffer\n";
         }
 
     return *stagingBuffer;
@@ -117,6 +115,12 @@ void DataBuffer::CreateStagingBuffers(){
     createdStagingBuffers = true;
 }
 
+void DataBuffer::CopyBufferData(VkDeviceMemory src, VkDeviceMemory dst,
+ size_t size){
+    StagingBufferCopyCMDInfo stagingBuffer = GetStagingBuffer(size);
+
+
+}
 void DataBuffer::UpdateData(void* data, size_t size){
     if(this->size != size){
         throw std::runtime_error("Size of data does not match size of buffer, you need to create a new buffer for this");

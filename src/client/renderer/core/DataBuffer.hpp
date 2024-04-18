@@ -14,7 +14,8 @@
 
 #define DATA_BUFFER_VERTEX_BIT 1
 #define DATA_BUFFER_INDEX_BIT 2
-#define DATA_BUFFER_UNIFORM_BIT 3
+#define DATA_BUFFER_UNIFORM_BIT 4
+#define DATA_BUFFER_IMAGE_BIT 8
 
 namespace renderer{
 
@@ -44,6 +45,8 @@ public:
     void CopyFromBuffer(StagingBufferCopyCMDInfo stagingBuffer, VkDeviceSize size);
 
     void UpdateData(void* data, size_t size);
+
+    static void CopyBufferData(VkDeviceMemory src, VkDeviceMemory dst, size_t size);
 
     static void UpdateCommandBuffer();
 

@@ -33,6 +33,8 @@ private:
     DataBuffer buffer;
     VkImage image;
 
+    VkDeviceMemory memory;
+
     do_not_use_ImageData imageData;
 };
 
