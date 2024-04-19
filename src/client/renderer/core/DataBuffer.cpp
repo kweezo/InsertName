@@ -69,6 +69,7 @@ DataBuffer::DataBuffer(BufferDescriptions bufferDescriptions, size_t size,
 
     this->size = size;
     this->transferToLocalDevMem = transferToLocalDevMem;
+
 }
 void DataBuffer::LoadDataIntoImage(VkImage image, size_t size, void* data, VkExtent3D extent,
 VkImageSubresourceLayers subresourceLayers){
@@ -315,6 +316,7 @@ void DataBuffer::Cleanup(){
     }
     stagingBuffers.clear();
     finishedCopyingFence.~Fence();
+    commandBuffer.~CommandBuffer();
 }
 
 DataBuffer::DataBuffer(const DataBuffer& other){
