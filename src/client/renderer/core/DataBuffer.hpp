@@ -38,7 +38,8 @@ public:
     DataBuffer(BufferDescriptions bufferDescriptions, size_t size,
      void* data, bool transferToLocalDevMem, uint32_t flags);
 
-    static void LoadDataIntoImage(VkImage image, VkDeviceMemory imageMemory, size_t size, void* data);
+    static void LoadDataIntoImage(VkImage image, size_t size, void* data, VkExtent3D extent,
+    VkImageSubresourceLayers subresourceLayers);
 
     VkBuffer GetBuffer();
 

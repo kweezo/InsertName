@@ -191,7 +191,7 @@ int main(){
         throw std::runtime_error("Failed to create semaphores");
     }
 
-    //Texture texture = Texture("client_data/res/textures/test.jpeg");
+    Texture texture = Texture("client_data/res/textures/test.jpeg");
 
 
     while(!glfwWindowShouldClose(Window::GetGLFWwindow())){

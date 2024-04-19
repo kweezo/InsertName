@@ -1,28 +1,10 @@
-#include "Texture.hpp"
-
-#define STB_IMAGE_IMPLEMENTATION
-#include "../deps/stb_image.h"
+#include "Image.hpp"
 
 namespace renderer{
 
+Image::Image(VkImageLayout layout, VkFormat format, uint32_t width,
+     uint32_t height, size_t size, void* data){
 
-Texture::Texture(const std::string& path){
-    LoadTexture(path);
-    CreateTextureImage();
-    CreateTextureImageView();
-    CreateTextureSampler();
-}
-
-void Texture::LoadTexture(const std::string& path){
-    imageData.dat = stbi_load(path.c_str(), &imageData.width, &imageData.height,
-     &imageData.channels, STBI_rgb_alpha);
-
-    if(imageData.dat == nullptr){
-        throw std::runtime_error("Failed to load texture, invalid path?");
-    }
-}
-
-void Texture::CreateTextureImage(){
     VkImageCreateInfo imageInfo = {};
 
     QueueFamilyInfo queueFamilyInfo = Device::GetQueueFamilyInfo();
@@ -41,8 +23,8 @@ void Texture::CreateTextureImage(){
 
     imageInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
     imageInfo.imageType = VK_IMAGE_TYPE_2D;
-    imageInfo.extent.width = imageData.width;
-    imageInfo.extent.height = imageData.height;
+    imageInfo.extent.width = width;
+    imageInfo.extent.height = height;
     imageInfo.extent.depth = 1;
     imageInfo.mipLevels = 1;
     imageInfo.arrayLayers = 1;
@@ -79,17 +61,5 @@ void Texture::CreateTextureImage(){
     }
 
     vkBindImageMemory(Device::GetDevice(), image, memory, 0);
-
-  //  DataBuffer::LoadDataIntoImage(image, imageData.width * imageData.height * 4, imageData.dat,
-    // {(uint32_t)imageData.width, (uint32_t)imageData.height, 1});
-}
-
-void Texture::CreateTextureImageView(){
-
-}
-
-void Texture::CreateTextureSampler(){
-
-}
-
+     }
 }

@@ -70,7 +70,8 @@ DataBuffer::DataBuffer(BufferDescriptions bufferDescriptions, size_t size,
     this->size = size;
     this->transferToLocalDevMem = transferToLocalDevMem;
 }
-void DataBuffer::LoadDataIntoImage(VkImage image, VkDeviceMemory imageMemory, size_t size, void* data){
+void DataBuffer::LoadDataIntoImage(VkImage image, size_t size, void* data, VkExtent3D extent,
+VkImageSubresourceLayers subresourceLayers){
     StagingBufferCopyCMDInfo copyInfo = GetStagingBuffer(size);
 
     void* stagingData;
@@ -80,7 +81,22 @@ void DataBuffer::LoadDataIntoImage(VkImage image, VkDeviceMemory imageMemory, si
     memcpy(stagingData, data, size);
     vkUnmapMemory(Device::GetDevice(), copyInfo.bufferMemory);
 
+    VkCommandBufferInheritanceInfo inheritanceInfo{};
+    inheritanceInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_INFO;
 
+    copyInfo.commandBuffer.BeginCommandBuffer(0, &inheritanceInfo);
+
+    VkBufferImageCopy copyRegion{};
+    copyRegion.bufferOffset = 0;
+    copyRegion.bufferRowLength = 0;
+    copyRegion.bufferImageHeight = 0;
+    copyRegion.imageExtent = extent;
+    copyRegion.imageSubresource = subresourceLayers;
+
+    vkCmdCopyBufferToImage(copyInfo.commandBuffer.GetCommandBuffer(), copyInfo.buffer,
+     image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &copyRegion);
+
+    copyInfo.commandBuffer.EndCommandBuffer();
 }
 
 StagingBufferCopyCMDInfo DataBuffer::GetStagingBuffer(size_t size){
