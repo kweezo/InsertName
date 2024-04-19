@@ -6,6 +6,7 @@
 
 #include "../core/DataBuffer.hpp"
 #include "../core/Device.hpp"
+#include "../core/Image.hpp"
 
 
 namespace renderer{
@@ -30,10 +31,8 @@ private:
     void CreateTextureImageView();
     void CreateTextureSampler();
 
-    DataBuffer buffer;
-    VkImage image;
 
-    VkDeviceMemory memory;
+    Image image;
 
     do_not_use_ImageData imageData;
 };
