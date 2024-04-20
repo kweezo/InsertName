@@ -19,6 +19,7 @@ void Renderer::DestroyRenderer(){
     Swapchain::DestroySwapchain();
     DescriptorManager::Cleanup();
     DataBuffer::Cleanup();
+    ImageImpl::Cleanup();
     CommandPool::DestroyCommandPools();
     vkDestroySurfaceKHR(Instance::GetInstance(), Window::GetVulkanSurface(), nullptr);
     Device::DestroyDevice();

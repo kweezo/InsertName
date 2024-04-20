@@ -271,7 +271,7 @@ void DataBuffer::CreateBuffer(VkBuffer& buffer, VkBufferUsageFlags usage, VkDevi
     }
 
     if(vkCreateBuffer(Device::GetDevice(), &bufferInfo, nullptr, &buffer) != VK_SUCCESS){
-        throw std::runtime_error("Failed to create vertex buffer");
+        throw std::runtime_error("Failed to create buffer");
     }
 }
 

@@ -49,13 +49,17 @@ public:
     ImageImpl(VkImageLayout layout, VkFormat format, uint32_t width,
      uint32_t height, size_t size, void* data);
 
+    ~ImageImpl();
+    ImageImpl(const ImageImpl& other);
+    ImageImpl&  operator=(const ImageImpl& other);
+
     static void Initialize();
+    static void Cleanup();
 
     VkImage GetImage();
+    void TransitionImageLayout();
 
     static void UpdateCommandBuffers();
-
-    void TransitionImageLayout();
 private:
     static void CreateCommandBuffers();
     static CommandBuffer GetFreeCommandBuffer(ImageHandle image);
@@ -64,6 +68,7 @@ private:
     static Fence finishedTransitioningFence;
     static CommandBuffer primaryCommandBuffer;
 
+    uint32_t* useCount;
 
     LoadDataIntoImageInfo loadDataInfo;
 

@@ -29,7 +29,10 @@ void ImageImpl::Initialize(){
     CreateCommandBuffers();
 }
 
-ImageImpl::ImageImpl(){}
+ImageImpl::ImageImpl(){
+    useCount = new uint32_t;
+    (*useCount) = 1;
+}
 
 ImageImpl::ImageImpl(VkImageLayout layout, VkFormat format, uint32_t width,
      uint32_t height, size_t size, void* data){
@@ -130,9 +133,11 @@ ImageImpl::ImageImpl(VkImageLayout layout, VkFormat format, uint32_t width,
     VK_PIPELINE_STAGE_TRANSFER_BIT, 0, 0, nullptr, 0, nullptr, 1, &imageMemoryBarrier);
     commandBuffer.EndCommandBuffer();
 
-    ImageImpl::UpdateCommandBuffers();
 
     loadDataInfo = {image, memory, size, data, {width, height, 1}, subresourceLayers};
+
+    useCount = new uint32_t;
+    (*useCount) = 1;
 
 }
 
@@ -217,6 +222,43 @@ CommandBuffer ImageImpl::GetFreeCommandBuffer(ImageHandle image){
 VkImage ImageImpl::GetImage(){
     return image;
 
+}
+
+ImageImpl::ImageImpl(const ImageImpl& other){
+    loadDataInfo = other.loadDataInfo;
+    image = other.image;
+    memory = other.memory;
+    useCount = other.useCount;
+    (*useCount)++;
+}
+
+ImageImpl& ImageImpl::operator=(const ImageImpl& other){
+    if(this == &other){
+        return *this;
+    }
+
+    loadDataInfo = other.loadDataInfo;
+    image = other.image;
+    memory = other.memory;
+    useCount = other.useCount;
+    (*useCount)++;
+
+    return *this;
+}
+
+ImageImpl::~ImageImpl(){
+    if((*useCount) <= 1){
+        vkDestroyImage(Device::GetDevice(), image, nullptr);
+        vkFreeMemory(Device::GetDevice(), memory, nullptr);
+    }
+}
+
+void ImageImpl::Cleanup(){
+    finishedTransitioningFence.~Fence();
+    primaryCommandBuffer.~CommandBuffer();
+    for (ImageTransitionCMDInfo& buffer : stagingBuffers){
+        buffer.commandBuffer.~CommandBuffer();
+    }
 }
 
 }

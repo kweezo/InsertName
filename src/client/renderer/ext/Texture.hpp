@@ -20,7 +20,9 @@ typedef struct {
 class Texture {
 public:
     Texture(const std::string& path);
-//    ~Texture();
+    ~Texture();
+    Texture(const Texture& other);
+    Texture& operator=(const Texture& other);
 
 
     VkImageView GetTextureImageView();
@@ -33,9 +35,9 @@ private:
     void CreateTextureImageView();
     void CreateTextureSampler();
 
+    uint32_t *useCount;
 
     ImageHandle image;
-
     do_not_use_ImageData imageData;
 };
 
