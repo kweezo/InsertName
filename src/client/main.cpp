@@ -191,8 +191,8 @@ int main(){
         throw std::runtime_error("Failed to create semaphores");
     }
 
-    Texture texture = Texture("client_data/res/textures/test.jpeg");
-    Texture::EnableNewTextures();
+    TextureHandle texture = Texture::CreateTexture("client_data/res/textures/test.jpeg", 1);
+    Texture::EnableTextures();
 
 
 
@@ -261,6 +261,7 @@ int main(){
     vkDeviceWaitIdle(Device::GetDevice());
 
     UniformBuffer::Free(uniformBuffer);
+    Texture::Free(texture);
 
     vkDestroySemaphore(Device::GetDevice(), renderFinishedSemaphore, nullptr);
     vkDestroySemaphore(Device::GetDevice(), imageAvailableSemaphore, nullptr);

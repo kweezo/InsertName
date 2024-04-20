@@ -225,7 +225,6 @@ CommandBuffer ImageImpl::GetFreeCommandBuffer(ImageHandle image){
 
 VkImage ImageImpl::GetImage(){
     return image;
-
 }
 
 ImageImpl::ImageImpl(const ImageImpl& other){
