@@ -192,6 +192,8 @@ int main(){
     }
 
     Texture texture = Texture("client_data/res/textures/test.jpeg");
+    Texture::EnableNewTextures();
+
 
 
     while(!glfwWindowShouldClose(Window::GetGLFWwindow())){

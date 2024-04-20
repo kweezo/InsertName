@@ -19,9 +19,9 @@ void Image::Free(ImageHandle image){
 void Image::Initialize(){
     ImageImpl::Initialize();
 }
+
 void Image::UpdateCommandBuffers(){
     ImageImpl::UpdateCommandBuffers();
-
 }
 
 void ImageImpl::Initialize(){
@@ -99,7 +99,7 @@ ImageImpl::ImageImpl(VkImageLayout layout, VkFormat format, uint32_t width,
     subresourceLayers.layerCount = 1;
     subresourceLayers.mipLevel = 0;
 
-    CommandBuffer commandBuffer = GetFreeCommandBuffer();
+    CommandBuffer commandBuffer = GetFreeCommandBuffer(this);
 
     VkImageMemoryBarrier imageMemoryBarrier = {};
     imageMemoryBarrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
@@ -132,15 +132,18 @@ ImageImpl::ImageImpl(VkImageLayout layout, VkFormat format, uint32_t width,
 
     ImageImpl::UpdateCommandBuffers();
 
-    DataBuffer::LoadDataIntoImage(image, size, data, {width, height, 1}, subresourceLayers);
+    loadDataInfo = {image, memory, size, data, {width, height, 1}, subresourceLayers};
+
+}
+
+void ImageImpl::TransitionImageLayout(){
+    DataBuffer::LoadDataIntoImage(loadDataInfo.image, loadDataInfo.size, loadDataInfo.data, loadDataInfo.extent, loadDataInfo.subresource);
 }
 
 void ImageImpl::UpdateCommandBuffers(){
-  std::vector<uint32_t> cleanupList;
     std::vector<VkCommandBuffer> commandBuffers;
     for(int i = 0; i < stagingBuffers.size(); i++){
         if(!stagingBuffers[i].free){
-            cleanupList.push_back(i);
             commandBuffers.push_back(stagingBuffers[i].commandBuffer.GetCommandBuffer());
         }
     }
@@ -173,8 +176,12 @@ void ImageImpl::UpdateCommandBuffers(){
     
     vkWaitForFences(Device::GetDevice(), 1, &fence, VK_TRUE, UINT64_MAX);
 
-    for(uint32_t i : cleanupList){
-        stagingBuffers[i].free = true;
+    for(ImageCopyCMDInfo& buffer : stagingBuffers){
+        if(buffer.free){
+            continue;
+        }
+        buffer.image->TransitionImageLayout();
+        buffer.free = true;
     }
 
     while(stagingBuffers.size() > MAX_FREE_COMMAND_BUFFER_COUNT){
@@ -192,10 +199,11 @@ void ImageImpl::CreateCommandBuffers(){
 }
 
 
-CommandBuffer ImageImpl::GetFreeCommandBuffer(){
+CommandBuffer ImageImpl::GetFreeCommandBuffer(ImageHandle image){
     for(ImageCopyCMDInfo& buffer : stagingBuffers){
         if(buffer.free){
             buffer.free = false;
+            buffer.image = image;
             return buffer.commandBuffer;
         }
     }

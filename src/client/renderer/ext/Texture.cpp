@@ -5,6 +5,9 @@
 
 namespace renderer{
 
+void Texture::EnableNewTextures(){
+    Image::UpdateCommandBuffers();
+}
 
 Texture::Texture(const std::string& path){
     LoadTexture(path);
@@ -23,7 +26,7 @@ void Texture::LoadTexture(const std::string& path){
 }
 
 void Texture::CreateTextureImage(){
-    ImageImpl image = ImageImpl(VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_FORMAT_R8G8B8A8_SRGB,
+    image = Image::CreateImage (VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_FORMAT_R8G8B8A8_SRGB,
      imageData.width, imageData.height, imageData.width * imageData.height * 4, imageData.dat);
 }
 

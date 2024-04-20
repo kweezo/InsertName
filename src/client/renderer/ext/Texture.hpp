@@ -25,6 +25,8 @@ public:
 
     VkImageView GetTextureImageView();
     VkSampler GetTextureSampler();
+
+    static void EnableNewTextures();
 private:
     void LoadTexture(const std::string& path);
     void CreateTextureImage();
@@ -32,7 +34,7 @@ private:
     void CreateTextureSampler();
 
 
-    ImageImpl image;
+    ImageHandle image;
 
     do_not_use_ImageData imageData;
 };
