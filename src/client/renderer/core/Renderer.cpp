@@ -8,7 +8,7 @@ void Renderer::InitRenderer(){
     Window::CreateVulkanSurface();
     Swapchain::CreateSwapchain();
     CommandPool::CreateCommandPools();
-    Image::Initialize();
+    ImageImpl::Initialize();
 }
 
 void Renderer::RenderFrame(){

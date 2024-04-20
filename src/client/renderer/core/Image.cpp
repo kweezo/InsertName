@@ -3,18 +3,35 @@
 #define MAX_FREE_COMMAND_BUFFER_COUNT 3 
 
 namespace renderer{
-std::vector<ImageTransitionCMDInfo> Image::stagingBuffers = {};
-Fence Image::finishedTransitioningFence = Fence();
-CommandBuffer Image::primaryCommandBuffer = CommandBuffer();
+std::vector<ImageTransitionCMDInfo> ImageImpl::stagingBuffers = {};
+Fence ImageImpl::finishedTransitioningFence = Fence();
+CommandBuffer ImageImpl::primaryCommandBuffer = CommandBuffer();
+
+ImageHandle Image::CreateImage(VkImageLayout layout, VkFormat format, uint32_t width,
+     uint32_t height, size_t size, void* data){
+        return new ImageImpl(layout, format, width, height, size, data);
+}
+
+void Image::Free(ImageHandle image){
+    delete image;   
+}
 
 void Image::Initialize(){
+    ImageImpl::Initialize();
+}
+void Image::UpdateCommandBuffers(){
+    ImageImpl::UpdateCommandBuffers();
+
+}
+
+void ImageImpl::Initialize(){
     finishedTransitioningFence = Fence(0);
     CreateCommandBuffers();
 }
 
-Image::Image(){}
+ImageImpl::ImageImpl(){}
 
-Image::Image(VkImageLayout layout, VkFormat format, uint32_t width,
+ImageImpl::ImageImpl(VkImageLayout layout, VkFormat format, uint32_t width,
      uint32_t height, size_t size, void* data){
 
     VkImageCreateInfo imageInfo = {};
@@ -113,12 +130,12 @@ Image::Image(VkImageLayout layout, VkFormat format, uint32_t width,
     VK_PIPELINE_STAGE_TRANSFER_BIT, 0, 0, nullptr, 0, nullptr, 1, &imageMemoryBarrier);
     commandBuffer.EndCommandBuffer();
 
-    Image::UpdateCommandBuffers();
+    ImageImpl::UpdateCommandBuffers();
 
     DataBuffer::LoadDataIntoImage(image, size, data, {width, height, 1}, subresourceLayers);
 }
 
-void Image::UpdateCommandBuffers(){
+void ImageImpl::UpdateCommandBuffers(){
   std::vector<uint32_t> cleanupList;
     std::vector<VkCommandBuffer> commandBuffers;
     for(int i = 0; i < stagingBuffers.size(); i++){
@@ -166,7 +183,7 @@ void Image::UpdateCommandBuffers(){
 }
 
 
-void Image::CreateCommandBuffers(){
+void ImageImpl::CreateCommandBuffers(){
     for(int i = 0; i < MAX_FREE_COMMAND_BUFFER_COUNT; i++){
         stagingBuffers.push_back({CommandBuffer(VK_COMMAND_BUFFER_LEVEL_SECONDARY,
         COMMAND_BUFFER_ONE_TIME_SUBMIT_FLAG | COMMAND_BUFFER_TRANSFER_FLAG, nullptr), true});
@@ -175,7 +192,7 @@ void Image::CreateCommandBuffers(){
 }
 
 
-CommandBuffer Image::GetFreeCommandBuffer(){
+CommandBuffer ImageImpl::GetFreeCommandBuffer(){
     for(ImageCopyCMDInfo& buffer : stagingBuffers){
         if(buffer.free){
             buffer.free = false;
@@ -189,7 +206,7 @@ CommandBuffer Image::GetFreeCommandBuffer(){
     return stagingBuffers.back().commandBuffer;
 }
 
-VkImage Image::GetImage(){
+VkImage ImageImpl::GetImage(){
     return image;
 
 }

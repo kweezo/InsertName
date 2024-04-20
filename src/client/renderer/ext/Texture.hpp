@@ -32,7 +32,7 @@ private:
     void CreateTextureSampler();
 
 
-    Image image;
+    ImageImpl image;
 
     do_not_use_ImageData imageData;
 };

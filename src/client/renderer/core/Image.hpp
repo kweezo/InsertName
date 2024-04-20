@@ -9,6 +9,8 @@
 #include "CommandBuffer.hpp"
 #include "Fence.hpp"
 
+#define ImageHandle ImageImpl*
+
 namespace renderer{
 
 typedef struct ImageTransitionCMDInfo{
@@ -29,8 +31,20 @@ typedef struct LoadDataIntoImageInfo{
 
 class Image{
 public:
-    Image();
-    Image(VkImageLayout layout, VkFormat format, uint32_t width,
+
+    static ImageHandle CreateImage(VkImageLayout layout, VkFormat format, uint32_t width,
+     uint32_t height, size_t size, void* data);
+
+    static void Free(ImageHandle image);
+
+    static void Initialize();
+    static void UpdateCommandBuffers();
+};
+
+class ImageImpl{
+public:
+    ImageImpl();
+    ImageImpl(VkImageLayout layout, VkFormat format, uint32_t width,
      uint32_t height, size_t size, void* data);
 
     static void Initialize();
