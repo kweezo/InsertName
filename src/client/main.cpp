@@ -191,7 +191,9 @@ int main(){
         throw std::runtime_error("Failed to create semaphores");
     }
 
-    //Texture texture = Texture("client_data/res/textures/test.jpeg");
+    Texture texture = Texture("client_data/res/textures/test.jpeg");
+    Texture::EnableNewTextures();
+
 
 
     while(!glfwWindowShouldClose(Window::GetGLFWwindow())){
@@ -263,7 +265,6 @@ int main(){
     vkDestroySemaphore(Device::GetDevice(), renderFinishedSemaphore, nullptr);
     vkDestroySemaphore(Device::GetDevice(), imageAvailableSemaphore, nullptr);
     vkDestroyFence(Device::GetDevice(), inFlightFence, nullptr);
-
     
 }
     Renderer::DestroyRenderer();

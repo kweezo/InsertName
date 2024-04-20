@@ -8,6 +8,7 @@ void Renderer::InitRenderer(){
     Window::CreateVulkanSurface();
     Swapchain::CreateSwapchain();
     CommandPool::CreateCommandPools();
+    ImageImpl::Initialize();
 }
 
 void Renderer::RenderFrame(){
@@ -18,6 +19,7 @@ void Renderer::DestroyRenderer(){
     Swapchain::DestroySwapchain();
     DescriptorManager::Cleanup();
     DataBuffer::Cleanup();
+    ImageImpl::Cleanup();
     CommandPool::DestroyCommandPools();
     vkDestroySurfaceKHR(Instance::GetInstance(), Window::GetVulkanSurface(), nullptr);
     Device::DestroyDevice();
