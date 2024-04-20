@@ -2,6 +2,31 @@
 
 namespace renderer{
 
+VKAPI_ATTR VkBool32 VKAPI_CALL debugCallback(
+    VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,
+    VkDebugUtilsMessageTypeFlagsEXT messageType,
+    const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData,
+    void* pUserData) {
+
+    if(messageSeverity < VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT){
+        return VK_FALSE;
+    }
+
+    std::cerr << pCallbackData->pMessage << std::endl;
+
+    static const char* MEMORY_ERR = "VK_ERROR_OUT_OF_DEVICE_MEMORY";
+
+    if(!strcmp(pCallbackData->pMessage, MEMORY_ERR)){
+        Device::SetDeviceMemoryFull();
+    }
+
+    if(messageSeverity >= VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT){
+        throw std::runtime_error("Validation error too severe, aborting");
+    }
+
+    return VK_FALSE;
+}
+
 const std::vector<const char*> deviceExtensions = {
     VK_KHR_SWAPCHAIN_EXTENSION_NAME
 };
@@ -13,6 +38,7 @@ std::vector<VkQueue> Device::graphicsQueues = {};
 std::vector<VkQueue> Device::transferQueues = {};
 uint32_t Device::graphicsQueueFamilyIndex = 0;
 uint32_t Device::transferQueueFamilyIndex = 0;
+bool Device::deviceMemoryFree = false;
 
 void Device::CreateDevice(){
     PickPhysicalDevice();
@@ -44,6 +70,7 @@ void Device::PickPhysicalDevice(){
 
         if(deviceProperties.deviceType == VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU){
             physicalDevice = currDevice;
+            deviceMemoryFree = true;
             break;
         }
     }
@@ -55,6 +82,13 @@ void Device::PickPhysicalDevice(){
     if(physicalDevice == VK_NULL_HANDLE){
         throw std::runtime_error("Failed to find a suitable GPU!");
     }
+}
+
+bool Device::DeviceMemoryFree(){
+    return deviceMemoryFree;
+}
+void Device::SetDeviceMemoryFull(){
+    deviceMemoryFree = false;
 }
 
 void Device::CreateLogicalDevice(){

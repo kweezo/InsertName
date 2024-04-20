@@ -57,7 +57,7 @@ public:
     static void Cleanup();
 
     VkImage GetImage();
-    void TransitionImageLayout();
+    void LoadDataIntoImage();
 
     static void UpdateCommandBuffers();
 private:

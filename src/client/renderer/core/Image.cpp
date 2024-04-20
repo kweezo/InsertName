@@ -78,9 +78,11 @@ ImageImpl::ImageImpl(VkImageLayout layout, VkFormat format, uint32_t width,
     VkPhysicalDeviceMemoryProperties memProperties;
     vkGetPhysicalDeviceMemoryProperties(Device::GetPhysicalDevice(), &memProperties);
 
+    VkMemoryPropertyFlagBits memoryProperties = Device::DeviceMemoryFree() ? (VkMemoryPropertyFlagBits)(VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT) : (VkMemoryPropertyFlagBits)(VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+
     for(uint32_t i = 0; i < memProperties.memoryTypeCount; i++){
-        if((memRequirements.memoryTypeBits & (1 << i)) && (memProperties.memoryTypes[i].propertyFlags & VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT)
-         == VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT){
+        if((memRequirements.memoryTypeBits & (1 << i)) && (memProperties.memoryTypes[i].propertyFlags & memoryProperties)
+         == memoryProperties){
             VkMemoryAllocateInfo allocInfo{};
             allocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
             allocInfo.allocationSize = memRequirements.size ;
@@ -102,7 +104,6 @@ ImageImpl::ImageImpl(VkImageLayout layout, VkFormat format, uint32_t width,
     subresourceLayers.layerCount = 1;
     subresourceLayers.mipLevel = 0;
 
-    CommandBuffer commandBuffer = GetFreeCommandBuffer(this);
 
     VkImageMemoryBarrier imageMemoryBarrier = {};
     imageMemoryBarrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
@@ -128,10 +129,13 @@ ImageImpl::ImageImpl(VkImageLayout layout, VkFormat format, uint32_t width,
     inheritanceInfo.queryFlags = 0;
     inheritanceInfo.pipelineStatistics = 0;
 
-    commandBuffer.BeginCommandBuffer(0, &inheritanceInfo); 
-    vkCmdPipelineBarrier(commandBuffer.GetCommandBuffer(), VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
-    VK_PIPELINE_STAGE_TRANSFER_BIT, 0, 0, nullptr, 0, nullptr, 1, &imageMemoryBarrier);
-    commandBuffer.EndCommandBuffer();
+    if(Device::DeviceMemoryFree()){
+        CommandBuffer commandBuffer = GetFreeCommandBuffer(this);
+        commandBuffer.BeginCommandBuffer(0, &inheritanceInfo); 
+        vkCmdPipelineBarrier(commandBuffer.GetCommandBuffer(), VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
+        VK_PIPELINE_STAGE_TRANSFER_BIT, 0, 0, nullptr, 0, nullptr, 1, &imageMemoryBarrier);
+        commandBuffer.EndCommandBuffer();
+    }
 
 
     loadDataInfo = {image, memory, size, data, {width, height, 1}, subresourceLayers};
@@ -141,7 +145,7 @@ ImageImpl::ImageImpl(VkImageLayout layout, VkFormat format, uint32_t width,
 
 }
 
-void ImageImpl::TransitionImageLayout(){
+void ImageImpl::LoadDataIntoImage(){
     DataBuffer::LoadDataIntoImage(loadDataInfo.image, loadDataInfo.size, loadDataInfo.data, loadDataInfo.extent, loadDataInfo.subresource);
 }
 
@@ -185,7 +189,7 @@ void ImageImpl::UpdateCommandBuffers(){
         if(buffer.free){
             continue;
         }
-        buffer.image->TransitionImageLayout();
+        buffer.image->LoadDataIntoImage();
         buffer.free = true;
     }
 

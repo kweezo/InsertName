@@ -33,6 +33,10 @@ DataBuffer::DataBuffer(BufferDescriptions bufferDescriptions, size_t size,
         throw std::runtime_error("Invalid buffer type");
     }
 
+    if(!Device::DeviceMemoryFree()){
+        transferToLocalDevMem = false;
+    }
+
     if(transferToLocalDevMem){
         CreateBuffer(buff, bufferType | VK_BUFFER_USAGE_TRANSFER_DST_BIT, size);
         AllocateMemory(mem, buff, size, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
@@ -175,7 +179,7 @@ void DataBuffer::UpdateData(void* data, size_t size){
 
         void *stagingData;
         if(vkMapMemory(Device::GetDevice(), stagingBuffer.bufferMemory, 0, size, 0, &stagingData) != VK_SUCCESS){
-            throw std::runtime_error("Failed to map vertex buffer memory");
+            throw std::runtime_error("Failed to map buffer memory");
         }
         memcpy(stagingData, data, size);
         vkUnmapMemory(Device::GetDevice(), stagingBuffer.bufferMemory);
@@ -184,8 +188,10 @@ void DataBuffer::UpdateData(void* data, size_t size){
     }else{
         void *mappedData;
         if(vkMapMemory(Device::GetDevice(), mem, 0, size, 0, &mappedData) != VK_SUCCESS){
-            throw std::runtime_error("Failed to map vertex buffer memory");
+            throw std::runtime_error("Failed to map buffer memory");
         }
+        memcpy(mappedData, data, size);
+        vkUnmapMemory(Device::GetDevice(), mem);
     }
     
 }
