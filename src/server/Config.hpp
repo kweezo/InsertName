@@ -13,6 +13,8 @@ public:
     std::string dbhostaddr;
     std::string dbport;
 
+    int messageBatchSize;
+
     static Config& GetInstance();
     void LoadConfig(const std::string& filename);
 };

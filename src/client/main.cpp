@@ -1,3 +1,8 @@
+#include <iostream>
+#include <string>
+#include <thread>
+#include <chrono>
+
 #include "account/UserManager.hpp"
 #include "../settings.hpp"
 #include "renderer/window/Window.hpp"
@@ -18,14 +23,63 @@ using namespace renderer;//here beacuse this is again, all temp and i cant be bo
 
 //implement staging and index buffer support (I am going to kill myself)
 
+void chatThread(UserManager& userManager) {
+    std::this_thread::sleep_for(std::chrono::seconds(1));
+    std::string typeOfRequest;
+    while (true) {
+        std::cout << "Enter type of request: ";
+        std::cin >> typeOfRequest;
+
+        if (typeOfRequest == "send") {
+            std::string receiver;
+            std::string message;
+            std::cout << "Enter receiver: ";
+            std::cin >> receiver;
+            std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n'); // Ignore the newline left in the buffer by std::cin
+            std::cout << "Enter message: ";
+            std::getline(std::cin, message);
+            std::cout << userManager.sendMessage(receiver, message) << std::endl;
+            
+        } else if (typeOfRequest == "get") {
+            std::string sender;
+            std::cout << "Enter sender: ";
+            std::cin >> sender;
+            std::cout << userManager.getChat(sender) << std::endl;
+
+        } else if (typeOfRequest == "getnew") {
+            std::string sender;
+            std::cout << "Enter sender: ";
+            std::cin >> sender;
+            std::cout << userManager.getNewMessages(sender) << std::endl;
+
+        } else if (typeOfRequest == "stop") {
+            break;
+
+        } else {
+            std::cout << "Invalid request" << std::endl;
+        }
+        std::cout << std::endl;
+    }
+}
+
 void userTemp(){
     UserManager userManager("127.0.0.1", 12345);
     if (userManager.connectToServer()) {
-        std::string username;
-        std::string password;
-        char loginType;
-        std::cin >> loginType >> username >> password;
-        userManager.loginUser(loginType, username, password);
+        for (int i = 0; i < 3; i++) {
+            std::string username;
+            std::string password;
+            char loginType;
+            std::cin >> loginType >> username >> password;
+            if (userManager.loginUser(loginType, username, password) <= 2) {
+                std::cout << "Successfuly logged in" << std::endl;
+                break;
+            } else {
+                std::cout << "Failed to log in" << std::endl;
+            }
+        }
+        
+        std::thread chat(chatThread, std::ref(userManager));
+        chat.detach();
     }
 }
 
@@ -38,7 +92,7 @@ struct ModelDat{
 int main(){
     Settings settings;
     ReadSettings(settings, "src/settings.bin");
-   // userTemp();
+    userTemp();
 
     Window::CreateWindowContext(settings.width, settings.height, "Vulkan");
     Renderer::InitRenderer();

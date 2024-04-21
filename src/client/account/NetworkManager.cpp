@@ -127,7 +127,6 @@ std::string NetworkManager::sendData(const std::string& message) {
     int bytesReceived = SSL_read(ssl, buf, 1024);
     if (bytesReceived > 0) {
         std::string response(buf, 0, bytesReceived);
-        std::cout << "SERVER> " << response << '\n';
         return response;
     }
     
