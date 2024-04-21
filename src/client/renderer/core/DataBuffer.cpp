@@ -104,6 +104,7 @@ VkImageSubresourceLayers subresourceLayers, VkImageLayout format){
     copyInfo.commandBuffer.EndCommandBuffer();
 }
 
+
 StagingBufferCopyCMDInfo DataBuffer::GetStagingBuffer(size_t size){
         StagingBufferCopyCMDInfo *stagingBuffer;
         bool foundFreeBuff = false;
@@ -248,6 +249,10 @@ void DataBuffer::UpdateCommandBuffer(){
     
     VkFence fences[] = {finishedCopyingFence.GetFence()};
     vkWaitForFences(Device::GetDevice(), 1, fences, VK_TRUE, UINT64_MAX);
+
+    for(VkCommandBuffer& commandBuffer : commandBuffers){
+        vkResetCommandBuffer(commandBuffer, 0);
+    }
 
     for(uint32_t i : cleanupList){
         stagingBuffers[i].free = true;

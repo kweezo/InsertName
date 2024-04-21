@@ -78,7 +78,9 @@ ImageImpl::ImageImpl(VkImageLayout layout, VkFormat format, uint32_t width,
     VkPhysicalDeviceMemoryProperties memProperties;
     vkGetPhysicalDeviceMemoryProperties(Device::GetPhysicalDevice(), &memProperties);
 
-    VkMemoryPropertyFlagBits memoryProperties = Device::DeviceMemoryFree() ? (VkMemoryPropertyFlagBits)(VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT) : (VkMemoryPropertyFlagBits)(VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+    VkMemoryPropertyFlagBits memoryProperties = Device::DeviceMemoryFree() ? (VkMemoryPropertyFlagBits)
+    (VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT) : (VkMemoryPropertyFlagBits)
+    (VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
 
     for(uint32_t i = 0; i < memProperties.memoryTypeCount; i++){
         if((memRequirements.memoryTypeBits & (1 << i)) && (memProperties.memoryTypes[i].propertyFlags & memoryProperties)
@@ -189,6 +191,7 @@ void ImageImpl::UpdateCommandBuffers(){
     vkWaitForFences(Device::GetDevice(), 1, &fence, VK_TRUE, UINT64_MAX);
 
     for(ImageCopyCMDInfo& buffer : stagingBuffers){
+        buffer.commandBuffer.ResetCommandBuffer();
         if(buffer.free){
             continue;
         }

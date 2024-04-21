@@ -33,6 +33,10 @@ CommandBuffer::CommandBuffer(VkCommandBufferLevel level, uint32_t flags, Graphic
 
 }
 
+void CommandBuffer::ResetCommandBuffer(){
+    vkResetCommandBuffer(commandBuffer, 0);
+}
+
 void CommandBuffer::BeginCommandBuffer(uint32_t imageIndex, VkCommandBufferInheritanceInfo* inheritanceInfo){
 //    if(level == VK_COMMAND_BUFFER_LEVEL_SECONDARY){
 //        throw std::runtime_error("Tried to record a secondary command buffer, aborting!");
