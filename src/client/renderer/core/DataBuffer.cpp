@@ -33,6 +33,10 @@ DataBuffer::DataBuffer(BufferDescriptions bufferDescriptions, size_t size,
         throw std::runtime_error("Invalid buffer type");
     }
 
+    if(!Device::DeviceMemoryFree()){
+        transferToLocalDevMem = false;
+    }
+
     if(transferToLocalDevMem){
         CreateBuffer(buff, bufferType | VK_BUFFER_USAGE_TRANSFER_DST_BIT, size);
         AllocateMemory(mem, buff, size, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
@@ -69,6 +73,35 @@ DataBuffer::DataBuffer(BufferDescriptions bufferDescriptions, size_t size,
 
     this->size = size;
     this->transferToLocalDevMem = transferToLocalDevMem;
+
+}
+void DataBuffer::LoadDataIntoImage(VkImage image, size_t size, void* data, VkExtent3D extent,
+VkImageSubresourceLayers subresourceLayers){
+    StagingBufferCopyCMDInfo copyInfo = GetStagingBuffer(size);
+
+    void* stagingData;
+    if(vkMapMemory(Device::GetDevice(), copyInfo.bufferMemory, 0, size, 0, &stagingData) != VK_SUCCESS){
+        throw std::runtime_error("Failed to map image buffer memory");
+    }
+    memcpy(stagingData, data, size);
+    vkUnmapMemory(Device::GetDevice(), copyInfo.bufferMemory);
+
+    VkCommandBufferInheritanceInfo inheritanceInfo{};
+    inheritanceInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_INFO;
+
+    copyInfo.commandBuffer.BeginCommandBuffer(0, &inheritanceInfo);
+
+    VkBufferImageCopy copyRegion{};
+    copyRegion.bufferOffset = 0;
+    copyRegion.bufferRowLength = 0;
+    copyRegion.bufferImageHeight = 0;
+    copyRegion.imageExtent = extent;
+    copyRegion.imageSubresource = subresourceLayers;
+
+    vkCmdCopyBufferToImage(copyInfo.commandBuffer.GetCommandBuffer(), copyInfo.buffer,
+     image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &copyRegion);
+
+    copyInfo.commandBuffer.EndCommandBuffer();
 }
 
 StagingBufferCopyCMDInfo DataBuffer::GetStagingBuffer(size_t size){
@@ -115,6 +148,28 @@ void DataBuffer::CreateStagingBuffers(){
     createdStagingBuffers = true;
 }
 
+void DataBuffer::CopyBufferData(VkBuffer dst, void* data, size_t size){
+    StagingBufferCopyCMDInfo stagingBuffer = GetStagingBuffer(size);
+
+    VkCommandBufferInheritanceInfo inheritanceInfo{};
+    inheritanceInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_INFO;
+
+    void* stagingData;
+    if(vkMapMemory(Device::GetDevice(), stagingBuffer.bufferMemory, 0, size, 0, &stagingData) != VK_SUCCESS){
+        throw std::runtime_error("Failed to map vertex buffer memory");
+    }
+    memcpy(data, stagingData, size);
+    vkUnmapMemory(Device::GetDevice(), stagingBuffer.bufferMemory);
+
+    stagingBuffer.commandBuffer.BeginCommandBuffer(0, &inheritanceInfo);
+
+    VkBufferCopy copyRegion{};
+    copyRegion.size = size;
+    vkCmdCopyBuffer(stagingBuffer.commandBuffer.GetCommandBuffer(), stagingBuffer.buffer, dst, 1, &copyRegion);
+
+    stagingBuffer.commandBuffer.EndCommandBuffer();
+}
+
 void DataBuffer::UpdateData(void* data, size_t size){
     if(this->size != size){
         throw std::runtime_error("Size of data does not match size of buffer, you need to create a new buffer for this");
@@ -124,7 +179,7 @@ void DataBuffer::UpdateData(void* data, size_t size){
 
         void *stagingData;
         if(vkMapMemory(Device::GetDevice(), stagingBuffer.bufferMemory, 0, size, 0, &stagingData) != VK_SUCCESS){
-            throw std::runtime_error("Failed to map vertex buffer memory");
+            throw std::runtime_error("Failed to map buffer memory");
         }
         memcpy(stagingData, data, size);
         vkUnmapMemory(Device::GetDevice(), stagingBuffer.bufferMemory);
@@ -133,8 +188,10 @@ void DataBuffer::UpdateData(void* data, size_t size){
     }else{
         void *mappedData;
         if(vkMapMemory(Device::GetDevice(), mem, 0, size, 0, &mappedData) != VK_SUCCESS){
-            throw std::runtime_error("Failed to map vertex buffer memory");
+            throw std::runtime_error("Failed to map buffer memory");
         }
+        memcpy(mappedData, data, size);
+        vkUnmapMemory(Device::GetDevice(), mem);
     }
     
 }
@@ -220,7 +277,7 @@ void DataBuffer::CreateBuffer(VkBuffer& buffer, VkBufferUsageFlags usage, VkDevi
     }
 
     if(vkCreateBuffer(Device::GetDevice(), &bufferInfo, nullptr, &buffer) != VK_SUCCESS){
-        throw std::runtime_error("Failed to create vertex buffer");
+        throw std::runtime_error("Failed to create buffer");
     }
 }
 
@@ -265,6 +322,7 @@ void DataBuffer::Cleanup(){
     }
     stagingBuffers.clear();
     finishedCopyingFence.~Fence();
+    commandBuffer.~CommandBuffer();
 }
 
 DataBuffer::DataBuffer(const DataBuffer& other){
