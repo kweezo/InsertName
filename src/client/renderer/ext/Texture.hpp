@@ -29,7 +29,7 @@ typedef struct TextureBindingInfo{
 
 class Texture{
 public:
-    static TextureHandle CreateTexture(const std::string& path, uint32_t binding);
+    static TextureHandle CreateTexture(const std::string& path, uint32_t binding, VkDescriptorSet descriptorSet);
     static void Free(TextureHandle texture);
 
     static void EnableTextures();
@@ -37,7 +37,7 @@ public:
 
 class TextureImpl {
 public:
-    TextureImpl(const std::string& path, uint32_t binding);
+    TextureImpl(const std::string& path, uint32_t binding, VkDescriptorSet descriptorSet);
     ~TextureImpl();
     TextureImpl(const TextureImpl& other);
     TextureImpl& operator=(const TextureImpl& other);
@@ -45,6 +45,8 @@ public:
     VkImageView GetTextureImageView();
     VkSampler GetTextureSampler();
     VkWriteDescriptorSet GetWriteDescriptorSet();
+
+    ImageHandle GetImage();
 
     void SetDescriptorSet(VkDescriptorSet descriptorSet);
 
@@ -55,10 +57,11 @@ private:
     void CreateTextureImageView();
     void CreateTextureSampler();
 
-    static std::unordered_map<uint32_t, TextureBindingInfo> texturesPerBinding;
-    uint32_t binding;
-
     uint32_t *useCount;
+
+    static std::vector<TextureHandle> handles;
+
+    uint32_t binding;
 
     ImageHandle image;
     VkImageView imageView;

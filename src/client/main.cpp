@@ -44,7 +44,25 @@ int main(){
     Window::CreateWindowContext(settings.width, settings.height, "Vulkan");
     Renderer::InitRenderer();
 {
-    Shader shader = Shader("shaders/bin/triangleVert.spv", "shaders/bin/triangleFrag.spv"); // TEMP REMOVE LATER
+
+    VkDescriptorSetLayoutBinding uniformBufferBinding{};
+    uniformBufferBinding.binding = 0;
+    uniformBufferBinding.descriptorCount = 1;
+    uniformBufferBinding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+    uniformBufferBinding.pImmutableSamplers = nullptr;
+    uniformBufferBinding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
+
+
+    VkDescriptorSetLayoutBinding samplerBinding{};
+    samplerBinding.binding = 1;
+    samplerBinding.descriptorCount = 1;
+    samplerBinding.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+    samplerBinding.pImmutableSamplers = nullptr;
+    samplerBinding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+
+
+    ShaderHandle shader = Shader::CreateShader("shaders/bin/triangleVert.spv", "shaders/bin/triangleFrag.spv", {uniformBufferBinding, samplerBinding}); // TEMP REMOVE LATER
+    Shader::EnableNewShaders();
 
     std::vector<VkVertexInputAttributeDescription> attributeDescriptions(2);
 
@@ -87,9 +105,9 @@ int main(){
     modelDat.model = glm::mat4(1.0f);
     modelDat.view = glm::lookAt(glm::vec3(0.0f, 0.0f, 2.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
     modelDat.proj = glm::perspective(glm::radians(45.0f), 800.0f / 600.0f, 0.1f, 10.0f);
-    UniformBufferHandle uniformBuffer = UniformBuffer::Create(reinterpret_cast<void*>(&modelDat), sizeof(modelDat), {"model", 0}); 
+    UniformBufferHandle uniformBuffer = UniformBuffer::Create(reinterpret_cast<void*>(&modelDat), sizeof(modelDat), 0,
+    shader->GetDescriptorSet()); 
 
-    UniformBuffer::EnableBuffers();
 
     VkPipelineVertexInputStateCreateInfo vertexInputInfo{};
     vertexInputInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
@@ -165,7 +183,7 @@ int main(){
 
     GraphicsPipeline pipeline = GraphicsPipeline(vertexInputInfo, VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST,
      VK_POLYGON_MODE_FILL, multisampling,
-     depthStencilInfo, colorBlending, renderPassInfo, pipelineLayoutInfo, shader);
+     depthStencilInfo, colorBlending, renderPassInfo, pipelineLayoutInfo, *shader);
 
     CommandBuffer buffer = CommandBuffer(VK_COMMAND_BUFFER_LEVEL_PRIMARY, COMMAND_BUFFER_GRAPHICS_FLAG, &pipeline);
 
@@ -191,9 +209,8 @@ int main(){
         throw std::runtime_error("Failed to create semaphores");
     }
 
-    TextureHandle texture = Texture::CreateTexture("client_data/res/textures/test.jpeg", 1);
+    TextureHandle texture = Texture::CreateTexture("client_data/res/textures/test.jpeg", 1, shader->GetDescriptorSet());
     Texture::EnableTextures();
-
 
 
     while(!glfwWindowShouldClose(Window::GetGLFWwindow())){
@@ -211,11 +228,18 @@ int main(){
         modelDat.model = glm::rotate(modelDat.model, (float)glm::radians(cos(glfwGetTime())), glm::vec3(0.0f, 0.0f, 1.0f));
         uniformBuffer->UpdateData(reinterpret_cast<void*>(&modelDat), sizeof(modelDat));
 
+        std::vector<VkWriteDescriptorSet> descriptorWrite = {
+            texture->GetWriteDescriptorSet(),
+            uniformBuffer->GetWriteDescriptorSet(),
+        };
+
+
         buffer.BeginCommandBuffer(imageIndex, nullptr);
+        shader->UpdateDescriptorSet(descriptorWrite);
+        shader->Bind(buffer.GetCommandBuffer(), pipeline.GetPipelineLayout());
         VkBuffer buff = vertexBuffer.GetBuffer();
         vkCmdBindVertexBuffers(buffer.GetCommandBuffer(), 0, 1, &buff, offsets);
         vkCmdBindIndexBuffer(buffer.GetCommandBuffer(), indexBuffer.GetBuffer(), 0, VK_INDEX_TYPE_UINT32);
-        uniformBuffer->Bind(buffer.GetCommandBuffer(), pipeline.GetPipelineLayout());
         vkCmdDrawIndexed(buffer.GetCommandBuffer(), 6, 1, 0, 0, 0);
         buffer.EndCommandBuffer();
 
@@ -262,6 +286,7 @@ int main(){
 
     UniformBuffer::Free(uniformBuffer);
     Texture::Free(texture);
+    Shader::Free(shader);
 
     vkDestroySemaphore(Device::GetDevice(), renderFinishedSemaphore, nullptr);
     vkDestroySemaphore(Device::GetDevice(), imageAvailableSemaphore, nullptr);

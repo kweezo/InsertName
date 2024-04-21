@@ -5,10 +5,10 @@
 
 namespace renderer{
 
-std::unordered_map<uint32_t, TextureBindingInfo> TextureImpl::texturesPerBinding = {};
+std::vector<TextureHandle> TextureImpl::handles = {};
 
-TextureHandle Texture::CreateTexture(const std::string& path, uint32_t binding){
-    return new TextureImpl(path, binding);
+TextureHandle Texture::CreateTexture(const std::string& path, uint32_t binding, VkDescriptorSet descriptorSet){
+    return new TextureImpl(path, binding, descriptorSet);
 }
 
 void Texture::Free(TextureHandle texture){
@@ -25,74 +25,44 @@ void TextureImpl::SetDescriptorSet(VkDescriptorSet descriptorSet){
 
 void TextureImpl::EnableTextures(){
     Image::UpdateCommandBuffers();
-
-
-    VkDescriptorSetLayoutCreateInfo layoutInfo{};
-    layoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
-    layoutInfo.bindingCount = texturesPerBinding.size();
-
-
-    VkDescriptorSetLayoutBinding binding{};
-    binding.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-    binding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
-    binding.pImmutableSamplers = nullptr;
-    std::vector<VkDescriptorSetLayoutBinding> bindings;
-    for(auto& [bindingIndex, count] : texturesPerBinding){
-        binding.binding = bindingIndex;
-        binding.descriptorCount = texturesPerBinding[bindingIndex].count;
-        bindings.push_back(binding);
+    DataBuffer::UpdateCommandBuffer();
+    for(TextureHandle handle : handles){
+        handle->GetImage()->TransitionLayout(VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
     }
-
-    layoutInfo.pBindings = bindings.data();
-
-    std::vector<uint32_t> layoutIndexes = DescriptorManager::CreateLayouts({layoutInfo});
-    
-    DescriptorBatchInfo batchInfo = {};
-    batchInfo.layoutIndex = layoutIndexes[0];
-    batchInfo.setCount = 1;
-
-    std::vector<DescriptorHandle> descriptorHandles = DescriptorManager::CreateDescriptors({batchInfo});
-
-    VkDescriptorSet descriptorSet = DescriptorManager::GetDescriptorSet(descriptorHandles[0]);
-
-    for(auto& [bindingIndex, count] : texturesPerBinding){
-        for(TextureImpl* texture : count.handles){
-            texture->SetDescriptorSet(descriptorSet);
-            vkUpdateDescriptorSets(Device::GetDevice(), 1, &texture->GetWriteDescriptorSet(), 0, nullptr);
-        }
-    }
+    Image::UpdateCommandBuffers();
 }
 
-TextureImpl::TextureImpl(const std::string& path, uint32_t binding){
+ImageHandle TextureImpl::GetImage(){
+    return image;
+}
+
+TextureImpl::TextureImpl(const std::string& path, uint32_t binding, VkDescriptorSet descriptorSet){
     LoadTexture(path);
     CreateTextureImage();
     CreateTextureImageView();
     CreateTextureSampler();
-    
-    if(texturesPerBinding.find(binding) == texturesPerBinding.end()){
-        texturesPerBinding[binding] = {1, {this}};
-    }
-    else{
-        texturesPerBinding[binding].count++;
-        texturesPerBinding[binding].handles.push_back(this);
-    }
 
-    this->binding = binding;
+    handles.push_back(this);
+    
 
     useCount = new uint32_t;
     (*useCount) = 1;
+
+    this->descriptorSet = descriptorSet;
+    this->binding = binding;
 }
 
 VkWriteDescriptorSet TextureImpl::GetWriteDescriptorSet(){
     VkWriteDescriptorSet writeDescriptorSet = {};
     writeDescriptorSet.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
     writeDescriptorSet.dstSet = descriptorSet;
-    writeDescriptorSet.dstBinding = binding;
     writeDescriptorSet.dstArrayElement = 0;
+    writeDescriptorSet.dstBinding = binding;
     writeDescriptorSet.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
     writeDescriptorSet.descriptorCount = 1;
 
-    VkDescriptorImageInfo imageInfo{};
+
+    static VkDescriptorImageInfo imageInfo{};
     imageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
     imageInfo.imageView = imageView;
     imageInfo.sampler = sampler;
@@ -101,6 +71,7 @@ VkWriteDescriptorSet TextureImpl::GetWriteDescriptorSet(){
 
     return writeDescriptorSet;
 }
+
 
 void TextureImpl::LoadTexture(const std::string& path){
     imageData.dat = stbi_load(path.c_str(), &imageData.width, &imageData.height,
@@ -112,9 +83,11 @@ void TextureImpl::LoadTexture(const std::string& path){
 }
 
 void TextureImpl::CreateTextureImage(){
-    image = Image::CreateImage (VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_FORMAT_R8G8B8A8_SRGB,
+    image = Image::CreateImage (VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_FORMAT_R8G8B8A8_SRGB,
      imageData.width, imageData.height, imageData.width * imageData.height * 4, imageData.dat);
     stbi_image_free(imageData.dat);
+
+
 }
 
 
@@ -165,6 +138,8 @@ TextureImpl::TextureImpl(const TextureImpl& other){
     useCount = other.useCount;
     imageView = other.imageView;
     sampler = other.sampler;
+    binding = other.binding;
+    descriptorSet = other.descriptorSet;
     (*useCount)++;
 }
 
@@ -176,7 +151,9 @@ TextureImpl& TextureImpl::operator=(const TextureImpl& other){
     imageData = other.imageData;
     useCount = other.useCount;
     imageView = other.imageView;
+    binding = other.binding;
     sampler = other.sampler;
+    descriptorSet = other.descriptorSet;
     (*useCount)++;
     return *this;
 }

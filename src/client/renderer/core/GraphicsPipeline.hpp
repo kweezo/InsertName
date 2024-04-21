@@ -20,7 +20,7 @@ public:
      VkPipelineDepthStencilStateCreateInfo depthStencilInfo,
       VkPipelineColorBlendStateCreateInfo colorBlendAttachment,
        VkRenderPassCreateInfo renderPassInfo, VkPipelineLayoutCreateInfo pipelineLayoutInfo,
-        Shader& shader);
+        ShaderImpl& shader);
     
     ~GraphicsPipeline();
 

@@ -6,7 +6,7 @@ GraphicsPipeline::GraphicsPipeline(VkPipelineVertexInputStateCreateInfo vertexIn
     VkPolygonMode polygonMode, VkPipelineMultisampleStateCreateInfo multisampling,
      VkPipelineDepthStencilStateCreateInfo depthStencilInfo,
       VkPipelineColorBlendStateCreateInfo colorBlending, VkRenderPassCreateInfo renderPassInfo, VkPipelineLayoutCreateInfo pipelineLayoutInfo,
-       Shader& shader){
+       ShaderImpl& shader){
     std::vector<VkDynamicState> dynamicStates = {VK_DYNAMIC_STATE_VIEWPORT, VK_DYNAMIC_STATE_SCISSOR};
 
     VkPipelineDynamicStateCreateInfo dynamicState{};
