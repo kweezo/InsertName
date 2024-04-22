@@ -26,6 +26,8 @@ public:
     CommandBuffer(const CommandBuffer& other);
     CommandBuffer operator=(const CommandBuffer& other);
 
+    void ResetCommandBuffer();
+
     void BeginCommandBuffer(uint32_t imageIndex, VkCommandBufferInheritanceInfo* inheritanceInfo);
     void EndCommandBuffer();
 

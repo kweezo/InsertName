@@ -13,21 +13,15 @@
 
 namespace renderer{
 
-struct UniformBufferCreateInfo{
-    std::string name;
-    uint32_t index;
-};
 
 class UniformBufferImpl{
 public:
-    UniformBufferImpl(void* data, size_t size, UniformBufferCreateInfo info);
-
-    void Bind(VkCommandBuffer commandBuffer, VkPipelineLayout layout);
+    UniformBufferImpl(void* data, size_t size, uint32_t binding, VkDescriptorSet descriptorSet);
 
     void UpdateData(void* data, size_t size);
-    void ForceWriteDescriptorSet();
+    void SetDescriptorSet(VkDescriptorSet descriptorSet);
 
-    static void EnableBuffers();
+    VkWriteDescriptorSet GetWriteDescriptorSet();
 
     void AssignDescriptorHandle(DescriptorHandle handle);// DO NOT TOUCH THIS UNLESS YOU KNOW WHY ITS LIKE THIS,
     // NO HARAM
@@ -35,11 +29,10 @@ private:
     DataBuffer dataBuffer;
     DescriptorHandle descriptorHandle;
 
-    size_t dataSize;
-    std::string name;
-    uint32_t layoutIndex;
+    VkDescriptorSet descriptorSet;
 
-    static bool creationLock;
+    size_t dataSize;
+    uint32_t binding;
 
 };
 
@@ -48,7 +41,7 @@ private:
 
 class UniformBuffer{
 public:
-    static UniformBufferHandle Create(void* data, size_t size, UniformBufferCreateInfo info);
+    static UniformBufferHandle Create(void* data, size_t size, uint32_t binding, VkDescriptorSet descriptorSet);
     static void Free(UniformBufferHandle buffer);
 
     static void EnableBuffers();
