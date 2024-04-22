@@ -225,6 +225,7 @@ void DataBuffer::UpdateCommandBuffer(){
         return;
     }
 
+
     VkFence fence = finishedCopyingFence.GetFence();
 
     vkResetFences(Device::GetDevice(), 1, &fence);

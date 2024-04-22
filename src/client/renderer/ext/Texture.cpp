@@ -30,6 +30,7 @@ void TextureImpl::EnableTextures(){
         handle->GetImage()->TransitionLayout(VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
     }
     Image::UpdateCommandBuffers();
+    handles.clear();
 }
 
 ImageHandle TextureImpl::GetImage(){
