@@ -244,16 +244,13 @@ int main(){
     colorBlending.attachmentCount = 1;
     colorBlending.pAttachments = &colorBlendAttachment;
 
-    std::vector<VkDescriptorSetLayout> *layouts = DescriptorManager::GetLayouts();
-
     VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
     pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
     pipelineLayoutInfo.setLayoutCount = DescriptorManager::GetLayouts()[0].size();
     pipelineLayoutInfo.pSetLayouts = DescriptorManager::GetLayouts()[0].data();
     pipelineLayoutInfo.pushConstantRangeCount = 0;
 
-    GraphicsPipeline pipeline = GraphicsPipeline(vertexInputInfo, VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST,
-     VK_POLYGON_MODE_FILL, multisampling,
+    GraphicsPipeline pipeline = GraphicsPipeline(vertexInputInfo, VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, VK_POLYGON_MODE_FILL, multisampling,
      depthStencilInfo, colorBlending, renderPassInfo, pipelineLayoutInfo, shader);
 
     CommandBuffer buffer = CommandBuffer(VK_COMMAND_BUFFER_LEVEL_PRIMARY, COMMAND_BUFFER_GRAPHICS_FLAG, &pipeline);
@@ -280,14 +277,10 @@ int main(){
         throw std::runtime_error("Failed to create semaphores");
     }
 
-    Texture texture = Texture("client_data/res/textures/test.jpeg");
-    Texture::EnableNewTextures();
-
-
 
     while(!glfwWindowShouldClose(Window::GetGLFWwindow())){
         glfwPollEvents();
-    
+
         int width;
         glfwGetWindowSize(Window::GetGLFWwindow(), &width, nullptr);
         if(!width){
@@ -297,8 +290,7 @@ int main(){
         vkWaitForFences(Device::GetDevice(), 1, &inFlightFence, VK_TRUE, UINT64_MAX);
         vkResetFences(Device::GetDevice(), 1, &inFlightFence);
 
-        vkAcquireNextImageKHR(Device::GetDevice(), Swapchain::GetSwapchain(), UINT64_MAX, imageAvailableSemaphore,
-         VK_NULL_HANDLE, &imageIndex);
+        vkAcquireNextImageKHR(Device::GetDevice(), Swapchain::GetSwapchain(), UINT64_MAX, imageAvailableSemaphore, VK_NULL_HANDLE, &imageIndex);
 
 
         VkDeviceSize offsets[] = {0};
@@ -352,15 +344,12 @@ int main(){
         imageIndex = (imageIndex + 1) % Swapchain::GetImageCount(); 
     }
 
-
     vkDeviceWaitIdle(Device::GetDevice());
 
-    UniformBuffer::Free(uniformBuffer);
 
     vkDestroySemaphore(Device::GetDevice(), renderFinishedSemaphore, nullptr);
     vkDestroySemaphore(Device::GetDevice(), imageAvailableSemaphore, nullptr);
     vkDestroyFence(Device::GetDevice(), inFlightFence, nullptr);
-    
 }
     Renderer::DestroyRenderer();
     Window::DestroyWindowContext();
