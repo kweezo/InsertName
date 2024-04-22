@@ -28,7 +28,6 @@ typedef struct LoadDataIntoImageInfo{
     void* data;
     VkExtent3D extent;
     VkImageSubresourceLayers subresource;
-    VkImageLayout layout;
 } LoadDataIntoImageInfo;
 
 
@@ -60,11 +59,8 @@ public:
     VkImage GetImage();
     void LoadDataIntoImage();
 
-    void TransitionLayout(VkImageLayout oldLayout, VkImageLayout newLayout);
-
     static void UpdateCommandBuffers();
 private:
-
     static void CreateCommandBuffers();
     static CommandBuffer GetFreeCommandBuffer(ImageHandle image);
 

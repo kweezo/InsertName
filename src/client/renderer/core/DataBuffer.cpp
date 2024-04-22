@@ -76,7 +76,7 @@ DataBuffer::DataBuffer(BufferDescriptions bufferDescriptions, size_t size,
 
 }
 void DataBuffer::LoadDataIntoImage(VkImage image, size_t size, void* data, VkExtent3D extent,
-VkImageSubresourceLayers subresourceLayers, VkImageLayout format){
+VkImageSubresourceLayers subresourceLayers){
     StagingBufferCopyCMDInfo copyInfo = GetStagingBuffer(size);
 
     void* stagingData;
@@ -99,11 +99,10 @@ VkImageSubresourceLayers subresourceLayers, VkImageLayout format){
     copyRegion.imageSubresource = subresourceLayers;
 
     vkCmdCopyBufferToImage(copyInfo.commandBuffer.GetCommandBuffer(), copyInfo.buffer,
-     image, format, 1, &copyRegion);
+     image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &copyRegion);
 
     copyInfo.commandBuffer.EndCommandBuffer();
 }
-
 
 StagingBufferCopyCMDInfo DataBuffer::GetStagingBuffer(size_t size){
         StagingBufferCopyCMDInfo *stagingBuffer;
@@ -225,7 +224,6 @@ void DataBuffer::UpdateCommandBuffer(){
         return;
     }
 
-
     VkFence fence = finishedCopyingFence.GetFence();
 
     vkResetFences(Device::GetDevice(), 1, &fence);
@@ -250,10 +248,6 @@ void DataBuffer::UpdateCommandBuffer(){
     
     VkFence fences[] = {finishedCopyingFence.GetFence()};
     vkWaitForFences(Device::GetDevice(), 1, fences, VK_TRUE, UINT64_MAX);
-
-    for(VkCommandBuffer& commandBuffer : commandBuffers){
-        vkResetCommandBuffer(commandBuffer, 0);
-    }
 
     for(uint32_t i : cleanupList){
         stagingBuffers[i].free = true;

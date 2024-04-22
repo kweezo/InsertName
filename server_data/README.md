@@ -1,9 +1,10 @@
 ### Example of `config.txt`
 ```
-dbname=your_database_name
-dbuser=your_username
-dbpassword=your_password
-dbhostaddr=your_host_address
-dbport=your_port
+dbname=(string)your_database_name
+dbuser=(string)your_username
+dbpassword=(string)your_password
+dbhostaddr=(string)your_host_address
+dbport=(int)your_port
+messegeBatchSize=(int)count_of_messeges_sent_at_once
 ```
 File will be auto generated if not exists

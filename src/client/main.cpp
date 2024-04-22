@@ -1,3 +1,8 @@
+#include <iostream>
+#include <string>
+#include <thread>
+#include <chrono>
+
 #include "account/UserManager.hpp"
 #include "../settings.hpp"
 #include "renderer/window/Window.hpp"
@@ -19,14 +24,63 @@ using namespace renderer;//here beacuse this is again, all temp and i cant be bo
 
 //implement staging and index buffer support (I am going to kill myself)
 
+void chatThread(UserManager& userManager) {
+    std::this_thread::sleep_for(std::chrono::seconds(1));
+    std::string typeOfRequest;
+    while (true) {
+        std::cout << "Enter type of request: ";
+        std::cin >> typeOfRequest;
+
+        if (typeOfRequest == "send") {
+            std::string receiver;
+            std::string message;
+            std::cout << "Enter receiver: ";
+            std::cin >> receiver;
+            std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n'); // Ignore the newline left in the buffer by std::cin
+            std::cout << "Enter message: ";
+            std::getline(std::cin, message);
+            std::cout << userManager.sendMessage(receiver, message) << std::endl;
+            
+        } else if (typeOfRequest == "get") {
+            std::string sender;
+            std::cout << "Enter sender: ";
+            std::cin >> sender;
+            std::cout << userManager.getChat(sender) << std::endl;
+
+        } else if (typeOfRequest == "getnew") {
+            std::string sender;
+            std::cout << "Enter sender: ";
+            std::cin >> sender;
+            std::cout << userManager.getNewMessages(sender) << std::endl;
+
+        } else if (typeOfRequest == "stop") {
+            break;
+
+        } else {
+            std::cout << "Invalid request" << std::endl;
+        }
+        std::cout << std::endl;
+    }
+}
+
 void userTemp(){
     UserManager userManager("127.0.0.1", 12345);
     if (userManager.connectToServer()) {
-        std::string username;
-        std::string password;
-        char loginType;
-        std::cin >> loginType >> username >> password;
-        userManager.loginUser(loginType, username, password);
+        for (int i = 0; i < 3; i++) {
+            std::string username;
+            std::string password;
+            char loginType;
+            std::cin >> loginType >> username >> password;
+            if (userManager.loginUser(loginType, username, password) <= 2) {
+                std::cout << "Successfuly logged in" << std::endl;
+                break;
+            } else {
+                std::cout << "Failed to log in" << std::endl;
+            }
+        }
+        
+        std::thread chat(chatThread, std::ref(userManager));
+        chat.detach();
     }
 }
 
@@ -39,30 +93,12 @@ struct ModelDat{
 int main(){
     Settings settings;
     ReadSettings(settings, "src/settings.bin");
-   // userTemp();
+    userTemp();
 
     Window::CreateWindowContext(settings.width, settings.height, "Vulkan");
     Renderer::InitRenderer();
 {
-
-    VkDescriptorSetLayoutBinding uniformBufferBinding{};
-    uniformBufferBinding.binding = 0;
-    uniformBufferBinding.descriptorCount = 1;
-    uniformBufferBinding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-    uniformBufferBinding.pImmutableSamplers = nullptr;
-    uniformBufferBinding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
-
-
-    VkDescriptorSetLayoutBinding samplerBinding{};
-    samplerBinding.binding = 1;
-    samplerBinding.descriptorCount = 1;
-    samplerBinding.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-    samplerBinding.pImmutableSamplers = nullptr;
-    samplerBinding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
-
-
-    ShaderHandle shader = Shader::CreateShader("shaders/bin/triangleVert.spv", "shaders/bin/triangleFrag.spv", {uniformBufferBinding, samplerBinding}); // TEMP REMOVE LATER
-    Shader::EnableNewShaders();
+    Shader shader = Shader("shaders/bin/triangleVert.spv", "shaders/bin/triangleFrag.spv"); // TEMP REMOVE LATER
 
     std::vector<VkVertexInputAttributeDescription> attributeDescriptions(2);
 
@@ -105,9 +141,9 @@ int main(){
     modelDat.model = glm::mat4(1.0f);
     modelDat.view = glm::lookAt(glm::vec3(0.0f, 0.0f, 2.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
     modelDat.proj = glm::perspective(glm::radians(45.0f), 800.0f / 600.0f, 0.1f, 10.0f);
-    UniformBufferHandle uniformBuffer = UniformBuffer::Create(reinterpret_cast<void*>(&modelDat), sizeof(modelDat), 0,
-    shader->GetDescriptorSet()); 
+    UniformBufferHandle uniformBuffer = UniformBuffer::Create(reinterpret_cast<void*>(&modelDat), sizeof(modelDat), {"model", 0}); 
 
+    UniformBuffer::EnableBuffers();
 
     VkPipelineVertexInputStateCreateInfo vertexInputInfo{};
     vertexInputInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
@@ -183,7 +219,7 @@ int main(){
 
     GraphicsPipeline pipeline = GraphicsPipeline(vertexInputInfo, VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST,
      VK_POLYGON_MODE_FILL, multisampling,
-     depthStencilInfo, colorBlending, renderPassInfo, pipelineLayoutInfo, *shader);
+     depthStencilInfo, colorBlending, renderPassInfo, pipelineLayoutInfo, shader);
 
     CommandBuffer buffer = CommandBuffer(VK_COMMAND_BUFFER_LEVEL_PRIMARY, COMMAND_BUFFER_GRAPHICS_FLAG, &pipeline);
 
@@ -209,12 +245,19 @@ int main(){
         throw std::runtime_error("Failed to create semaphores");
     }
 
-    TextureHandle texture = Texture::CreateTexture("client_data/res/textures/test.jpeg", 1, shader->GetDescriptorSet());
-    Texture::EnableTextures();
+    Texture texture = Texture("client_data/res/textures/test.jpeg");
+    Texture::EnableNewTextures();
+
 
 
     while(!glfwWindowShouldClose(Window::GetGLFWwindow())){
         glfwPollEvents();
+    
+        int width;
+        glfwGetWindowSize(Window::GetGLFWwindow(), &width, nullptr);
+        if(!width){
+            continue;
+        }
 
         vkWaitForFences(Device::GetDevice(), 1, &inFlightFence, VK_TRUE, UINT64_MAX);
         vkResetFences(Device::GetDevice(), 1, &inFlightFence);
@@ -228,18 +271,11 @@ int main(){
         modelDat.model = glm::rotate(modelDat.model, (float)glm::radians(cos(glfwGetTime())), glm::vec3(0.0f, 0.0f, 1.0f));
         uniformBuffer->UpdateData(reinterpret_cast<void*>(&modelDat), sizeof(modelDat));
 
-        std::vector<VkWriteDescriptorSet> descriptorWrite = {
-            texture->GetWriteDescriptorSet(),
-            uniformBuffer->GetWriteDescriptorSet(),
-        };
-
-
         buffer.BeginCommandBuffer(imageIndex, nullptr);
-        shader->UpdateDescriptorSet(descriptorWrite);
-        shader->Bind(buffer.GetCommandBuffer(), pipeline.GetPipelineLayout());
         VkBuffer buff = vertexBuffer.GetBuffer();
         vkCmdBindVertexBuffers(buffer.GetCommandBuffer(), 0, 1, &buff, offsets);
         vkCmdBindIndexBuffer(buffer.GetCommandBuffer(), indexBuffer.GetBuffer(), 0, VK_INDEX_TYPE_UINT32);
+        uniformBuffer->Bind(buffer.GetCommandBuffer(), pipeline.GetPipelineLayout());
         vkCmdDrawIndexed(buffer.GetCommandBuffer(), 6, 1, 0, 0, 0);
         buffer.EndCommandBuffer();
 
@@ -285,8 +321,6 @@ int main(){
     vkDeviceWaitIdle(Device::GetDevice());
 
     UniformBuffer::Free(uniformBuffer);
-    Texture::Free(texture);
-    Shader::Free(shader);
 
     vkDestroySemaphore(Device::GetDevice(), renderFinishedSemaphore, nullptr);
     vkDestroySemaphore(Device::GetDevice(), imageAvailableSemaphore, nullptr);

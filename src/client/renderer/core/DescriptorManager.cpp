@@ -20,26 +20,25 @@ std::vector<uint32_t> DescriptorManager::CreateLayouts(std::vector<VkDescriptorS
     return indices;
 }
 
-std::vector<DescriptorHandle> DescriptorManager::CreateDescriptors(std::vector<DescriptorBatchInfo> batchInfos, uint32_t setCount,
-uint32_t layoutIndex){
-    uint32_t descriptorCount = 0;
-
-    std::vector<VkDescriptorPoolSize> poolSizes;
+std::vector<DescriptorHandle> DescriptorManager::CreateDescriptors(std::vector<DescriptorBatchInfo> batchInfos){
+    uint32_t setCount = 0;
     for(const DescriptorBatchInfo& batchInfo : batchInfos){
-        poolSizes.push_back({batchInfo.descriptorType, batchInfo.setCount});
-        descriptorCount += batchInfo.setCount;
+        setCount += batchInfo.setCount;
     }
 
     batches.resize(batches.size()+1);
 
     DescriptorBatch& batch = batches.back();
 
+    VkDescriptorPoolSize poolSize{};
+    poolSize.type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+    poolSize.descriptorCount = setCount;
 
     VkDescriptorPoolCreateInfo poolInfo{};
     poolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
-    poolInfo.poolSizeCount = poolSizes.size();
-    poolInfo.pPoolSizes = poolSizes.data();
-    poolInfo.maxSets = descriptorCount;
+    poolInfo.poolSizeCount = 1;
+    poolInfo.pPoolSizes = &poolSize;
+    poolInfo.maxSets = setCount;
 
     if(vkCreateDescriptorPool(Device::GetDevice(), &poolInfo, nullptr, &batch.pool) != VK_SUCCESS){
         throw std::runtime_error("Failed to create descriptor pool");
@@ -49,17 +48,21 @@ uint32_t layoutIndex){
 
     batch.sets.resize(setCount);
     std::vector<DescriptorHandle> handles(setCount);
-    VkDescriptorSetAllocateInfo allocInfo{};
-    allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
-    allocInfo.descriptorPool = batch.pool;
-    allocInfo.descriptorSetCount = setCount;
-    allocInfo.pSetLayouts = &layouts[layoutIndex];
+    for(const DescriptorBatchInfo& batchInfo : batchInfos){
+        VkDescriptorSetAllocateInfo allocInfo{};
+        allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
+        allocInfo.descriptorPool = batch.pool;
+        allocInfo.descriptorSetCount = batchInfo.setCount;
+        allocInfo.pSetLayouts = &layouts[batchInfo.layoutIndex];
 
-    handles[i].batchIndex = batches.size()-1;
-    handles[i].index = i;
+        handles[i].batchIndex = batches.size()-1;
+        handles[i].index = i;
 
-    if(vkAllocateDescriptorSets(Device::GetDevice(), &allocInfo, batch.sets.data()+(i * sizeof(VkDescriptorSet))) != VK_SUCCESS){
-        throw std::runtime_error("Failed to allocate descriptor sets");
+        if(vkAllocateDescriptorSets(Device::GetDevice(), &allocInfo, batch.sets.data()+(i * sizeof(VkDescriptorSet))) != VK_SUCCESS){
+            throw std::runtime_error("Failed to allocate descriptor sets");
+        }
+
+        i += batchInfo.setCount;
     }
 
     return handles;

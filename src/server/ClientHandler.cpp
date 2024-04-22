@@ -38,19 +38,46 @@ void ClientHandler::handleConnection() {
 }
 
 std::string ClientHandler::handleMsg(const std::string& receivedMsg) {
-    std::string response = "";
+    std::string response;
     std::string msg = receivedMsg;
 
     if (receivedMsg[0] == 'r') {
-        username = getNextArg(msg);
+        std::string username = getNextArg(msg);
         std::string password = getNextArg(msg);
         response = registerUser(username, password);
+
     } else if (receivedMsg[0] == 'l') {
-        username = getNextArg(msg);
+        std::string username = getNextArg(msg);
         std::string password = getNextArg(msg);
         response = loginUser(username, password);
+
+    } else if (receivedMsg[0] == 'm') {
+        std::string reciverUsername = getNextArg(msg);
+        response = sendMessage(reciverUsername, msg);
+
+    } else if (receivedMsg[0] == 'g') {
+        std::string senderUsername = getNextArg(msg);
+        int offset = std::stoi(getNextArg(msg));
+        std::vector<std::pair<std::string, std::string>> messages = getMessages(senderUsername, offset);
+        response = "g";
+        for (const auto& pair : messages) {
+            std::string timestamp = pair.second;
+            std::string message = pair.first;
+            response += timestamp + (char)30 + message + (char)30;
+        }
+
+    } else if (receivedMsg[0] == 'n') {
+        std::string senderUsername = getNextArg(msg);
+        std::vector<std::pair<std::string, std::string>> messages = getNewMessages(senderUsername);
+        response = "n";
+        for (const auto& pair : messages) {
+            std::string timestamp = pair.second;
+            std::string message = pair.first;
+            response += timestamp + (char)30 + message + (char)30;
+        }
+
     } else {
-        response = "e";
+        response = "q";
     }
 
     return response;
@@ -80,7 +107,7 @@ char ClientHandler::registerUser(const std::string& username, const std::string&
         std::cerr << "Failed to register user: " << e.what() << std::endl;
         return 'e';
     }
-
+    this->username = username;
     return 'r';
 }
 
@@ -99,6 +126,7 @@ char ClientHandler::loginUser(const std::string& username, const std::string& pa
             std::string passwordHash = generateHash(password, salt);
 
             if (storedPasswordHash == passwordHash) {
+                this->username = username;
                 return 'l';
             } else {
                 return 'w';
@@ -110,6 +138,95 @@ char ClientHandler::loginUser(const std::string& username, const std::string& pa
         std::cerr << "Failed to login user: " << e.what() << std::endl;
         return 'f';
     }
+}
+
+char ClientHandler::sendMessage(const std::string& receiverUsername, const std::string& message) {
+    char response = 's';
+    try {
+        pqxx::work W(c);
+
+        std::string sql = "INSERT INTO Messages (SenderUsername, ReceiverUsername, Message) VALUES ($1, $2, $3);";
+        W.exec_params(sql, this->username, receiverUsername, message);
+        W.commit();
+    } catch (const std::exception &e) {
+        std::cerr << "Failed to send message: " << e.what() << std::endl;
+        response = 'c';
+    }
+
+    return response;
+}
+
+std::vector<std::pair<std::string, std::string>> ClientHandler::getMessages(std::string senderUsername, int offset) {
+    std::vector<std::pair<std::string, std::string>> messages;
+    try {
+        pqxx::work W(c);
+
+        // Pridobite ID zadnjega prebranega sporočila, če je offset večji od 0, sicer uporabite 0
+        int lastReadMessageId = 0;
+        if (offset > 0) {
+            std::string sql = "SELECT MAX(ID) FROM Messages WHERE ReceiverUsername = $1 AND SenderUsername = $2 AND IsRead = TRUE;";
+            pqxx::result R = W.exec_params(sql, this->username, senderUsername);
+            lastReadMessageId = R[0][0].is_null() ? 0 : R[0][0].as<int>();
+        }
+
+        // Pridobite sporočila in datume
+        std::string sql = "SELECT ID, Message, Timestamp FROM Messages WHERE ReceiverUsername = $1 AND SenderUsername = $2 AND ID > $3 ORDER BY Timestamp DESC LIMIT $4 OFFSET $5;";
+        pqxx::result R = W.exec_params(sql, this->username, senderUsername, lastReadMessageId, Config::GetInstance().messageBatchSize, offset);
+        
+        // Ker so sporočila urejena v obratnem vrstnem redu (najnovejše je prvo), jih obrnemo, da bodo v pravilnem vrstnem redu.
+        std::vector<pqxx::row> rows(R.begin(), R.end());
+        std::reverse(rows.begin(), rows.end());
+        
+        for (auto row : rows) {
+            std::string message = row[1].as<std::string>();
+            std::string timestamp = row[2].as<std::string>();
+            messages.push_back(std::make_pair(message, timestamp));
+        }
+
+        // Označite nova sporočila kot prebrana
+        sql = "UPDATE Messages SET IsRead = TRUE WHERE ReceiverUsername = $1 AND SenderUsername = $2 AND ID > $3;";
+        W.exec_params(sql, this->username, senderUsername, lastReadMessageId);
+        W.commit();
+    } catch (const std::exception &e) {
+        std::cerr << "Failed to get messages: " << e.what() << std::endl;
+    }
+
+    return messages;
+}
+
+std::vector<std::pair<std::string, std::string>> ClientHandler::getNewMessages(std::string senderUsername) {
+    std::vector<std::pair<std::string, std::string>> messages;
+    try {
+        pqxx::work W(c);
+
+        // Pridobite ID zadnjega prebranega sporočila
+        std::string sql = "SELECT MAX(ID) FROM Messages WHERE ReceiverUsername = $1 AND SenderUsername = $2 AND IsRead = TRUE;";
+        pqxx::result R = W.exec_params(sql, this->username, senderUsername);
+        int lastReadMessageId = R[0][0].is_null() ? 0 : R[0][0].as<int>();
+
+        // Pridobite nova sporočila
+        sql = "SELECT ID, Message, Timestamp FROM Messages WHERE ReceiverUsername = $1 AND SenderUsername = $2 AND ID > $3 ORDER BY Timestamp DESC LIMIT $4;";
+        R = W.exec_params(sql, this->username, senderUsername, lastReadMessageId, Config::GetInstance().messageBatchSize);
+
+        // Ker so sporočila urejena v obratnem vrstnem redu (najnovejše je prvo), jih obrnemo, da bodo v pravilnem vrstnem redu.
+        std::vector<pqxx::row> rows(R.begin(), R.end());
+        std::reverse(rows.begin(), rows.end());
+
+        for (auto row : rows) {
+            std::string message = row[1].as<std::string>();
+            std::string timestamp = row[2].as<std::string>();
+            messages.push_back(std::make_pair(message, timestamp));
+        }
+
+        // Označite nova sporočila kot prebrana
+        sql = "UPDATE Messages SET IsRead = TRUE WHERE ReceiverUsername = $1 AND SenderUsername = $2 AND ID > $3;";
+        W.exec_params(sql, this->username, senderUsername, lastReadMessageId);
+        W.commit();
+    } catch (const std::exception &e) {
+        std::cerr << "Failed to get messages: " << e.what() << std::endl;
+    }
+
+    return messages;
 }
 
 std::string ClientHandler::getNextArg(std::string& msg) {

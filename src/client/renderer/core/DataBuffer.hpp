@@ -39,7 +39,7 @@ public:
      void* data, bool transferToLocalDevMem, uint32_t flags);
 
     static void LoadDataIntoImage(VkImage image, size_t size, void* data, VkExtent3D extent,
-    VkImageSubresourceLayers subresourceLayers, VkImageLayout format);
+    VkImageSubresourceLayers subresourceLayers);
 
     VkBuffer GetBuffer();
 
