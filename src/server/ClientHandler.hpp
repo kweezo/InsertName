@@ -17,6 +17,8 @@
 #include <sstream>
 #include <iomanip>
 
+#include "Config.hpp"
+
 class ClientHandler {
 public:
     ClientHandler(int clientSocket, SSL* ssl, pqxx::connection& c);
@@ -28,9 +30,12 @@ public:
     char loginUser(const std::string& username, const std::string& password);
     std::string getNextArg(std::string& msg);
 
-
     std::string generateSalt();
     std::string generateHash(const std::string& password, const std::string& salt);
+
+    char sendMessage(const std::string& receiverUsername, const std::string& message);
+    std::vector<std::pair<std::string, std::string>> getMessages(std::string senderUsername, int offset = 0);
+    std::vector<std::pair<std::string, std::string>> getNewMessages(std::string senderUsername);
 
 
 private:
@@ -38,5 +43,7 @@ private:
     SSL* ssl;
     bool dbConnectionFailed;
     pqxx::connection& c;
+
     std::string username;
+    int msgBatchSize;
 };

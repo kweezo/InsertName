@@ -9,6 +9,7 @@
 #include "CommandPool.hpp"
 #include "DataBuffer.hpp"
 #include "DescriptorManager.hpp"
+#include "Image.hpp"
 
 namespace renderer{
 

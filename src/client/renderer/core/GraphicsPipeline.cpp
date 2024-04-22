@@ -103,9 +103,10 @@ void GraphicsPipeline::BeginRenderPassAndBindPipeline(uint32_t imageIndex, VkCom
     renderPassInfo.framebuffer = framebuffers[imageIndex];
     renderPassInfo.renderArea.offset = {0, 0};
     renderPassInfo.renderArea.extent = Swapchain::GetExtent();
-    if(renderPassInfo.renderArea.extent.width == -1 || renderPassInfo.renderArea.extent.height == -1){
+    if(renderPassInfo.renderArea.extent.width < 1){
         glfwGetWindowSize(Window::GetGLFWwindow(), (int*)&renderPassInfo.renderArea.extent.width, (int*)&renderPassInfo.renderArea.extent.height);
     }
+
     VkClearValue clearColor = {0.0f, 0.0f, 0.0f, 1.0f}; // todo, make this dynamic
     renderPassInfo.clearValueCount = 1;
     renderPassInfo.pClearValues = &clearColor;
