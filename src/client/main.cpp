@@ -24,12 +24,6 @@ using namespace renderer;//here beacuse this is again, all temp and i cant be bo
 
 //implement staging and index buffer support (I am going to kill myself)
 
-typedef struct Transform{
-    glm::mat4 model;
-    glm::mat4 view;
-    glm::mat4 projection;
-} Transform;
-
 void chatThread(UserManager& userManager) {
     std::this_thread::sleep_for(std::chrono::seconds(1));
     std::string typeOfRequest;
