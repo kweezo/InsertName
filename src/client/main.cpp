@@ -22,13 +22,12 @@ using namespace renderer;//here beacuse this is again, all temp and i cant be bo
 
 //implement staging and index buffer support (I am going to kill myself)
 
-<<<<<<< HEAD
 typedef struct Transform{
     glm::mat4 model;
     glm::mat4 view;
     glm::mat4 projection;
 } Transform;
-=======
+
 void chatThread(UserManager& userManager) {
     std::this_thread::sleep_for(std::chrono::seconds(1));
     std::string typeOfRequest;
@@ -67,7 +66,6 @@ void chatThread(UserManager& userManager) {
         std::cout << std::endl;
     }
 }
->>>>>>> 25b29fd73cdfcbebc89b9398c0ba0dcbd91030b3
 
 void userTemp(){
     UserManager userManager("127.0.0.1", 12345);
