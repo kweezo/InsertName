@@ -49,6 +49,7 @@ public:
     ImageHandle GetImage();
 
     void SetDescriptorSet(VkDescriptorSet descriptorSet);
+    void FreeImageData();
 
     static void EnableTextures();
 private:

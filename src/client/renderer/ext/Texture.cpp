@@ -31,9 +31,14 @@ void TextureImpl::EnableTextures(){
     DataBuffer::UpdateCommandBuffer();
     for(TextureHandle handle : handles){
         handle->GetImage()->TransitionLayout(VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+        handle->FreeImageData();
     }
     Image::UpdateCommandBuffers();
     handles.clear();
+}
+
+void TextureImpl::FreeImageData(){
+    stbi_image_free(imageData.dat);
 }
 
 ImageHandle TextureImpl::GetImage(){
@@ -89,9 +94,6 @@ void TextureImpl::LoadTexture(const std::string& path){
 void TextureImpl::CreateTextureImage(){
     image = Image::CreateImage (VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_FORMAT_R8G8B8A8_SRGB,
      imageData.width, imageData.height, imageData.width * imageData.height * 4, imageData.dat);
-    stbi_image_free(imageData.dat);
-
-
 }
 
 
