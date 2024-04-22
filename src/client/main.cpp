@@ -252,6 +252,12 @@ int main(){
 
     while(!glfwWindowShouldClose(Window::GetGLFWwindow())){
         glfwPollEvents();
+    
+        int width;
+        glfwGetWindowSize(Window::GetGLFWwindow(), &width, nullptr);
+        if(!width){
+            continue;
+        }
 
         vkWaitForFences(Device::GetDevice(), 1, &inFlightFence, VK_TRUE, UINT64_MAX);
         vkResetFences(Device::GetDevice(), 1, &inFlightFence);
