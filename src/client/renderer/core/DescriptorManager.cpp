@@ -5,19 +5,15 @@ namespace renderer{
 std::vector<VkDescriptorSetLayout> DescriptorManager::layouts = {};
 std::vector<DescriptorBatch> DescriptorManager::batches = {};
 
-std::vector<uint32_t> DescriptorManager::CreateLayouts(std::vector<VkDescriptorSetLayoutCreateInfo> layoutInfos){
-    int i = layouts.size();
-    std::vector<uint32_t> indices(layoutInfos.size());
-    layouts.resize(layouts.size()+layoutInfos.size());
+void DescriptorManager::Initialize(std::vector<VkDescriptorSetLayoutCreateInfo> layoutInfos){
+    layouts.resize(layoutInfos.size());
+    int i = 0;
     for(const VkDescriptorSetLayoutCreateInfo& layoutInfo : layoutInfos){
-        indices[layouts.size()-i-1] = i;
         if(vkCreateDescriptorSetLayout(Device::GetDevice(), &layoutInfo, nullptr, &layouts[i]) != VK_SUCCESS){
             throw std::runtime_error("Failed to create descriptor set layout");
         }
         i++;
     }
-
-    return indices;
 }
 
 std::vector<DescriptorHandle> DescriptorManager::CreateDescriptors(std::vector<DescriptorBatchInfo> batchInfos){
