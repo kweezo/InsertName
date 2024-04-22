@@ -6,7 +6,7 @@ GraphicsPipeline::GraphicsPipeline(VkPipelineVertexInputStateCreateInfo vertexIn
     VkPolygonMode polygonMode, VkPipelineMultisampleStateCreateInfo multisampling,
      VkPipelineDepthStencilStateCreateInfo depthStencilInfo,
       VkPipelineColorBlendStateCreateInfo colorBlending, VkRenderPassCreateInfo renderPassInfo, VkPipelineLayoutCreateInfo pipelineLayoutInfo,
-       Shader& shader){
+       ShaderImpl& shader){
     std::vector<VkDynamicState> dynamicStates = {VK_DYNAMIC_STATE_VIEWPORT, VK_DYNAMIC_STATE_SCISSOR};
 
     VkPipelineDynamicStateCreateInfo dynamicState{};
@@ -77,6 +77,14 @@ GraphicsPipeline::GraphicsPipeline(VkPipelineVertexInputStateCreateInfo vertexIn
         framebufferInfo.height = Swapchain::GetExtent().height;
         framebufferInfo.layers = 1;
 
+
+        if(framebufferInfo.width == std::numeric_limits<uint32_t>::max() && framebufferInfo.height == std::numeric_limits<uint32_t>::max()){
+            int width, height;
+            glfwGetWindowSize(Window::GetGLFWwindow(), &width, &height);
+            framebufferInfo.width = width;
+            framebufferInfo.height = height;
+        }
+
         if(vkCreateFramebuffer(Device::GetDevice(), &framebufferInfo, nullptr, &framebuffers[i]) != VK_SUCCESS){
             throw std::runtime_error("Failed to create framebuffer");
         }
@@ -95,6 +103,9 @@ void GraphicsPipeline::BeginRenderPassAndBindPipeline(uint32_t imageIndex, VkCom
     renderPassInfo.framebuffer = framebuffers[imageIndex];
     renderPassInfo.renderArea.offset = {0, 0};
     renderPassInfo.renderArea.extent = Swapchain::GetExtent();
+    if(renderPassInfo.renderArea.extent.width == -1 || renderPassInfo.renderArea.extent.height == -1){
+        glfwGetWindowSize(Window::GetGLFWwindow(), (int*)&renderPassInfo.renderArea.extent.width, (int*)&renderPassInfo.renderArea.extent.height);
+    }
     VkClearValue clearColor = {0.0f, 0.0f, 0.0f, 1.0f}; // todo, make this dynamic
     renderPassInfo.clearValueCount = 1;
     renderPassInfo.pClearValues = &clearColor;
@@ -108,22 +119,22 @@ void GraphicsPipeline::BeginRenderPassAndBindPipeline(uint32_t imageIndex, VkCom
     VkViewport viewport{};
     viewport.x = 0.0f;
     viewport.y = 0.0f;
-    viewport.width = Swapchain::GetExtent().width;
-    viewport.height = Swapchain::GetExtent().height;
+    viewport.width = renderPassInfo.renderArea.extent.width;
+    viewport.height = renderPassInfo.renderArea.extent.height;
+
     viewport.minDepth = 0.0f;
     viewport.maxDepth = 1.0f;
     vkCmdSetViewport(commandBuffer, 0, 1, &viewport);
 
     VkRect2D scissor{};
     scissor.offset = {0, 0};
-    scissor.extent = Swapchain::GetExtent();
+    scissor.extent = renderPassInfo.renderArea.extent;
     vkCmdSetScissor(commandBuffer, 0, 1, &scissor);
 }
 
 void GraphicsPipeline::EndRenderPass(VkCommandBuffer commandBuffer){
     vkCmdEndRenderPass(commandBuffer);
 }
-
 VkPipelineLayout GraphicsPipeline::GetPipelineLayout(){
     return pipelineLayout;
 }

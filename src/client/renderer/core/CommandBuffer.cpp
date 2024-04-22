@@ -9,13 +9,13 @@ CommandBuffer::CommandBuffer(): commandBuffer(VK_NULL_HANDLE) {
 
 CommandBuffer::CommandBuffer(VkCommandBufferLevel level, uint32_t flags, GraphicsPipeline* pipeline){
 
-    if(pipeline == nullptr && flags & COMMAND_BUFFER_GRAPHICS_FLAG == COMMAND_BUFFER_GRAPHICS_FLAG){
+    if(pipeline == nullptr && (flags & COMMAND_BUFFER_GRAPHICS_FLAG) == COMMAND_BUFFER_GRAPHICS_FLAG){
         throw std::runtime_error("Tried to create a graphics command buffer without a pipeline");
     }
 
     VkCommandBufferAllocateInfo allocInfo = {};
     allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
-    allocInfo.commandPool = (flags & COMMAND_BUFFER_GRAPHICS_FLAG == COMMAND_BUFFER_GRAPHICS_FLAG)
+    allocInfo.commandPool = ((flags & COMMAND_BUFFER_GRAPHICS_FLAG) == COMMAND_BUFFER_GRAPHICS_FLAG)
      ? CommandPool::GetGraphicsCommandPool() : CommandPool::GetTransferCommandPool();
     allocInfo.level = level;
     allocInfo.commandBufferCount = 1;
@@ -33,6 +33,10 @@ CommandBuffer::CommandBuffer(VkCommandBufferLevel level, uint32_t flags, Graphic
 
 }
 
+void CommandBuffer::ResetCommandBuffer(){
+    vkResetCommandBuffer(commandBuffer, 0);
+}
+
 void CommandBuffer::BeginCommandBuffer(uint32_t imageIndex, VkCommandBufferInheritanceInfo* inheritanceInfo){
 //    if(level == VK_COMMAND_BUFFER_LEVEL_SECONDARY){
 //        throw std::runtime_error("Tried to record a secondary command buffer, aborting!");
@@ -48,20 +52,20 @@ void CommandBuffer::BeginCommandBuffer(uint32_t imageIndex, VkCommandBufferInher
     beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
     beginInfo.flags = 0;
     beginInfo.pInheritanceInfo = inheritanceInfo;
-    beginInfo.flags = (flags & COMMAND_BUFFER_ONE_TIME_SUBMIT_FLAG == COMMAND_BUFFER_TRANSFER_FLAG)
+    beginInfo.flags = ((flags & COMMAND_BUFFER_ONE_TIME_SUBMIT_FLAG) == COMMAND_BUFFER_TRANSFER_FLAG)
      ? VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT : 0;
 
     if(vkBeginCommandBuffer(commandBuffer, &beginInfo) != VK_SUCCESS){
         throw std::runtime_error("Failed to begin recording command buffer");
     }
 
-    if(flags & COMMAND_BUFFER_GRAPHICS_FLAG == COMMAND_BUFFER_GRAPHICS_FLAG){
+    if((flags & COMMAND_BUFFER_GRAPHICS_FLAG) == COMMAND_BUFFER_GRAPHICS_FLAG){
         pipeline->BeginRenderPassAndBindPipeline(imageIndex, commandBuffer);
     }
 }
 
 void CommandBuffer::EndCommandBuffer(){
-    if(flags & COMMAND_BUFFER_GRAPHICS_FLAG == COMMAND_BUFFER_GRAPHICS_FLAG){
+    if((flags & COMMAND_BUFFER_GRAPHICS_FLAG) == COMMAND_BUFFER_GRAPHICS_FLAG){
         pipeline->EndRenderPass(commandBuffer);
     }
 
@@ -98,14 +102,10 @@ CommandBuffer CommandBuffer::operator=(const CommandBuffer& other) {
 
 CommandBuffer::~CommandBuffer(){
     if(useCount[0] <= 1){
-        if(flags & COMMAND_BUFFER_GRAPHICS_FLAG == COMMAND_BUFFER_GRAPHICS_FLAG){
+        if((flags & COMMAND_BUFFER_GRAPHICS_FLAG) == COMMAND_BUFFER_GRAPHICS_FLAG){
             vkFreeCommandBuffers(Device::GetDevice(), CommandPool::GetGraphicsCommandPool(), 1, &commandBuffer);
-        }else if(flags & COMMAND_BUFFER_TRANSFER_FLAG == COMMAND_BUFFER_TRANSFER_FLAG){
-            if(Device::GetQueueFamilyInfo().transferFamilyFound){
+        }else{
                 vkFreeCommandBuffers(Device::GetDevice(), CommandPool::GetTransferCommandPool(), 1, &commandBuffer);
-            }else{
-                vkFreeCommandBuffers(Device::GetDevice(), CommandPool::GetGraphicsCommandPool(), 1, &commandBuffer);
-            }
         }
         delete[] useCount;
     }

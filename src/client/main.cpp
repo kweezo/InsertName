@@ -14,6 +14,7 @@
 #include "renderer/core/DataBuffer.hpp"
 #include "renderer/core/Fence.hpp"
 #include "renderer/core/DescriptorManager.hpp"
+#include "renderer/core/UniformBuffer.hpp"
 #include "renderer/ext/Texture.hpp"
 
 #include <glm/glm.hpp>
@@ -103,7 +104,25 @@ int main(){
     Window::CreateWindowContext(settings.width, settings.height, "Vulkan");
     Renderer::InitRenderer();
 {
-    Shader shader = Shader("shaders/bin/triangleVert.spv", "shaders/bin/triangleFrag.spv"); // TEMP REMOVE LATER
+
+    VkDescriptorSetLayoutBinding uniformBufferBinding{};
+    uniformBufferBinding.binding = 0;
+    uniformBufferBinding.descriptorCount = 1;
+    uniformBufferBinding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+    uniformBufferBinding.pImmutableSamplers = nullptr;
+    uniformBufferBinding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
+
+
+    VkDescriptorSetLayoutBinding samplerBinding{};
+    samplerBinding.binding = 1;
+    samplerBinding.descriptorCount = 1;
+    samplerBinding.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+    samplerBinding.pImmutableSamplers = nullptr;
+    samplerBinding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+
+
+    ShaderHandle shader = Shader::CreateShader("shaders/bin/triangleVert.spv", "shaders/bin/triangleFrag.spv", {uniformBufferBinding, samplerBinding}); // TEMP REMOVE LATER
+    Shader::EnableNewShaders();
 
     std::vector<VkVertexInputAttributeDescription> attributeDescriptions(2);
 
@@ -142,43 +161,13 @@ int main(){
 
     BufferDescriptions buffDescription = vertexBuffer.GetDescriptions();
 
-    VkDescriptorSetLayoutBinding layoutBinding{};
-    layoutBinding.binding = 0;
-    layoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-    layoutBinding.descriptorCount = 1;
-    layoutBinding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
+    ModelDat modelDat;
+    modelDat.model = glm::mat4(1.0f);
+    modelDat.view = glm::lookAt(glm::vec3(0.0f, 0.0f, 2.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+    modelDat.proj = glm::perspective(glm::radians(45.0f), 800.0f / 600.0f, 0.1f, 10.0f);
+    UniformBufferHandle uniformBuffer = UniformBuffer::Create(reinterpret_cast<void*>(&modelDat), sizeof(modelDat), 0,
+    shader->GetDescriptorSet()); 
 
-    VkDescriptorSetLayoutCreateInfo layoutInfo{};
-    layoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
-    layoutInfo.bindingCount = 1;
-    layoutInfo.pBindings = &layoutBinding;
-
-    DescriptorManager::Initialize({layoutInfo});
-
-    DescriptorHandle descriptorHandle = DescriptorManager::CreateDescriptors({{0, 1}})[0];
-
-    Transform transform;
-    transform.model = glm::mat4(1.0f);
-    transform.view = glm::lookAt(glm::vec3(0.0f, 0.0f, 2.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0, 1.0, 0.0));
-    transform.projection = glm::perspective(glm::radians(45.0f), (float)settings.width / (float)settings.height, 0.1f, 10.0f);
-
-    DataBuffer uniformBuffer = DataBuffer({}, sizeof(Transform), &transform, true, DATA_BUFFER_UNIFORM_BIT);
-
-    VkDescriptorBufferInfo bufferInfo{};
-    bufferInfo.buffer = uniformBuffer.GetBuffer();
-    bufferInfo.offset = 0;
-    bufferInfo.range = sizeof(Transform);
-
-    VkWriteDescriptorSet descriptorWrite{};
-    descriptorWrite.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-    descriptorWrite.dstSet = DescriptorManager::GetDescriptorSet(descriptorHandle); 
-    descriptorWrite.dstBinding = 0;
-    descriptorWrite.dstArrayElement = 0;
-    descriptorWrite.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-    descriptorWrite.descriptorCount = 1;
-    descriptorWrite.pBufferInfo = &bufferInfo;
-
-    vkUpdateDescriptorSets(Device::GetDevice(), 1, &descriptorWrite, 0, nullptr);
 
     VkPipelineVertexInputStateCreateInfo vertexInputInfo{};
     vertexInputInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
@@ -244,14 +233,17 @@ int main(){
     colorBlending.attachmentCount = 1;
     colorBlending.pAttachments = &colorBlendAttachment;
 
+    std::vector<VkDescriptorSetLayout> *layouts = DescriptorManager::GetLayouts();
+
     VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
     pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
-    pipelineLayoutInfo.setLayoutCount = DescriptorManager::GetLayouts()[0].size();
-    pipelineLayoutInfo.pSetLayouts = DescriptorManager::GetLayouts()[0].data();
+    pipelineLayoutInfo.setLayoutCount = layouts->size();
+    pipelineLayoutInfo.pSetLayouts = layouts->data();
     pipelineLayoutInfo.pushConstantRangeCount = 0;
 
-    GraphicsPipeline pipeline = GraphicsPipeline(vertexInputInfo, VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, VK_POLYGON_MODE_FILL, multisampling,
-     depthStencilInfo, colorBlending, renderPassInfo, pipelineLayoutInfo, shader);
+    GraphicsPipeline pipeline = GraphicsPipeline(vertexInputInfo, VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST,
+     VK_POLYGON_MODE_FILL, multisampling,
+     depthStencilInfo, colorBlending, renderPassInfo, pipelineLayoutInfo, *shader);
 
     CommandBuffer buffer = CommandBuffer(VK_COMMAND_BUFFER_LEVEL_PRIMARY, COMMAND_BUFFER_GRAPHICS_FLAG, &pipeline);
 
@@ -277,6 +269,9 @@ int main(){
         throw std::runtime_error("Failed to create semaphores");
     }
 
+    TextureHandle texture = Texture::CreateTexture("client_data/res/textures/test.jpeg", 1, shader->GetDescriptorSet());
+    Texture::EnableTextures();
+
 
     while(!glfwWindowShouldClose(Window::GetGLFWwindow())){
         glfwPollEvents();
@@ -290,19 +285,27 @@ int main(){
         vkWaitForFences(Device::GetDevice(), 1, &inFlightFence, VK_TRUE, UINT64_MAX);
         vkResetFences(Device::GetDevice(), 1, &inFlightFence);
 
-        vkAcquireNextImageKHR(Device::GetDevice(), Swapchain::GetSwapchain(), UINT64_MAX, imageAvailableSemaphore, VK_NULL_HANDLE, &imageIndex);
+        vkAcquireNextImageKHR(Device::GetDevice(), Swapchain::GetSwapchain(), UINT64_MAX, imageAvailableSemaphore,
+         VK_NULL_HANDLE, &imageIndex);
 
 
         VkDeviceSize offsets[] = {0};
 
-        VkDescriptorSet descriptor = DescriptorManager::GetDescriptorSet(descriptorHandle); 
+        modelDat.model = glm::rotate(modelDat.model, (float)glm::radians(cos(glfwGetTime())), glm::vec3(0.0f, 0.0f, 1.0f));
+        uniformBuffer->UpdateData(reinterpret_cast<void*>(&modelDat), sizeof(modelDat));
+
+        std::vector<VkWriteDescriptorSet> descriptorWrite = {
+            texture->GetWriteDescriptorSet(),
+            uniformBuffer->GetWriteDescriptorSet(),
+        };
+
 
         buffer.BeginCommandBuffer(imageIndex, nullptr);
+        shader->UpdateDescriptorSet(descriptorWrite);
+        shader->Bind(buffer.GetCommandBuffer(), pipeline.GetPipelineLayout());
         VkBuffer buff = vertexBuffer.GetBuffer();
         vkCmdBindVertexBuffers(buffer.GetCommandBuffer(), 0, 1, &buff, offsets);
         vkCmdBindIndexBuffer(buffer.GetCommandBuffer(), indexBuffer.GetBuffer(), 0, VK_INDEX_TYPE_UINT32);
-        vkCmdBindDescriptorSets(buffer.GetCommandBuffer(), VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline.GetPipelineLayout(), 0, 1,
-         &descriptor, 0, nullptr);
         vkCmdDrawIndexed(buffer.GetCommandBuffer(), 6, 1, 0, 0, 0);
         buffer.EndCommandBuffer();
 
@@ -344,12 +347,17 @@ int main(){
         imageIndex = (imageIndex + 1) % Swapchain::GetImageCount(); 
     }
 
+
     vkDeviceWaitIdle(Device::GetDevice());
 
+    UniformBuffer::Free(uniformBuffer);
+    Texture::Free(texture);
+    Shader::Free(shader);
 
     vkDestroySemaphore(Device::GetDevice(), renderFinishedSemaphore, nullptr);
     vkDestroySemaphore(Device::GetDevice(), imageAvailableSemaphore, nullptr);
     vkDestroyFence(Device::GetDevice(), inFlightFence, nullptr);
+    
 }
     Renderer::DestroyRenderer();
     Window::DestroyWindowContext();

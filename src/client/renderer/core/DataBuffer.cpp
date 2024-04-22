@@ -23,18 +23,20 @@ DataBuffer::DataBuffer(BufferDescriptions bufferDescriptions, size_t size,
     }
 
     VkBufferUsageFlagBits bufferType;
-    if(flags & DATA_BUFFER_VERTEX_BIT){
+    if(flags == DATA_BUFFER_VERTEX_BIT){
         bufferType = VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
-    }
-    else if(flags & DATA_BUFFER_INDEX_BIT){
+    }else if(flags == DATA_BUFFER_INDEX_BIT){
         bufferType = VK_BUFFER_USAGE_INDEX_BUFFER_BIT;
-    }
-    else if(flags & DATA_BUFFER_UNIFORM_BIT){
+    }else if(flags == DATA_BUFFER_UNIFORM_BIT){
         bufferType = VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT;
+    }else{
+        throw std::runtime_error("Invalid buffer type");
     }
-    else{
-        throw std::runtime_error("No buffer type found, aborting cause you have a problem");
+
+    if(!Device::DeviceMemoryFree()){
+        transferToLocalDevMem = false;
     }
+
     if(transferToLocalDevMem){
         CreateBuffer(buff, bufferType | VK_BUFFER_USAGE_TRANSFER_DST_BIT, size);
         AllocateMemory(mem, buff, size, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
@@ -71,7 +73,37 @@ DataBuffer::DataBuffer(BufferDescriptions bufferDescriptions, size_t size,
 
     this->size = size;
     this->transferToLocalDevMem = transferToLocalDevMem;
+
 }
+void DataBuffer::LoadDataIntoImage(VkImage image, size_t size, void* data, VkExtent3D extent,
+VkImageSubresourceLayers subresourceLayers, VkImageLayout format){
+    StagingBufferCopyCMDInfo copyInfo = GetStagingBuffer(size);
+
+    void* stagingData;
+    if(vkMapMemory(Device::GetDevice(), copyInfo.bufferMemory, 0, size, 0, &stagingData) != VK_SUCCESS){
+        throw std::runtime_error("Failed to map image buffer memory");
+    }
+    memcpy(stagingData, data, size);
+    vkUnmapMemory(Device::GetDevice(), copyInfo.bufferMemory);
+
+    VkCommandBufferInheritanceInfo inheritanceInfo{};
+    inheritanceInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_INFO;
+
+    copyInfo.commandBuffer.BeginCommandBuffer(0, &inheritanceInfo);
+
+    VkBufferImageCopy copyRegion{};
+    copyRegion.bufferOffset = 0;
+    copyRegion.bufferRowLength = 0;
+    copyRegion.bufferImageHeight = 0;
+    copyRegion.imageExtent = extent;
+    copyRegion.imageSubresource = subresourceLayers;
+
+    vkCmdCopyBufferToImage(copyInfo.commandBuffer.GetCommandBuffer(), copyInfo.buffer,
+     image, format, 1, &copyRegion);
+
+    copyInfo.commandBuffer.EndCommandBuffer();
+}
+
 
 StagingBufferCopyCMDInfo DataBuffer::GetStagingBuffer(size_t size){
         StagingBufferCopyCMDInfo *stagingBuffer;
@@ -94,7 +126,7 @@ StagingBufferCopyCMDInfo DataBuffer::GetStagingBuffer(size_t size){
             tmpStagingBuffer.commandBuffer = CommandBuffer(VK_COMMAND_BUFFER_LEVEL_SECONDARY, COMMAND_BUFFER_TRANSFER_FLAG, nullptr);
         
             CreateBuffer(tmpStagingBuffer.buffer, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, size);
-            AllocateMemory(stagingBuffer->bufferMemory, stagingBuffer->buffer, size,
+            AllocateMemory(tmpStagingBuffer.bufferMemory, tmpStagingBuffer.buffer, size,
              VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
 
             stagingBuffers.push_back(tmpStagingBuffer);
@@ -117,29 +149,52 @@ void DataBuffer::CreateStagingBuffers(){
     createdStagingBuffers = true;
 }
 
-void DataBuffer::UpdateData(void* data, size_t size){
-    if(this->size == size){
-        if(transferToLocalDevMem){
-            StagingBufferCopyCMDInfo stagingBuffer = GetStagingBuffer(size);
+void DataBuffer::CopyBufferData(VkBuffer dst, void* data, size_t size){
+    StagingBufferCopyCMDInfo stagingBuffer = GetStagingBuffer(size);
 
-            void *stagingData;
-            if(vkMapMemory(Device::GetDevice(), stagingBuffer.bufferMemory, 0, size, 0, &stagingData) != VK_SUCCESS){
-                throw std::runtime_error("Failed to map vertex buffer memory");
-            }
-            memcpy(stagingData, data, size);
-            vkUnmapMemory(Device::GetDevice(), stagingBuffer.bufferMemory);
+    VkCommandBufferInheritanceInfo inheritanceInfo{};
+    inheritanceInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_INFO;
 
-            CopyFromBuffer(stagingBuffer, size);
-        }else{
-            void *mappedData;
-            if(vkMapMemory(Device::GetDevice(), mem, 0, size, 0, &mappedData) != VK_SUCCESS){
-                throw std::runtime_error("Failed to map vertex buffer memory");
-            }
-        }
+    void* stagingData;
+    if(vkMapMemory(Device::GetDevice(), stagingBuffer.bufferMemory, 0, size, 0, &stagingData) != VK_SUCCESS){
+        throw std::runtime_error("Failed to map vertex buffer memory");
     }
-    else{
+    memcpy(data, stagingData, size);
+    vkUnmapMemory(Device::GetDevice(), stagingBuffer.bufferMemory);
+
+    stagingBuffer.commandBuffer.BeginCommandBuffer(0, &inheritanceInfo);
+
+    VkBufferCopy copyRegion{};
+    copyRegion.size = size;
+    vkCmdCopyBuffer(stagingBuffer.commandBuffer.GetCommandBuffer(), stagingBuffer.buffer, dst, 1, &copyRegion);
+
+    stagingBuffer.commandBuffer.EndCommandBuffer();
+}
+
+void DataBuffer::UpdateData(void* data, size_t size){
+    if(this->size != size){
         throw std::runtime_error("Size of data does not match size of buffer, you need to create a new buffer for this");
     }
+    if(transferToLocalDevMem){
+        StagingBufferCopyCMDInfo stagingBuffer = GetStagingBuffer(size);
+
+        void *stagingData;
+        if(vkMapMemory(Device::GetDevice(), stagingBuffer.bufferMemory, 0, size, 0, &stagingData) != VK_SUCCESS){
+            throw std::runtime_error("Failed to map buffer memory");
+        }
+        memcpy(stagingData, data, size);
+        vkUnmapMemory(Device::GetDevice(), stagingBuffer.bufferMemory);
+
+        CopyFromBuffer(stagingBuffer, size);
+    }else{
+        void *mappedData;
+        if(vkMapMemory(Device::GetDevice(), mem, 0, size, 0, &mappedData) != VK_SUCCESS){
+            throw std::runtime_error("Failed to map buffer memory");
+        }
+        memcpy(mappedData, data, size);
+        vkUnmapMemory(Device::GetDevice(), mem);
+    }
+    
 }
 
 void DataBuffer::CopyFromBuffer(StagingBufferCopyCMDInfo stagingBuffer, VkDeviceSize size){
@@ -170,6 +225,7 @@ void DataBuffer::UpdateCommandBuffer(){
         return;
     }
 
+
     VkFence fence = finishedCopyingFence.GetFence();
 
     vkResetFences(Device::GetDevice(), 1, &fence);
@@ -194,6 +250,10 @@ void DataBuffer::UpdateCommandBuffer(){
     
     VkFence fences[] = {finishedCopyingFence.GetFence()};
     vkWaitForFences(Device::GetDevice(), 1, fences, VK_TRUE, UINT64_MAX);
+
+    for(VkCommandBuffer& commandBuffer : commandBuffers){
+        vkResetCommandBuffer(commandBuffer, 0);
+    }
 
     for(uint32_t i : cleanupList){
         stagingBuffers[i].free = true;
@@ -223,7 +283,7 @@ void DataBuffer::CreateBuffer(VkBuffer& buffer, VkBufferUsageFlags usage, VkDevi
     }
 
     if(vkCreateBuffer(Device::GetDevice(), &bufferInfo, nullptr, &buffer) != VK_SUCCESS){
-        throw std::runtime_error("Failed to create vertex buffer");
+        throw std::runtime_error("Failed to create buffer");
     }
 }
 
@@ -268,13 +328,16 @@ void DataBuffer::Cleanup(){
     }
     stagingBuffers.clear();
     finishedCopyingFence.~Fence();
+    commandBuffer.~CommandBuffer();
 }
 
 DataBuffer::DataBuffer(const DataBuffer& other){
     buff = other.buff;
     mem = other.mem;
     descriptions = other.descriptions;
+    size = other.size;
     useCount = other.useCount;
+    transferToLocalDevMem = other.transferToLocalDevMem;
     useCount[0]++;
 }
 
@@ -286,7 +349,9 @@ DataBuffer DataBuffer::operator=(const DataBuffer& other){
     buff = other.buff;
     mem = other.mem;
     descriptions = other.descriptions;
+    size = other.size;
     useCount = other.useCount;
+    transferToLocalDevMem = other.transferToLocalDevMem;
     useCount[0]++;
 
     return *this;

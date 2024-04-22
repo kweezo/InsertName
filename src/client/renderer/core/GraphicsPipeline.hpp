@@ -2,6 +2,7 @@
 
 #include <stdexcept>
 #include <iostream>
+#include <limits>
 
 #include <vulkan/vulkan.h>
 
@@ -19,7 +20,7 @@ public:
      VkPipelineDepthStencilStateCreateInfo depthStencilInfo,
       VkPipelineColorBlendStateCreateInfo colorBlendAttachment,
        VkRenderPassCreateInfo renderPassInfo, VkPipelineLayoutCreateInfo pipelineLayoutInfo,
-        Shader& shader);
+        ShaderImpl& shader);
     
     ~GraphicsPipeline();
 
@@ -30,7 +31,6 @@ public:
     void EndRenderPass(VkCommandBuffer commandBuffer);
 
     VkPipelineLayout GetPipelineLayout();
-
     VkRenderPass GetRenderPass();
 private:
     VkPipeline pipeline;

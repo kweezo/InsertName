@@ -15,6 +15,7 @@
 #define DATA_BUFFER_VERTEX_BIT 1
 #define DATA_BUFFER_INDEX_BIT 2
 #define DATA_BUFFER_UNIFORM_BIT 4
+#define DATA_BUFFER_IMAGE_BIT 8
 
 namespace renderer{
 
@@ -37,14 +38,17 @@ public:
     DataBuffer(BufferDescriptions bufferDescriptions, size_t size,
      void* data, bool transferToLocalDevMem, uint32_t flags);
 
+    static void LoadDataIntoImage(VkImage image, size_t size, void* data, VkExtent3D extent,
+    VkImageSubresourceLayers subresourceLayers, VkImageLayout format);
+
     VkBuffer GetBuffer();
 
     BufferDescriptions GetDescriptions();
 
     void CopyFromBuffer(StagingBufferCopyCMDInfo stagingBuffer, VkDeviceSize size);
-
     void UpdateData(void* data, size_t size);
 
+    static void CopyBufferData(VkBuffer dst, void* data, size_t size); // is this needed(obligatory suicide joke)?
     static void UpdateCommandBuffer();
 
     static void Cleanup();
