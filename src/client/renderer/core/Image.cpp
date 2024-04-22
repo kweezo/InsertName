@@ -141,13 +141,11 @@ void ImageImpl::TransitionLayout(VkImageLayout oldLayout, VkImageLayout newLayou
     inheritanceInfo.queryFlags = 0;
     inheritanceInfo.pipelineStatistics = 0;
 
-    if(Device::DeviceMemoryFree()){
-        CommandBuffer commandBuffer = GetFreeCommandBuffer(this);
-        commandBuffer.BeginCommandBuffer(0, &inheritanceInfo); 
-        vkCmdPipelineBarrier(commandBuffer.GetCommandBuffer(), VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
-        VK_PIPELINE_STAGE_TRANSFER_BIT, 0, 0, nullptr, 0, nullptr, 1, &imageMemoryBarrier);
-        commandBuffer.EndCommandBuffer();
-    }
+    CommandBuffer commandBuffer = GetFreeCommandBuffer(this);
+    commandBuffer.BeginCommandBuffer(0, &inheritanceInfo); 
+    vkCmdPipelineBarrier(commandBuffer.GetCommandBuffer(), VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
+    VK_PIPELINE_STAGE_TRANSFER_BIT, 0, 0, nullptr, 0, nullptr, 1, &imageMemoryBarrier);
+    commandBuffer.EndCommandBuffer();
 }
 
 void ImageImpl::LoadDataIntoImage(){
@@ -195,7 +193,6 @@ void ImageImpl::UpdateCommandBuffers(){
         if(buffer.free){
             continue;
         }
-        buffer.image->LoadDataIntoImage();
         buffer.free = true;
     }
 

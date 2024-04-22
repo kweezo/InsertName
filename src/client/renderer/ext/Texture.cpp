@@ -25,6 +25,9 @@ void TextureImpl::SetDescriptorSet(VkDescriptorSet descriptorSet){
 
 void TextureImpl::EnableTextures(){
     Image::UpdateCommandBuffers();
+    for(TextureHandle handle : handles){
+        handle->GetImage()->LoadDataIntoImage();
+    }
     DataBuffer::UpdateCommandBuffer();
     for(TextureHandle handle : handles){
         handle->GetImage()->TransitionLayout(VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
