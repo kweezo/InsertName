@@ -2,7 +2,6 @@
 
 #include <stdexcept>
 #include <iostream>
-#include <limits>
 
 #include <vulkan/vulkan.h>
 
@@ -31,6 +30,7 @@ public:
     void EndRenderPass(VkCommandBuffer commandBuffer);
 
     VkPipelineLayout GetPipelineLayout();
+
     VkRenderPass GetRenderPass();
 private:
     VkPipeline pipeline;

@@ -14,6 +14,7 @@
 #include "renderer/core/DataBuffer.hpp"
 #include "renderer/core/Fence.hpp"
 #include "renderer/core/DescriptorManager.hpp"
+#include "renderer/ext/Texture.hpp"
 
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>

@@ -3,7 +3,6 @@
 #include <vector>
 #include <iostream>
 #include <stdexcept>
-#include <cstring>
 
 #include <vulkan/vulkan.h>
 #include <GLFW/glfw3.h>
