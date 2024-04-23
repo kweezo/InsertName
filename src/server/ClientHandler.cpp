@@ -33,7 +33,6 @@ void ClientHandler::handleConnection() {
         std::string response = handleMsg(receivedMsg);
         SSL_write(ssl, response.c_str(), response.size() + 1);
         if (response == "c" || response == "q") {
-            delete this;
             return;
         }
     }
