@@ -2,8 +2,6 @@
 
 
 Server::Server(int port, const std::string& dir) : port(port), dir(dir), ctx(nullptr), ssl(nullptr) {
-    Config::GetInstance().LoadConfig(dir + "/config.txt");
-
     // Vzpostavitev povezave z bazo podatkov
     std::string conn_str = "dbname=" + Config::GetInstance().dbname +
                           " user=" + Config::GetInstance().dbuser +

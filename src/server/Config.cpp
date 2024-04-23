@@ -17,6 +17,7 @@ void Config::LoadConfig(const std::string& filename) {
         file << "dbhostaddr=127.0.0.1\n";
         file << "dbport=5432\n";
         file << "messageBatchSize=30\n";
+        file << "messageBufferSize=4096\n";
         file.close();
         // Reopen the file for reading
         file.open(filename, std::ios::in);
@@ -41,6 +42,8 @@ void Config::LoadConfig(const std::string& filename) {
                     dbport = value;
                 } else if (key == "messageBatchSize") {
                     messageBatchSize = std::stoi(value);
+                } else if (key == "messageBufferSize") {
+                    messageBufferSize = std::stoi(value);
                 }
             }
         }

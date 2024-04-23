@@ -14,6 +14,7 @@ public:
     std::string dbport;
 
     int messageBatchSize;
+    int messageBufferSize;
 
     static Config& GetInstance();
     void LoadConfig(const std::string& filename);
