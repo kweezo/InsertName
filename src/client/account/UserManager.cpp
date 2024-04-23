@@ -59,7 +59,7 @@ std::string UserManager::getNextArg(std::string& msg) {
     }
 
     std::string arg = msg.substr(0, pos); // Get the string up to the next (char)30
-    msg.erase(0, pos); // Erase everything up to and including the next (char)30
+    msg.erase(0, pos); // Erase everything up to the next (char)30
 
     return arg;
 }

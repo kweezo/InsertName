@@ -24,7 +24,7 @@ using namespace renderer;//here beacuse this is again, all temp and i cant be bo
 
 //implement staging and index buffer support (I am going to kill myself)
 
-void chatThread(UserManager& userManager) {
+void chatThread(UserManager* userManager) {
     std::this_thread::sleep_for(std::chrono::seconds(1));
     std::string typeOfRequest;
     while (true) {
@@ -39,21 +39,23 @@ void chatThread(UserManager& userManager) {
             std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n'); // Ignore the newline left in the buffer by std::cin
             std::cout << "Enter message: ";
             std::getline(std::cin, message);
-            std::cout << userManager.sendMessage(receiver, message) << std::endl;
+            std::cout << userManager->sendMessage(receiver, message) << std::endl;
             
         } else if (typeOfRequest == "get") {
             std::string sender;
             std::cout << "Enter sender: ";
             std::cin >> sender;
-            std::cout << userManager.getChat(sender) << std::endl;
+            std::cout << userManager->getChat(sender) << std::endl;
 
         } else if (typeOfRequest == "getnew") {
             std::string sender;
             std::cout << "Enter sender: ";
             std::cin >> sender;
-            std::cout << userManager.getNewMessages(sender) << std::endl;
+            std::cout << userManager->getNewMessages(sender) << std::endl;
 
         } else if (typeOfRequest == "stop") {
+            std::cout << "Ending server connection" << std::endl;
+            delete userManager;
             break;
 
         } else {
@@ -64,14 +66,14 @@ void chatThread(UserManager& userManager) {
 }
 
 void userTemp(){
-    UserManager userManager("127.0.0.1", 12345);
-    if (userManager.connectToServer()) {
+    UserManager* userManager = new UserManager("127.0.0.1", 12345);
+    if (userManager->connectToServer()) {
         for (int i = 0; i < 3; i++) {
             std::string username;
             std::string password;
             char loginType;
             std::cin >> loginType >> username >> password;
-            if (userManager.loginUser(loginType, username, password) <= 2) {
+            if (userManager->loginUser(loginType, username, password) <= 2) {
                 std::cout << "Successfuly logged in" << std::endl;
                 break;
             } else {
@@ -79,7 +81,7 @@ void userTemp(){
             }
         }
         
-        std::thread chat(chatThread, std::ref(userManager));
+        std::thread chat(chatThread, userManager);
         chat.detach();
     }
 }

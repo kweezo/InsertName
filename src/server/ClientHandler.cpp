@@ -3,9 +3,7 @@
 ClientHandler::ClientHandler(int clientSocket, SSL* ssl, pqxx::connection& c)
 : clientSocket(clientSocket), ssl(ssl), c(c), dbConnectionFailed(false) {
     // Preverjanje povezave z bazo podatkov
-    if (c.is_open()) {
-        std::cout << "Opened database successfully: " << c.dbname() << std::endl;
-    } else {
+    if (!c.is_open()) {
         std::cerr << "Can't open database" << std::endl;
         dbConnectionFailed = true;
         return;
@@ -53,6 +51,7 @@ std::string ClientHandler::handleMsg(const std::string& receivedMsg) {
 
     } else if (receivedMsg[0] == 'm') {
         std::string reciverUsername = getNextArg(msg);
+        msg = getNextArg(msg);
         response = sendMessage(reciverUsername, msg);
 
     } else if (receivedMsg[0] == 'g') {
@@ -238,7 +237,7 @@ std::string ClientHandler::getNextArg(std::string& msg) {
     }
 
     std::string arg = msg.substr(0, pos); // Get the string up to the next (char)30
-    msg.erase(0, pos); // Erase everything up to and including the next (char)30
+    msg.erase(0, pos); // Erase everything up to the next (char)30
 
     return arg;
 }
