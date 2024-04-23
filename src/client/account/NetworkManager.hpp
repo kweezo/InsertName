@@ -24,8 +24,8 @@
 class NetworkManager {
 public:
     NetworkManager(const std::string& serverIP, int port);
-    ~NetworkManager();
     bool connectToServer();
+    void closeConnection();
     std::string sendData(const std::string& message);
 
 private:

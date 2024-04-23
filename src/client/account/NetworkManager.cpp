@@ -17,29 +17,6 @@ NetworkManager::NetworkManager(const std::string& serverIP, int port)
     #endif
 }
 
-NetworkManager::~NetworkManager() {
-    // Gracefully close down everything
-    int shutdownResult = SSL_shutdown(ssl);
-    if (shutdownResult == 0) {
-        // The shutdown is not yet finished. Call SSL_shutdown() again
-        shutdownResult = SSL_shutdown(ssl);
-        if (shutdownResult != 1) {
-            // handle error
-            ERR_print_errors_fp(stderr);
-        }
-    } else if (shutdownResult == -1) {
-        // handle error
-        ERR_print_errors_fp(stderr);
-    }
-
-    SSL_free(ssl);
-    SSL_CTX_free(ctx);
-    closesocket(sock);
-    #ifdef _WIN32
-        WSACleanup();
-    #endif
-}
-
 bool NetworkManager::connectToServer() {
     // Create socket
     sock = socket(AF_INET, SOCK_STREAM, 0);
@@ -111,6 +88,31 @@ bool NetworkManager::connectToServer() {
     }
 
     return true;
+}
+
+void NetworkManager::closeConnection() {
+    // Send a message to the server to close the connection
+    sendData("c");
+
+    int shutdownResult = SSL_shutdown(ssl);
+    if (shutdownResult == 0) {
+        // The shutdown is not yet finished. Call SSL_shutdown() again
+        shutdownResult = SSL_shutdown(ssl);
+        if (shutdownResult != 1) {
+            // handle error
+            ERR_print_errors_fp(stderr);
+        }
+    } else if (shutdownResult == -1) {
+        // handle error
+        ERR_print_errors_fp(stderr);
+    }
+
+    SSL_free(ssl);
+    SSL_CTX_free(ctx);
+    closesocket(sock);
+    #ifdef _WIN32
+        WSACleanup();
+    #endif
 }
 
 std::string NetworkManager::sendData(const std::string& message) {

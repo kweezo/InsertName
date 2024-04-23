@@ -16,19 +16,19 @@ Server::Server(int port, const std::string& dir) : port(port), dir(dir), ctx(nul
     pqxx::work W(*c);
 
     std::string sql = "CREATE TABLE IF NOT EXISTS Users ("
-                    "Username TEXT PRIMARY KEY NOT NULL,"
-                    "PasswordHash TEXT NOT NULL,"
-                    "Salt TEXT NOT NULL,"
-                    "CreationDate TEXT NOT NULL);";
+                      "Username TEXT PRIMARY KEY NOT NULL,"
+                      "PasswordHash TEXT NOT NULL,"
+                      "Salt TEXT NOT NULL,"
+                      "CreationDate TEXT NOT NULL);";
     W.exec(sql);
 
     sql = "CREATE TABLE IF NOT EXISTS Messages ("
-        "ID SERIAL PRIMARY KEY,"
-        "SenderUsername VARCHAR(255),"
-        "ReceiverUsername VARCHAR(255),"
-        "Message TEXT,"
-        "Timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,"
-        "IsRead BOOLEAN DEFAULT FALSE);";
+          "ID SERIAL PRIMARY KEY,"
+          "SenderUsername VARCHAR(255),"
+          "ReceiverUsername VARCHAR(255),"
+          "Message TEXT,"
+          "Timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,"
+          "IsRead BOOLEAN DEFAULT FALSE);";
     W.exec(sql);
 
     W.commit();
@@ -53,7 +53,6 @@ Server::Server(int port, const std::string& dir) : port(port), dir(dir), ctx(nul
 }
 
 Server::~Server() {
-    // Gracefully close down everything
     SSL_shutdown(ssl);
     SSL_free(ssl);
     SSL_CTX_free(ctx);

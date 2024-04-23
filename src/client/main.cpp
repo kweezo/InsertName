@@ -55,7 +55,7 @@ void chatThread(UserManager* userManager) {
 
         } else if (typeOfRequest == "stop") {
             std::cout << "Ending server connection" << std::endl;
-            delete userManager;
+            userManager->closeConnection();
             break;
 
         } else {
@@ -65,8 +65,7 @@ void chatThread(UserManager* userManager) {
     }
 }
 
-void userTemp(){
-    UserManager* userManager = new UserManager("127.0.0.1", 12345);
+void userTemp(UserManager* userManager){
     if (userManager->connectToServer()) {
         for (int i = 0; i < 3; i++) {
             std::string username;
@@ -95,7 +94,8 @@ struct ModelDat{
 int main(){
     Settings settings;
     ReadSettings(settings, "src/settings.bin");
-    userTemp();
+    UserManager* userManager = new UserManager("127.0.0.1", 12345);
+    userTemp(userManager);
 
     Window::CreateWindowContext(settings.width, settings.height, "Vulkan");
     Renderer::InitRenderer();
@@ -357,6 +357,8 @@ int main(){
 }
     Renderer::DestroyRenderer();
     Window::DestroyWindowContext();
+
+    delete userManager;
 
     return 0;
 }

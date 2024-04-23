@@ -32,6 +32,10 @@ void ClientHandler::handleConnection() {
         std::string receivedMsg(buffer);
         std::string response = handleMsg(receivedMsg);
         SSL_write(ssl, response.c_str(), response.size() + 1);
+        if (response == "c" || response == "q") {
+            delete this;
+            return;
+        }
     }
 }
 
@@ -74,6 +78,9 @@ std::string ClientHandler::handleMsg(const std::string& receivedMsg) {
             std::string message = pair.first;
             response += timestamp + (char)30 + message + (char)30;
         }
+
+    } else if (receivedMsg[0] == 'c') {
+        response = "c";
 
     } else {
         response = "q";
