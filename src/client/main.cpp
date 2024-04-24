@@ -95,7 +95,7 @@ int main(){
     std::string dir = "./client_data/";
 
     Settings& settings = Settings::GetInstance();
-    settings.LoadConfig(dir + "settings.cfg");
+    settings.LoadSettings(dir + "settings.cfg");
     UserManager* userManager = new UserManager(settings.serverIP, settings.serverPort);
     userTemp(userManager);
 
