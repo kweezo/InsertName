@@ -3,49 +3,49 @@ So thus far no real issues or anything, this is a passion project done by a coup
 # Gameplay Notes:
 
 ## Skill Tree:
-1.  Advanture:
-    - stamina
-      - attack
-        - base attack
-        - crit rate
-        - crit chance
-      - defence
-        - physic defence
-          - physic defence
-          - physic resistance
-        - magic defence
-          - magic defence
-          - magic retsistance
-      - crafting
+1.  Adventure:
+    - Stamina
+      - Attack
+        - Base attack
+        - Crit rate
+        - Crit chance
+      - Defence
+        - Physical defence
+          - Physical defence
+          - Physical resistance
+        - Magic defence
+          - Magic defence
+          - Magic resistance
+      - Crafting
 2.  Fire:
-    - attack
-    - defence
-    - special
+    - Attack
+    - Defence
+    - Special
 3.  Water:
-    - attack
-    - defence
-    - special
+    - Attack
+    - Defence
+    - Special
 4.  Earth:
-    - attack
-    - defence
-    - special
+    - Attack
+    - Defence
+    - Special
 5.  Electro:
-    - attack
-    - defence
-    - special
+    - Attack
+    - Defence
+    - Special
 6.  Wind:
-    - attack
-    - defence
-    - special
+    - Attack
+    - Defence
+    - Special
 7.  Life:
-    - attack
-    - defence
-    - special
+    - Attack
+    - Defence
+    - Special
 8.  Light:
-    - attack
-    - defence
-    - special
+    - Attack
+    - Defence
+    - Special
 9.  Dark:
-    - attack
-    - defence
-    - special
+    - Attack
+    - Defence
+    - Special
