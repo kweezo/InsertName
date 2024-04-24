@@ -14,6 +14,8 @@ public:
     unsigned char anisotropy;
     bool anisotropyEnable;
 
+    std::string filename;
     static Settings& GetInstance();
     void LoadConfig(const std::string& filename);
+    void SaveConfig();
 };

@@ -6,6 +6,7 @@ Settings& Settings::GetInstance() {
 }
 
 void Settings::LoadConfig(const std::string& filename) {
+    this->filename = filename;
     std::unordered_map<std::string, std::string> settings;
 
     // Read the existing settings
@@ -53,4 +54,16 @@ void Settings::LoadConfig(const std::string& filename) {
     serverPort = std::stoi(settings["serverPort"]);
     anisotropy = std::stoi(settings["anisotropy"]);
     anisotropyEnable = settings["anisotropyEnable"] == "true";
+}
+
+void Settings::SaveConfig() {
+    std::ofstream outFile(filename);
+
+    // Write the current settings to the file
+    outFile << "windowWidth=" << windowWidth << "\n";
+    outFile << "windowHeight=" << windowHeight << "\n";
+    outFile << "serverIP=" << serverIP << "\n";
+    outFile << "serverPort=" << serverPort << "\n";
+    outFile << "anisotropy=" << anisotropy << "\n";
+    outFile << "anisotropyEnable=" << (anisotropyEnable ? "true" : "false") << "\n";
 }
