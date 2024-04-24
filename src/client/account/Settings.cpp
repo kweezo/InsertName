@@ -6,7 +6,7 @@ Settings& Settings::GetInstance() {
 }
 
 void Settings::LoadConfig(const std::string& filename) {
-    std::map<std::string, std::string> settings;
+    std::unordered_map<std::string, std::string> settings;
 
     // Read the existing settings
     std::ifstream inFile(filename);
@@ -37,10 +37,20 @@ void Settings::LoadConfig(const std::string& filename) {
         settings["serverPort"] = "12345";
         outFile << "serverPort=12345\n";
     }
+    if (settings.find("anisotropy") == settings.end()) {
+        settings["anisotropy"] = "2";
+        outFile << "anisotropy=2\n";
+    }
+    if (settings.find("anisotropyEnable") == settings.end()) {
+        settings["anisotropyEnable"] = "true";
+        outFile << "anisotropyEnable=true\n";
+    }
 
     // Now you can use the settings map to set your variables
     windowWidth = std::stoi(settings["windowWidth"]);
     windowHeight = std::stoi(settings["windowHeight"]);
     serverIP = settings["serverIP"];
     serverPort = std::stoi(settings["serverPort"]);
+    anisotropy = std::stoi(settings["anisotropy"]);
+    anisotropyEnable = settings["anisotropyEnable"] == "true";
 }

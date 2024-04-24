@@ -3,7 +3,7 @@
 #include <string>
 #include <fstream>
 #include <sstream>
-#include <map>
+#include <unordered_map>
 
 class Settings {
 public:
@@ -11,6 +11,8 @@ public:
     int windowHeight;
     std::string serverIP;
     int serverPort;
+    unsigned char anisotropy;
+    bool anisotropyEnable;
 
     static Settings& GetInstance();
     void LoadConfig(const std::string& filename);
