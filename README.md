@@ -1,4 +1,4 @@
-So thus far no real issues or anything, this is a passion project done by a couple of high schoolers. Some visual material and a detailed explanation for this project coming soon! If you'd like to contribute in any way please do, as we do not plan on making money from this and can only work on it in our spare time.
+So thus far no real issues or anything, this is a passion project done by a couple of high schoolers. Some visual material and a detailed explanation for this project coming soon! If you'd like to contribute in any way please do, as we do not plan on making money from this (for now) and can only work on it in our spare time.
 
 # Gameplay Notes:
 
