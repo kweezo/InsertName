@@ -19,10 +19,11 @@ ClientHandler::~ClientHandler() {
 }
 
 void ClientHandler::handleConnection() {
-    char buffer[Config::GetInstance().messageBufferSize];
+    int bufferSize = Config::GetInstance().messageBufferSize;
+    char buffer[bufferSize];
     while (true) {
-        memset(buffer, 0, Config::GetInstance().messageBufferSize);
-        int bytesReceived = SSL_read(ssl, buffer, Config::GetInstance().messageBufferSize);
+        memset(buffer, 0, bufferSize);
+        int bytesReceived = SSL_read(ssl, buffer, bufferSize);
         if (bytesReceived <= 0) {
             int errorCode = SSL_get_error(ssl, bytesReceived);
             std::cerr << "Error in SSL_read(). Error code: " << errorCode << ". Quitting" << std::endl;

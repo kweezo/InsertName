@@ -2,9 +2,9 @@
 #include <thread>
 
 int main() {
-    std::string dir = "./server_data";
+    std::string dir = "./server_data/";
 
-    Config::GetInstance().LoadConfig(dir + "/config.txt");
+    Config::GetInstance().LoadConfig(dir + "config.cfg");
     Server server(12345, dir);
     server.initNetwork();
 

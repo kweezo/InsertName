@@ -101,13 +101,13 @@ int Server::acceptClient() {
     }
 
     // Load the server's private key and certificate
-    if (SSL_CTX_use_PrivateKey_file(ctx, (dir + "/network/server.key").c_str(), SSL_FILETYPE_PEM) <= 0) {
+    if (SSL_CTX_use_PrivateKey_file(ctx, (dir + "network/server.key").c_str(), SSL_FILETYPE_PEM) <= 0) {
         ERR_print_errors_fp(stderr);
         // handle error
         return -1;
     }
 
-    if (SSL_CTX_use_certificate_file(ctx, (dir + "/network/server.crt").c_str(), SSL_FILETYPE_PEM) <= 0) {
+    if (SSL_CTX_use_certificate_file(ctx, (dir + "network/server.crt").c_str(), SSL_FILETYPE_PEM) <= 0) {
         ERR_print_errors_fp(stderr);
         // handle error
         return -1;

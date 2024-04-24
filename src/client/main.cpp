@@ -4,7 +4,7 @@
 #include <chrono>
 
 #include "account/UserManager.hpp"
-#include "../settings.hpp"
+#include "account/Settings.hpp"
 #include "renderer/window/Window.hpp"
 #include "renderer/core/Renderer.hpp"
 #include "renderer/core/CommandBuffer.hpp"
@@ -92,12 +92,14 @@ struct ModelDat{
 };
 
 int main(){
-    Settings settings;
-    ReadSettings(settings, "src/settings.bin");
-    UserManager* userManager = new UserManager("127.0.0.1", 12345);
+    std::string dir = "./client_data/";
+
+    Settings& settings = Settings::GetInstance();
+    settings.LoadConfig(dir + "settings.cfg");
+    UserManager* userManager = new UserManager(settings.serverIP, settings.serverPort);
     userTemp(userManager);
 
-    Window::CreateWindowContext(settings.width, settings.height, "Vulkan");
+    Window::CreateWindowContext(settings.windowWidth, settings.windowHeight, "Vulkan");
     Renderer::InitRenderer();
 {
 
@@ -265,7 +267,7 @@ int main(){
         throw std::runtime_error("Failed to create semaphores");
     }
 
-    TextureHandle texture = Texture::CreateTexture("client_data/res/textures/test.jpeg", 1, shader->GetDescriptorSet());
+    TextureHandle texture = Texture::CreateTexture(dir + "res/textures/test.jpeg", 1, shader->GetDescriptorSet());
     Texture::EnableTextures();
 
 

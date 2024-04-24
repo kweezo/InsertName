@@ -43,7 +43,7 @@ if(GFX_RECONSTRUCT)
 endif()
 
 if(BUILD_INSTALLER)
-    file(GLOB installersrc src/installer/**/*.cpp src/settings.cpp )
+    file(GLOB installersrc src/installer/**/*.cpp)
     add_executable(installer ${installersrc} src/installer/main.cpp)
 endif()
 
@@ -64,7 +64,7 @@ endif()
 
 if(BUILD_CLIENT)    
     file(GLOB clientsrc src/client/renderer/core/*.cpp src/client/renderer/ext/*.cpp src/client/renderer/window/*.cpp src/client/account/*.cpp)
-    add_executable(client ${clientsrc} src/client/main.cpp src/settings.cpp)
+    add_executable(client ${clientsrc} src/client/main.cpp)
     
     if(WIN32)
         target_link_libraries(client PRIVATE
