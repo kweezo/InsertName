@@ -27,10 +27,13 @@ endif()
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY bin)
+set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY lib)
+set(CMAKE_LIBRARY_OUTPUT_DIRECTORY lib)
 
 option(BUILD_CLIENT "Build the client executable" OFF)
 option(BUILD_INSTALLER "Build the installer executable" OFF)
 option(BUILD_SERVER "Build the server executable" OFF)
+option(BUILD_ENGINE "Build the engine library" OFF)
 option(DEBUG "Build with debug flags" OFF)
 option(GFX_RECONSTRUCT "Build with graphics reconstruction" OFF)
 
@@ -62,9 +65,21 @@ if(BUILD_SERVER)
     endif()
 endif()
 
+if(BUILD_ENGINE)
+    file(GLOB enginesrc src/engine/renderer/core/*.cpp src/engine/renderer/ext/*.cpp src/engine/renderer/window/*.cpp src/engine/account/*.cpp)
+    add_library(engine SHARED ${enginesrc})
+
+    target_link_libraries(engine PUBLIC glfw)
+    target_link_libraries(engine PUBLIC assimp)
+    target_link_libraries(engine PUBLIC vulkan)
+endif()
+
 if(BUILD_CLIENT)    
-    file(GLOB clientsrc src/client/renderer/core/*.cpp src/client/renderer/ext/*.cpp src/client/renderer/window/*.cpp src/client/account/*.cpp)
+    file(GLOB clientsrc src/client/account/*.cpp)
     add_executable(client ${clientsrc} src/client/main.cpp)
+
+    link_directories(${CMAKE_SOURCE_DIR}/lib)
+    include_directories(${CMAKE_SOURCE_DIR}/src)
     
     if(WIN32)
         target_link_libraries(client PRIVATE
@@ -75,13 +90,13 @@ if(BUILD_CLIENT)
             ws2_32
             ${SSL_LIBRARY}
             ${CRYPTO_LIBRARY}
-        )
+            engine
+            )
     elseif(UNIX AND NOT APPLE)
-        target_link_libraries(client PUBLIC glfw)
-        target_link_libraries(client PUBLIC assimp)
-        target_link_libraries(client PUBLIC vulkan)
+
         target_link_libraries(client PUBLIC ssl)
         target_link_libraries(client PUBLIC crypto)
+        target_link_libraries(client PUBLIC engine)
     endif()
 endif()
 set_target_properties(client PROPERTIES CXX_STANDARD 20 CXX_STANDARD_REQUIRED ON)
