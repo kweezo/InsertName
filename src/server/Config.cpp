@@ -1,12 +1,13 @@
 #include "Config.hpp"
 
-
 Config& Config::GetInstance() {
     static Config instance;
     return instance;
 }
+
 void Config::LoadConfig(const std::string& filename) {
-    std::map<std::string, std::string> settings;
+    this->filename = filename;
+    std::unordered_map<std::string, std::string> settings;
 
     // Read the existing settings
     std::ifstream inFile(filename);
@@ -58,4 +59,16 @@ void Config::LoadConfig(const std::string& filename) {
     dbport = settings["dbport"];
     messageBatchSize = std::stoi(settings["messageBatchSize"]);
     messageBufferSize = std::stoi(settings["messageBufferSize"]);
+}
+
+void Config::SaveConfig() {
+    std::ofstream outFile(filename);
+
+    outFile << "dbname=" << dbname << "\n";
+    outFile << "dbuser=" << dbuser << "\n";
+    outFile << "dbpassword=" << dbpassword << "\n";
+    outFile << "dbhostaddr=" << dbhostaddr << "\n";
+    outFile << "dbport=" << dbport << "\n";
+    outFile << "messageBatchSize=" << messageBatchSize << "\n";
+    outFile << "messageBufferSize=" << messageBufferSize << "\n";
 }

@@ -3,7 +3,7 @@
 #include <string>
 #include <fstream>
 #include <sstream>
-#include <map>
+#include <unordered_map>
 
 
 class Config {
@@ -17,6 +17,8 @@ public:
     int messageBatchSize;
     int messageBufferSize;
 
+    std::string filename;
     static Config& GetInstance();
     void LoadConfig(const std::string& filename);
+    void SaveConfig();
 };
