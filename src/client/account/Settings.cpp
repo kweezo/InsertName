@@ -5,7 +5,7 @@ Settings& Settings::GetInstance() {
     return instance;
 }
 
-void Settings::LoadConfig(const std::string& filename) {
+void Settings::LoadSettings(const std::string& filename) {
     this->filename = filename;
     std::unordered_map<std::string, std::string> settings;
 
@@ -56,7 +56,7 @@ void Settings::LoadConfig(const std::string& filename) {
     anisotropyEnable = settings["anisotropyEnable"] == "true";
 }
 
-void Settings::SaveConfig() {
+void Settings::SaveSettings() {
     std::ofstream outFile(filename);
 
     // Write the current settings to the file

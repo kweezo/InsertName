@@ -16,6 +16,6 @@ public:
 
     std::string filename;
     static Settings& GetInstance();
-    void LoadConfig(const std::string& filename);
-    void SaveConfig();
+    void LoadSettings(const std::string& filename);
+    void SaveSettings();
 };
