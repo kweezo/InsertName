@@ -6,10 +6,12 @@ if(WIN32)
     include_directories("C:\\Program Files (x86)\\libpqxx\\include")
     include_directories("C:\\Strawberry\\c\\include")
     include_directories("lib\\win\\g-truc-glm-0af55cc")
+    include_directories("lib\\win\\assimp\\include")
 
     link_directories("lib\\win\\GLFW\\lib-mingw-w64")
     link_directories("lib\\win\\VulkanSDK\\1.3.275.0\\Lib")
     link_directories("C:\\Program Files (x86)\\libpqxx\\lib")
+    link_directories("lib\\win\\assimp\\lib")
     find_library(SSL_LIBRARY
         NAMES libssl.a
         PATHS C:\\Strawberry\\c\\lib
@@ -69,9 +71,19 @@ if(BUILD_ENGINE)
     file(GLOB enginesrc src/engine/renderer/core/*.cpp src/engine/renderer/ext/*.cpp src/engine/renderer/window/*.cpp src/engine/account/*.cpp)
     add_library(engine SHARED ${enginesrc})
 
-    target_link_libraries(engine PUBLIC glfw)
-    target_link_libraries(engine PUBLIC assimp)
-    target_link_libraries(engine PUBLIC vulkan)
+    if(WIN32)
+        target_link_libraries(engine PUBLIC
+            glfw3
+            glfw3dll
+            assimp
+            gdi32
+            vulkan-1
+            )
+    else()
+        target_link_libraries(engine PUBLIC glfw)
+        target_link_libraries(engine PUBLIC assimp)
+        target_link_libraries(engine PUBLIC vulkan)
+    endif()
 endif()
 
 if(BUILD_CLIENT)    
@@ -82,7 +94,7 @@ if(BUILD_CLIENT)
     include_directories(${CMAKE_SOURCE_DIR}/src)
     
     if(WIN32)
-        target_link_libraries(client PRIVATE
+        target_link_libraries(client PUBLIC
             glfw3
             glfw3dll
             gdi32
@@ -92,8 +104,7 @@ if(BUILD_CLIENT)
             ${CRYPTO_LIBRARY}
             engine
             )
-    elseif(UNIX AND NOT APPLE)
-
+    else()
         target_link_libraries(client PUBLIC ssl)
         target_link_libraries(client PUBLIC crypto)
         target_link_libraries(client PUBLIC engine)
