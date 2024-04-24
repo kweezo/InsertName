@@ -6,7 +6,7 @@ So thus far no real issues or anything, this is a passion project done by a coup
 1.  Advanture:
     - stamina
       - attack
-        - base atack
+        - base attack
         - crit rate
         - crit chance
       - defence
