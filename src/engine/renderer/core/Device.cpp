@@ -39,6 +39,7 @@ std::vector<VkQueue> Device::transferQueues = {};
 uint32_t Device::graphicsQueueFamilyIndex = 0;
 uint32_t Device::transferQueueFamilyIndex = 0;
 bool Device::deviceMemoryFree = false;
+VkPhysicalDeviceProperties Device::physicalDeviceProperties = {};
 
 void Device::CreateDevice(){
     PickPhysicalDevice();
@@ -75,13 +76,29 @@ void Device::PickPhysicalDevice(){
         }
     }
 
-    VkPhysicalDeviceProperties deviceProperties;
-    vkGetPhysicalDeviceProperties(physicalDevice, &deviceProperties);
-    std::cout << "Using device: " << deviceProperties.deviceName << std::endl;
+    vkGetPhysicalDeviceProperties(physicalDevice, &physicalDeviceProperties);
+    std::cout << "Using device: " << physicalDeviceProperties.deviceName << std::endl;
 
     if(physicalDevice == VK_NULL_HANDLE){
         throw std::runtime_error("Failed to find a suitable GPU!");
     }
+}
+
+VkPhysicalDeviceFeatures Device::GetAvailableDeviceFeatures(){
+    VkPhysicalDeviceFeatures availableFeatures{};
+    vkGetPhysicalDeviceFeatures(physicalDevice, &availableFeatures);
+
+
+    VkPhysicalDeviceFeatures wantedFeatures{};
+    wantedFeatures.samplerAnisotropy = VK_TRUE;
+
+    for(uint32_t i = 0; i < sizeof(VkPhysicalDeviceFeatures)/sizeof(VkBool32); i++){
+        if(((VkBool32*)&wantedFeatures)[i] == VK_TRUE && ((VkBool32*)&availableFeatures)[i] == VK_FALSE){
+            throw std::runtime_error("Device does not support required features!");
+        }
+    }
+
+    return wantedFeatures;
 }
 
 bool Device::DeviceMemoryFree(){
@@ -89,6 +106,10 @@ bool Device::DeviceMemoryFree(){
 }
 void Device::SetDeviceMemoryFull(){
     deviceMemoryFree = false;
+}
+
+VkPhysicalDeviceProperties Device::GetPhysicalDeviceProperties(){
+    return physicalDeviceProperties;
 }
 
 void Device::CreateLogicalDevice(){
@@ -118,6 +139,8 @@ void Device::CreateLogicalDevice(){
     createInfo.pQueueCreateInfos = queueCreateInfos.data();
     createInfo.enabledExtensionCount = deviceExtensions.size();
     createInfo.ppEnabledExtensionNames = deviceExtensions.data();
+    VkPhysicalDeviceFeatures features = GetAvailableDeviceFeatures();
+    createInfo.pEnabledFeatures = &features;
     createInfo.enabledLayerCount = 0;
 
     if(vkCreateDevice(physicalDevice, &createInfo, nullptr, &device) != VK_SUCCESS){

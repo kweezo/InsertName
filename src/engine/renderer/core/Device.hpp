@@ -32,10 +32,13 @@ public:
     static VkQueue GetTransferQueue();
 
     static QueueFamilyInfo GetQueueFamilyInfo();
+    static VkPhysicalDeviceProperties GetPhysicalDeviceProperties();
 
     static bool DeviceMemoryFree();
     static void SetDeviceMemoryFull();
 private:
+    static VkPhysicalDeviceFeatures GetAvailableDeviceFeatures();
+
     static uint32_t graphicsQueueFamilyIndex;
     static uint32_t transferQueueFamilyIndex;
 
@@ -44,6 +47,8 @@ private:
 
     static VkDevice device;
     static VkPhysicalDevice physicalDevice;
+
+    static VkPhysicalDeviceProperties physicalDeviceProperties;
 
     static bool deviceMemoryFree;
 

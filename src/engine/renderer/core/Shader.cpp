@@ -19,25 +19,43 @@ void Shader::EnableNewShaders(){
 }
 
 void ShaderImpl::EnableNewShaders(){
+    if(shaderBindings.empty()){
+        std::cout << "Warning, tried to enable new shader bindings but no new shaders have been created" << std::endl;
+        return;
+    }
+
     std::vector<VkDescriptorSetLayoutCreateInfo> descriptorSetLayoutInfos;
 
     VkDescriptorType descriptorTypes{};
 
-    for(ShaderBindingInfo& bindingInfo : shaderBindings){
-        VkDescriptorSetLayoutCreateInfo descriptorSetLayoutInfo = {};
-        descriptorSetLayoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
-        descriptorSetLayoutInfo.bindingCount = bindingInfo.bindings.size();
-        descriptorSetLayoutInfo.pBindings = bindingInfo.bindings.data();
+    ShaderBindingInfo& firstBindingInfo = shaderBindings[0];
 
-        descriptorSetLayoutInfos.push_back(descriptorSetLayoutInfo);
+    for(uint32_t i = 1; i < shaderBindings.size(); i++){
+        firstBindingInfo.bindings.insert(firstBindingInfo.bindings.end(), shaderBindings[i].bindings.begin(), shaderBindings[i].bindings.end());
     }
 
-    uint32_t layoutIndex = DescriptorManager::CreateLayouts(descriptorSetLayoutInfos)[0];
+    VkDescriptorSetLayoutCreateInfo descriptorSetLayoutInfo = {};
+    descriptorSetLayoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
+    descriptorSetLayoutInfo.bindingCount = firstBindingInfo.bindings.size();
+    descriptorSetLayoutInfo.pBindings = firstBindingInfo.bindings.data();
+
+    uint32_t layoutIndex = DescriptorManager::CreateLayouts(descriptorSetLayoutInfo);
     
+    std::unordered_map<VkDescriptorType, uint32_t> bindingCounts;
+
     std::vector<DescriptorBatchInfo> batchInfos;
     uint32_t i = 0;
     for(VkDescriptorSetLayoutBinding& binding : shaderBindings[i].bindings){
-        batchInfos.push_back({1, binding.descriptorType});
+        if(bindingCounts.find(binding.descriptorType) == bindingCounts.end()){
+            bindingCounts[binding.descriptorType] = 1;
+        }
+        else{
+            bindingCounts[binding.descriptorType]++;
+        }
+    }
+
+    for(auto& [descriptorType, count] : bindingCounts){
+        batchInfos.push_back({count, descriptorType});
     }
 
     std::vector<DescriptorHandle> handles = DescriptorManager::CreateDescriptors(batchInfos, shaderBindings.size(), layoutIndex);

@@ -92,7 +92,7 @@ void TextureImpl::LoadTexture(const std::string& path){
 }
 
 void TextureImpl::CreateTextureImage(){
-    image = Image::CreateImage (VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_FORMAT_R8G8B8A8_SRGB,
+    image = Image::CreateImage (VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_ASPECT_COLOR_BIT,
      imageData.width, imageData.height, imageData.width * imageData.height * 4, imageData.dat);
 }
 
@@ -122,8 +122,8 @@ void TextureImpl::CreateTextureSampler(){
     samplerInfo.addressModeU = VK_SAMPLER_ADDRESS_MODE_REPEAT;
     samplerInfo.addressModeV = VK_SAMPLER_ADDRESS_MODE_REPEAT;
     samplerInfo.addressModeW = VK_SAMPLER_ADDRESS_MODE_REPEAT;
-    samplerInfo.anisotropyEnable = VK_FALSE; //!!!!!
-    samplerInfo.maxAnisotropy = 1.0f;
+    samplerInfo.anisotropyEnable = Settings::GetInstance().anisotropyEnable;
+    samplerInfo.maxAnisotropy = std::min((float)Settings::GetInstance().anisotropy, (float)Device::GetPhysicalDeviceProperties().limits.maxSamplerAnisotropy);
     samplerInfo.borderColor = VK_BORDER_COLOR_INT_OPAQUE_BLACK;
     samplerInfo.unnormalizedCoordinates = VK_FALSE;
     samplerInfo.compareEnable = VK_FALSE;
