@@ -38,6 +38,10 @@ void Settings::LoadSettings(const std::string& filename) {
         settings["serverPort"] = "12345";
         outFile << "serverPort=12345\n";
     }
+    if (settings.find("messageBufferSize") == settings.end()) {
+        settings["messageBufferSize"] = "1024";
+        outFile << "messageBufferSize=1024\n";
+    }
     if (settings.find("anisotropy") == settings.end()) {
         settings["anisotropy"] = "2";
         outFile << "anisotropy=2\n";
@@ -52,6 +56,7 @@ void Settings::LoadSettings(const std::string& filename) {
     windowHeight = std::stoi(settings["windowHeight"]);
     serverIP = settings["serverIP"];
     serverPort = std::stoi(settings["serverPort"]);
+    messageBufferSize = std::stoi(settings["messageBufferSize"]);
     anisotropy = std::stoi(settings["anisotropy"]);
     anisotropyEnable = settings["anisotropyEnable"] == "true";
 }
@@ -64,6 +69,7 @@ void Settings::SaveSettings() {
     outFile << "windowHeight=" << windowHeight << "\n";
     outFile << "serverIP=" << serverIP << "\n";
     outFile << "serverPort=" << serverPort << "\n";
+    outFile << "messageBufferSize=" << messageBufferSize << "\n";
     outFile << "anisotropy=" << anisotropy << "\n";
     outFile << "anisotropyEnable=" << (anisotropyEnable ? "true" : "false") << "\n";
 }

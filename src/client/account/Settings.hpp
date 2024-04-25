@@ -11,6 +11,7 @@ public:
     int windowHeight;
     std::string serverIP;
     int serverPort;
+    int messageBufferSize;
     unsigned char anisotropy;
     bool anisotropyEnable;
 

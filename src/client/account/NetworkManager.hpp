@@ -20,6 +20,8 @@
     #define closesocket close
 #endif
 
+#include "Settings.hpp"
+
 
 class NetworkManager {
 public:

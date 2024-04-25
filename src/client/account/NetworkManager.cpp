@@ -124,9 +124,10 @@ std::string NetworkManager::sendData(const std::string& message) {
     }
 
     // Receive the response
-    char buf[1024];
-    memset(buf, 0, 1024);
-    int bytesReceived = SSL_read(ssl, buf, 1024);
+    int bufferSize = Settings::GetInstance().messageBufferSize;
+    char buf[bufferSize];
+    memset(buf, 0, bufferSize);
+    int bytesReceived = SSL_read(ssl, buf, bufferSize);
     if (bytesReceived > 0) {
         std::string response(buf, 0, bytesReceived);
         return response;
