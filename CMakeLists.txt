@@ -95,10 +95,6 @@ if(BUILD_CLIENT)
     
     if(WIN32)
         target_link_libraries(client PUBLIC
-            glfw3
-            glfw3dll
-            gdi32
-            vulkan-1
             ws2_32
             ${SSL_LIBRARY}
             ${CRYPTO_LIBRARY}

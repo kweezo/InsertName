@@ -97,7 +97,7 @@ int main(){
     Settings& settings = Settings::GetInstance();
     settings.LoadSettings(dir + "settings.cfg");
     UserManager* userManager = new UserManager(settings.serverIP, settings.serverPort);
-    //userTemp(userManager);
+    userTemp(userManager);
 
     Window::CreateWindowContext(settings.windowWidth, settings.windowHeight, "Vulkan");
     Renderer::InitRenderer();
