@@ -9,6 +9,7 @@
 #include "../core/Device.hpp"
 #include "../core/Image.hpp"
 #include "../core/DescriptorManager.hpp"
+#include "client/account/Settings.hpp"
 
 #define TextureHandle TextureImpl*
 

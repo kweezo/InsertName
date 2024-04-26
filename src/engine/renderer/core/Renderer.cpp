@@ -3,12 +3,19 @@
 namespace renderer{
 
 void Renderer::InitRenderer(){
+    HardInit();
+    SoftInit();
+}
+void Renderer::HardInit(){
     Instance::CreateInstance();
     Device::CreateDevice();
     Window::CreateVulkanSurface();
-    Swapchain::CreateSwapchain();
     CommandPool::CreateCommandPools();
     ImageImpl::Initialize();
+}
+
+void Renderer::SoftInit(){
+    Swapchain::CreateSwapchain();
 }
 
 void Renderer::RenderFrame(){

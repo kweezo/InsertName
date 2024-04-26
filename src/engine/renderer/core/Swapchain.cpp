@@ -2,6 +2,8 @@
 
 namespace renderer{
 
+//TODO allow window resizing
+
 VkSwapchainKHR Swapchain::swapchain = VK_NULL_HANDLE;
 std::vector<VkImageView> Swapchain::swapchainImageViews = {};
 
@@ -49,7 +51,7 @@ void Swapchain::CreateSwapchain(){
     createInfo.compositeAlpha = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR;
     createInfo.presentMode = VK_PRESENT_MODE_FIFO_KHR;
     createInfo.clipped = VK_TRUE;
-    createInfo.oldSwapchain = VK_NULL_HANDLE;
+    createInfo.oldSwapchain = swapchain;
 
     if(vkCreateSwapchainKHR(Device::GetDevice(), &createInfo, nullptr, &swapchain) != VK_SUCCESS){
         throw std::runtime_error("Failed to create swapchain!");

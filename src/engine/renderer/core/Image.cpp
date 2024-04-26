@@ -7,9 +7,9 @@ std::vector<ImageTransitionCMDInfo> ImageImpl::stagingBuffers = {};
 Fence ImageImpl::finishedTransitioningFence = Fence();
 CommandBuffer ImageImpl::primaryCommandBuffer = CommandBuffer();
 
-ImageHandle Image::CreateImage(VkImageLayout layout, VkFormat format, uint32_t width,
+ImageHandle Image::CreateImage(VkImageLayout layout, VkFormat format, VkImageAspectFlags aspectMask, uint32_t width,
      uint32_t height, size_t size, void* data){
-        return new ImageImpl(layout, format, width, height, size, data);
+        return new ImageImpl(layout, format, aspectMask, width, height, size, data);
 }
 
 void Image::Free(ImageHandle image){
@@ -24,6 +24,19 @@ void Image::UpdateCommandBuffers(){
     ImageImpl::UpdateCommandBuffers();
 }
 
+VkFormat Image::GetSupportedFormat(VkFormat format, VkImageTiling tiling, VkFormatFeatureFlags features){
+    VkFormatProperties formatProperties;
+    vkGetPhysicalDeviceFormatProperties(Device::GetPhysicalDevice(), format, &formatProperties);
+
+    if(tiling == VK_IMAGE_TILING_LINEAR && (formatProperties.linearTilingFeatures & features) == features){
+        return format;
+    }else if(tiling == VK_IMAGE_TILING_OPTIMAL && (formatProperties.optimalTilingFeatures & features) == features){
+        return format;
+    }
+
+    throw std::runtime_error("Failed to find supported format");
+}
+
 void ImageImpl::Initialize(){
     finishedTransitioningFence = Fence(0);
     CreateCommandBuffers();
@@ -34,7 +47,7 @@ ImageImpl::ImageImpl(){
     (*useCount) = 1;
 }
 
-ImageImpl::ImageImpl(VkImageLayout layout, VkFormat format, uint32_t width,
+ImageImpl::ImageImpl(VkImageLayout layout, VkFormat format, VkImageAspectFlags aspectMask, uint32_t width,
      uint32_t height, size_t size, void* data){
 
     VkImageCreateInfo imageInfo = {};
@@ -69,7 +82,6 @@ ImageImpl::ImageImpl(VkImageLayout layout, VkFormat format, uint32_t width,
     if(vkCreateImage(Device::GetDevice(), &imageInfo, nullptr, &image) != VK_SUCCESS){
         throw std::runtime_error("Failed to create image");
     }
-
     
 
     VkMemoryRequirements memRequirements;
@@ -107,9 +119,11 @@ ImageImpl::ImageImpl(VkImageLayout layout, VkFormat format, uint32_t width,
     subresourceLayers.mipLevel = 0;
 
 
+    this->aspectMask = aspectMask;
     TransitionLayout(VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
 
     loadDataInfo = {image, memory, size, data, {width, height, 1}, subresourceLayers, layout};
+
 
     useCount = new uint32_t;
     (*useCount) = 1;
@@ -124,7 +138,7 @@ void ImageImpl::TransitionLayout(VkImageLayout oldLayout, VkImageLayout newLayou
     imageMemoryBarrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
     imageMemoryBarrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
     imageMemoryBarrier.image = image;
-    imageMemoryBarrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;//make this a parameter
+    imageMemoryBarrier.subresourceRange.aspectMask = aspectMask;
     imageMemoryBarrier.subresourceRange.baseMipLevel = 0;
     imageMemoryBarrier.subresourceRange.levelCount = 1;
     imageMemoryBarrier.subresourceRange.baseArrayLayer = 0;
@@ -235,6 +249,7 @@ ImageImpl::ImageImpl(const ImageImpl& other){
     image = other.image;
     memory = other.memory;
     useCount = other.useCount;
+    aspectMask = other.aspectMask;
     (*useCount)++;
 }
 
@@ -247,6 +262,7 @@ ImageImpl& ImageImpl::operator=(const ImageImpl& other){
     image = other.image;
     memory = other.memory;
     useCount = other.useCount;
+    aspectMask = other.aspectMask;
     (*useCount)++;
 
     return *this;

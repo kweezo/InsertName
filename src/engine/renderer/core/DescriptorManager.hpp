@@ -27,7 +27,7 @@ typedef struct{
 
 class DescriptorManager{
 public:
-    static std::vector<uint32_t> CreateLayouts(std::vector<VkDescriptorSetLayoutCreateInfo> layoutInfos);
+    static uint32_t CreateLayouts(VkDescriptorSetLayoutCreateInfo layoutInfo);
     static std::vector<DescriptorHandle> CreateDescriptors(std::vector<DescriptorBatchInfo> batchInfos, uint32_t setCount, uint32_t layoutIndex); 
     static void CreateDescriptor(uint32_t layoutIndex); //TODO implement once I figure out how to batch this mf
 
