@@ -28,7 +28,9 @@ public:
     NetworkManager(const std::string& serverIP, int port);
     bool connectToServer();
     void closeConnection();
-    std::string sendData(const std::string& message);
+    //std::string sendData(const std::string& message);
+    template <typename T>
+    std::string sendData(const T& data);
 
 private:
     std::string serverIP;

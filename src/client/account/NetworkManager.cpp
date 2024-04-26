@@ -92,7 +92,7 @@ bool NetworkManager::connectToServer() {
 
 void NetworkManager::closeConnection() {
     // Send a message to the server to close the connection
-    sendData("c");
+    sendData('c');
 
     int shutdownResult = SSL_shutdown(ssl);
     if (shutdownResult == 0) {
@@ -114,10 +114,36 @@ void NetworkManager::closeConnection() {
         WSACleanup();
     #endif
 }
-
+/*
 std::string NetworkManager::sendData(const std::string& message) {
     // Send the message
     int sendResult = SSL_write(ssl, message.c_str(), message.size() + 1);
+    if (sendResult <= 0) {
+        // handle error
+        return "";
+    }
+
+    // Receive the response
+    int bufferSize = Settings::GetInstance().messageBufferSize;
+    char buf[bufferSize];
+    memset(buf, 0, bufferSize);
+    int bytesReceived = SSL_read(ssl, buf, bufferSize);
+    if (bytesReceived > 0) {
+        std::string response(buf, 0, bytesReceived);
+        return response;
+    }
+    
+    return "";
+}
+*/
+template <typename T>
+std::string NetworkManager::sendData(const T& data) {
+    // Convert the data to binary
+    const char* binaryData = reinterpret_cast<const char*>(&data);
+    std::string binaryString(binaryData, binaryData + sizeof(T));
+
+    // Send the binary data
+    int sendResult = SSL_write(ssl, binaryString.c_str(), binaryString.size());
     if (sendResult <= 0) {
         // handle error
         return "";

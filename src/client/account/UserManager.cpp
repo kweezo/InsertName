@@ -3,6 +3,10 @@
 
 UserManager::UserManager(const std::string& serverIP, int port) : NetworkManager(serverIP, port) {}
 
+char UserManager::sendStruct(glm::vec3 v1[8], glm::vec3 v2[8]) {
+    
+}
+
 int UserManager::loginUser(const char loginType,const std::string &username, const std::string &password) {
     std::string message = stickMessage(loginType, username, password);
     std::string response = sendData(message);
