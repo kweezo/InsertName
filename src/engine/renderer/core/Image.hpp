@@ -42,6 +42,8 @@ public:
 
     static void Initialize();
     static void UpdateCommandBuffers();
+
+    static VkFormat GetSupportedFormat(VkFormat format, VkImageTiling tiling, VkFormatFeatureFlags features);
 };
 
 class ImageImpl{

@@ -24,6 +24,19 @@ void Image::UpdateCommandBuffers(){
     ImageImpl::UpdateCommandBuffers();
 }
 
+VkFormat Image::GetSupportedFormat(VkFormat format, VkImageTiling tiling, VkFormatFeatureFlags features){
+    VkFormatProperties formatProperties;
+    vkGetPhysicalDeviceFormatProperties(Device::GetPhysicalDevice(), format, &formatProperties);
+
+    if(tiling == VK_IMAGE_TILING_LINEAR && (formatProperties.linearTilingFeatures & features) == features){
+        return format;
+    }else if(tiling == VK_IMAGE_TILING_OPTIMAL && (formatProperties.optimalTilingFeatures & features) == features){
+        return format;
+    }
+
+    throw std::runtime_error("Failed to find supported format");
+}
+
 void ImageImpl::Initialize(){
     finishedTransitioningFence = Fence(0);
     CreateCommandBuffers();
