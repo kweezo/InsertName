@@ -56,7 +56,6 @@ public:
 private:
     void LoadTexture(const std::string& path);
     void CreateTextureImage();
-    void CreateTextureImageView();
     void CreateTextureSampler();
 
     uint32_t *useCount;
@@ -66,7 +65,6 @@ private:
     uint32_t binding;
 
     ImageHandle image;
-    VkImageView imageView;
     VkSampler sampler;
 
     VkDescriptorSet descriptorSet;

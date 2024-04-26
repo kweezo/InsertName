@@ -7,8 +7,8 @@ std::vector<ImageTransitionCMDInfo> ImageImpl::stagingBuffers = {};
 Fence ImageImpl::finishedTransitioningFence = Fence();
 CommandBuffer ImageImpl::primaryCommandBuffer = CommandBuffer();
 
-ImageHandle Image::CreateImage(VkImageLayout layout, VkFormat format, VkImageAspectFlags aspectMask, uint32_t width,
-     uint32_t height, size_t size, void* data){
+ImageHandle Image::CreateImage(VkImageLayout layout, VkFormat format, VkImageAspectFlags aspectMask,
+     uint32_t width, uint32_t height, size_t size, void* data){
         return new ImageImpl(layout, format, aspectMask, width, height, size, data);
 }
 
@@ -50,6 +50,58 @@ ImageImpl::ImageImpl(){
 ImageImpl::ImageImpl(VkImageLayout layout, VkFormat format, VkImageAspectFlags aspectMask, uint32_t width,
      uint32_t height, size_t size, void* data){
 
+
+    CreateImage(width, height, format);
+
+    VkMemoryRequirements memRequirements;
+    vkGetImageMemoryRequirements(Device::GetDevice(), image, &memRequirements);
+
+    VkPhysicalDeviceMemoryProperties memProperties;
+    vkGetPhysicalDeviceMemoryProperties(Device::GetPhysicalDevice(), &memProperties);
+
+    VkMemoryPropertyFlagBits memoryProperties = Device::DeviceMemoryFree() ? (VkMemoryPropertyFlagBits)
+    (VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT) : (VkMemoryPropertyFlagBits)
+    (VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+
+    for(uint32_t i = 0; i < memProperties.memoryTypeCount; i++){
+        if((memRequirements.memoryTypeBits & (1 << i)) && (memProperties.memoryTypes[i].propertyFlags & memoryProperties)
+         == memoryProperties){
+            VkMemoryAllocateInfo allocInfo{};
+            allocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
+            allocInfo.allocationSize = memRequirements.size ;
+            allocInfo.memoryTypeIndex = i;
+
+            if(vkAllocateMemory(Device::GetDevice(), &allocInfo, nullptr, &memory) != VK_SUCCESS){
+                throw std::runtime_error("Failed to allocate vertex buffer memory");
+            }
+
+            break;
+        }
+    }
+
+    vkBindImageMemory(Device::GetDevice(), image, memory, 0);
+
+    CreateImageView(format, aspectMask);
+
+    VkImageSubresourceLayers subresourceLayers = {};
+    subresourceLayers.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+    subresourceLayers.baseArrayLayer = 0;
+    subresourceLayers.layerCount = 1;
+    subresourceLayers.mipLevel = 0;
+
+
+    this->aspectMask = aspectMask;
+    TransitionLayout(VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
+
+    loadDataInfo = {image, memory, size, data, {width, height, 1}, subresourceLayers, layout};
+
+
+    useCount = new uint32_t;
+    (*useCount) = 1;
+
+}
+
+void ImageImpl::CreateImage(uint32_t width, uint32_t height, VkFormat format){
     VkImageCreateInfo imageInfo = {};
 
     QueueFamilyInfo queueFamilyInfo = Device::GetQueueFamilyInfo();
@@ -82,53 +134,39 @@ ImageImpl::ImageImpl(VkImageLayout layout, VkFormat format, VkImageAspectFlags a
     if(vkCreateImage(Device::GetDevice(), &imageInfo, nullptr, &image) != VK_SUCCESS){
         throw std::runtime_error("Failed to create image");
     }
-    
-
-    VkMemoryRequirements memRequirements;
-    vkGetImageMemoryRequirements(Device::GetDevice(), image, &memRequirements);
-
-    VkPhysicalDeviceMemoryProperties memProperties;
-    vkGetPhysicalDeviceMemoryProperties(Device::GetPhysicalDevice(), &memProperties);
-
-    VkMemoryPropertyFlagBits memoryProperties = Device::DeviceMemoryFree() ? (VkMemoryPropertyFlagBits)
-    (VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT) : (VkMemoryPropertyFlagBits)
-    (VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
-
-    for(uint32_t i = 0; i < memProperties.memoryTypeCount; i++){
-        if((memRequirements.memoryTypeBits & (1 << i)) && (memProperties.memoryTypes[i].propertyFlags & memoryProperties)
-         == memoryProperties){
-            VkMemoryAllocateInfo allocInfo{};
-            allocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
-            allocInfo.allocationSize = memRequirements.size ;
-            allocInfo.memoryTypeIndex = i;
-
-            if(vkAllocateMemory(Device::GetDevice(), &allocInfo, nullptr, &memory) != VK_SUCCESS){
-                throw std::runtime_error("Failed to allocate vertex buffer memory");
-            }
-
-            break;
-        }
-    }
-
-    vkBindImageMemory(Device::GetDevice(), image, memory, 0);
-
-    VkImageSubresourceLayers subresourceLayers = {};
-    subresourceLayers.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-    subresourceLayers.baseArrayLayer = 0;
-    subresourceLayers.layerCount = 1;
-    subresourceLayers.mipLevel = 0;
-
-
-    this->aspectMask = aspectMask;
-    TransitionLayout(VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
-
-    loadDataInfo = {image, memory, size, data, {width, height, 1}, subresourceLayers, layout};
-
-
-    useCount = new uint32_t;
-    (*useCount) = 1;
-
 }
+
+
+void ImageImpl::CreateImageView(VkFormat format, VkImageAspectFlags aspectMask){
+    VkImageViewCreateInfo createInfo{};
+
+    createInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
+    createInfo.image = image;
+    createInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
+    createInfo.format = format;
+    createInfo.components = {
+        VK_COMPONENT_SWIZZLE_IDENTITY,
+        VK_COMPONENT_SWIZZLE_IDENTITY,
+        VK_COMPONENT_SWIZZLE_IDENTITY,
+        VK_COMPONENT_SWIZZLE_IDENTITY,
+    };
+    createInfo.subresourceRange = {
+        aspectMask,
+        0,
+        1,
+        0,
+        1
+    };// make mutable
+
+    if(vkCreateImageView(Device::GetDevice(), &createInfo, nullptr, &imageView) != VK_SUCCESS){
+        throw std::runtime_error("Failed to create image view");
+    }
+}
+
+VkImageView ImageImpl::GetImageView(){
+    return imageView;
+}
+
 
 void ImageImpl::TransitionLayout(VkImageLayout oldLayout, VkImageLayout newLayout){
     VkImageMemoryBarrier imageMemoryBarrier = {};
@@ -249,6 +287,7 @@ ImageImpl::ImageImpl(const ImageImpl& other){
     image = other.image;
     memory = other.memory;
     useCount = other.useCount;
+    imageView = other.imageView;
     aspectMask = other.aspectMask;
     (*useCount)++;
 }
@@ -262,6 +301,7 @@ ImageImpl& ImageImpl::operator=(const ImageImpl& other){
     image = other.image;
     memory = other.memory;
     useCount = other.useCount;
+    imageView = other.imageView;
     aspectMask = other.aspectMask;
     (*useCount)++;
 
@@ -270,6 +310,7 @@ ImageImpl& ImageImpl::operator=(const ImageImpl& other){
 
 ImageImpl::~ImageImpl(){
     if((*useCount) <= 1){
+        vkDestroyImageView(Device::GetDevice(), imageView, nullptr);
         vkDestroyImage(Device::GetDevice(), image, nullptr);
         vkFreeMemory(Device::GetDevice(), memory, nullptr);
     }

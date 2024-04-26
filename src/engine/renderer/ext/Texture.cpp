@@ -48,7 +48,6 @@ ImageHandle TextureImpl::GetImage(){
 TextureImpl::TextureImpl(const std::string& path, uint32_t binding, VkDescriptorSet descriptorSet){
     LoadTexture(path);
     CreateTextureImage();
-    CreateTextureImageView();
     CreateTextureSampler();
 
     handles.push_back(this);
@@ -73,7 +72,7 @@ VkWriteDescriptorSet TextureImpl::GetWriteDescriptorSet(){
 
     static VkDescriptorImageInfo imageInfo{};
     imageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-    imageInfo.imageView = imageView;
+    imageInfo.imageView = image->GetImageView();
     imageInfo.sampler = sampler;
 
     writeDescriptorSet.pImageInfo = &imageInfo;
@@ -96,23 +95,6 @@ void TextureImpl::CreateTextureImage(){
      imageData.width, imageData.height, imageData.width * imageData.height * 4, imageData.dat);
 }
 
-
-void TextureImpl::CreateTextureImageView(){
-    VkImageViewCreateInfo viewInfo{};
-    viewInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
-    viewInfo.image = image->GetImage();
-    viewInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
-    viewInfo.format = VK_FORMAT_R8G8B8A8_SRGB;
-    viewInfo.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-    viewInfo.subresourceRange.baseMipLevel = 0;
-    viewInfo.subresourceRange.levelCount = 1;
-    viewInfo.subresourceRange.baseArrayLayer = 0;
-    viewInfo.subresourceRange.layerCount = 1;
-
-    if(vkCreateImageView(Device::GetDevice(), &viewInfo, nullptr, &imageView) != VK_SUCCESS){
-        throw std::runtime_error("Failed to create texture image view");
-    }
-}
 
 void TextureImpl::CreateTextureSampler(){
     VkSamplerCreateInfo samplerInfo{};
@@ -142,7 +124,6 @@ TextureImpl::TextureImpl(const TextureImpl& other){
     image = other.image;
     imageData = other.imageData;
     useCount = other.useCount;
-    imageView = other.imageView;
     sampler = other.sampler;
     binding = other.binding;
     descriptorSet = other.descriptorSet;
@@ -156,7 +137,6 @@ TextureImpl& TextureImpl::operator=(const TextureImpl& other){
     image = other.image;
     imageData = other.imageData;
     useCount = other.useCount;
-    imageView = other.imageView;
     binding = other.binding;
     sampler = other.sampler;
     descriptorSet = other.descriptorSet;
@@ -167,7 +147,6 @@ TextureImpl& TextureImpl::operator=(const TextureImpl& other){
 TextureImpl::~TextureImpl(){
     if((*useCount) <= 1){
         vkDestroySampler(Device::GetDevice(), sampler, nullptr);
-        vkDestroyImageView(Device::GetDevice(), imageView, nullptr);
         Image::Free(image);
     }
 }
