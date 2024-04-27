@@ -69,7 +69,12 @@ std::string ClientHandler::handleMsg(const char* receivedData, int dataSize) {
         memcpy(v1, receivedData + 1, sizeof(glm::vec3) * 8);
         memcpy(v2, receivedData + 1 + sizeof(glm::vec3) * 8, sizeof(glm::vec3) * 8);
 
+        for (int i = 0; i < 8; ++i) {
+            std::cout << "v1[" << i << "] = " << glm::to_string(v1[i]) << std::endl;
+            std::cout << "v2[" << i << "] = " << glm::to_string(v2[i]) << std::endl;
+        }
         //TODO Handle the glm::vec3 data...
+        response = "F";
 
     } else {
         std::string msg(dataStart, dataLength);
