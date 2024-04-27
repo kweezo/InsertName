@@ -18,11 +18,20 @@ ClientHandler::~ClientHandler() {
 }
 
 void ClientHandler::handleConnection() {
-    int bufferSize = Config::GetInstance().messageBufferSize;
-    char buffer[bufferSize];
     while (true) {
-        memset(buffer, 0, bufferSize);
-        int bytesReceived = SSL_read(ssl, buffer, bufferSize);
+        // Read the size of the incoming data
+        uint32_t size;
+        int bytesReceived = SSL_read(ssl, reinterpret_cast<char*>(&size), sizeof(uint32_t));
+        if (bytesReceived <= 0) {
+            int errorCode = SSL_get_error(ssl, bytesReceived);
+            std::cerr << "Error in SSL_read(). Error code: " << errorCode << ". Quitting" << std::endl;
+            break;
+        }
+        size = ntohl(size); // Convert from network byte order to host byte order
+
+        // Read the actual data
+        char buffer[size];
+        bytesReceived = SSL_read(ssl, buffer, size);
         if (bytesReceived <= 0) {
             int errorCode = SSL_get_error(ssl, bytesReceived);
             std::cerr << "Error in SSL_read(). Error code: " << errorCode << ". Quitting" << std::endl;
@@ -31,9 +40,11 @@ void ClientHandler::handleConnection() {
 
         // Pass the binary data to handleMsg
         std::string response = handleMsg(buffer, bytesReceived);
+
         // Convert the response to binary
-        const char* binaryResponse = reinterpret_cast<const char*>(&response);
-        std::string binaryString(binaryResponse, binaryResponse + sizeof(std::string));
+        std::string binaryString(response.begin(), response.end());
+
+        // Send the binary data
         SSL_write(ssl, binaryString.c_str(), binaryString.size());
         if (response == "c" || response == "q") {
             return;
@@ -43,6 +54,13 @@ void ClientHandler::handleConnection() {
 
 std::string ClientHandler::handleMsg(const char* receivedData, int dataSize) {
     std::string response;
+
+    // Extract the identifier from the received data
+    unsigned char identifier = receivedData[0]; // The identifier is the first byte
+
+    // The actual data starts after the identifier
+    const char* dataStart = receivedData + 1;
+    int dataLength = dataSize - 1;
 
     if (receivedData[0] == 's') {
         // Convert the binary data back to glm::vec3
@@ -54,50 +72,56 @@ std::string ClientHandler::handleMsg(const char* receivedData, int dataSize) {
         //TODO Handle the glm::vec3 data...
 
     } else {
-        // Convert the binary data to a string
-        std::string msg(receivedData, dataSize);
+        std::string msg(dataStart, dataLength);
 
-        if (msg[0] == 'r') {
-            std::string username = getNextArg(msg);
-            std::string password = getNextArg(msg);
-            response = registerUser(username, password);
-
-        } else if (msg[0] == 'l') {
-            std::string username = getNextArg(msg);
-            std::string password = getNextArg(msg);
-            response = loginUser(username, password);
-
-        } else if (msg[0] == 'm') {
-            std::string reciverUsername = getNextArg(msg);
-            msg = getNextArg(msg);
-            response = sendMessage(reciverUsername, msg);
-
-        } else if (msg[0] == 'g') {
-            std::string senderUsername = getNextArg(msg);
-            int offset = std::stoi(getNextArg(msg));
-            std::vector<std::pair<std::string, std::string>> messages = getMessages(senderUsername, offset);
-            response = "g";
-            for (const auto& pair : messages) {
-                std::string timestamp = pair.second;
-                std::string message = pair.first;
-                response += timestamp + (char)30 + message + (char)30;
+        switch (receivedData[0]) {
+            case 'r': {
+                std::string username = getNextArg(msg);
+                response = registerUser(username, msg);
+                break;
             }
-
-        } else if (msg[0] == 'n') {
-            std::string senderUsername = getNextArg(msg);
-            std::vector<std::pair<std::string, std::string>> messages = getNewMessages(senderUsername);
-            response = "n";
-            for (const auto& pair : messages) {
-                std::string timestamp = pair.second;
-                std::string message = pair.first;
-                response += timestamp + (char)30 + message + (char)30;
+            case 'l': {
+                std::string username = getNextArg(msg);
+                std::cout << msg << std::endl;
+                response = loginUser(username, msg);
+                break;
             }
-
-        } else if (msg[0] == 'c') {
-            response = "c";
-
-        } else {
-            response = "q";
+            case 'm': {
+                std::string reciverUsername = getNextArg(msg);
+                response = sendMessage(reciverUsername, msg);
+                break;
+            }
+            case 'g': {
+                std::string senderUsername = getNextArg(msg);
+                int offset = std::stoi(msg); //! Add error handling if the string is not a number
+                std::vector<std::pair<std::string, std::string>> messages = getMessages(senderUsername, offset);
+                response = "g";
+                for (const auto& pair : messages) {
+                    std::string timestamp = pair.second;
+                    std::string message = pair.first;
+                    response += timestamp + (char)30 + message + (char)30;
+                }
+                break;
+            }
+            case 'n': {
+                std::string senderUsername = getNextArg(msg);
+                std::vector<std::pair<std::string, std::string>> messages = getNewMessages(senderUsername);
+                response = "n";
+                for (const auto& pair : messages) {
+                    std::string timestamp = pair.second;
+                    std::string message = pair.first;
+                    response += timestamp + (char)30 + message + (char)30;
+                }
+                break;
+            }
+            case 'c': {
+                response = "c";
+                break;
+            }
+            default: {
+                response = "q";
+                break;
+            }
         }
     }
 
@@ -251,15 +275,13 @@ std::vector<std::pair<std::string, std::string>> ClientHandler::getNewMessages(s
 }
 
 std::string ClientHandler::getNextArg(std::string& msg) {
-    msg.erase(0, 1);
-
     size_t pos = msg.find((char)30);
     if (pos == std::string::npos) {
         pos = msg.size();
     }
 
     std::string arg = msg.substr(0, pos); // Get the string up to the next (char)30
-    msg.erase(0, pos); // Erase everything up to the next (char)30
+    msg.erase(0, pos+1); // Erase everything up to and including the next (char)30
 
     return arg;
 }

@@ -28,7 +28,7 @@ public:
     NetworkManager(const std::string& serverIP, int port);
     bool connectToServer();
     void closeConnection();
-    //std::string sendData(const std::string& message);
+
     template <typename T>
     std::string sendData(unsigned char identifier, const T& data);
     struct EmptyStruct {};
@@ -44,11 +44,23 @@ private:
 template <typename T>
 std::string NetworkManager::sendData(unsigned char identifier, const T& data) {
     // Convert the data to binary
-    const char* binaryData = reinterpret_cast<const char*>(&data);
-    std::string binaryString(binaryData, binaryData + sizeof(T));
+    std::string binaryString;
+    if constexpr (std::is_same_v<T, std::string>) {
+        binaryString = data; // No need to convert if T is already a string
+    } else {
+        const char* binaryData = reinterpret_cast<const char*>(&data);
+        binaryString.assign(binaryData, binaryData + sizeof(T));
+    }
 
-    // Prepend the identifier
+    // Convert the size to binary
+    uint32_t size = htonl(binaryString.size() + 1); // Add 1 for the identifier
+    const char* binarySize = reinterpret_cast<const char*>(&size);
+
+    // Insert the identifier at the beginning of the binary string
     binaryString.insert(binaryString.begin(), identifier);
+
+    // Prepend the size to the binary string
+    binaryString.insert(binaryString.begin(), binarySize, binarySize + sizeof(uint32_t));
 
     // Send the binary data
     int sendResult = SSL_write(ssl, binaryString.c_str(), binaryString.size());
@@ -63,7 +75,8 @@ std::string NetworkManager::sendData(unsigned char identifier, const T& data) {
     memset(buf, 0, bufferSize);
     int bytesReceived = SSL_read(ssl, buf, bufferSize);
     if (bytesReceived > 0) {
-        std::string response(buf, 0, bytesReceived);
+        // Convert the binary response back to a string
+        std::string response(buf, bytesReceived);
         return response;
     }
     
