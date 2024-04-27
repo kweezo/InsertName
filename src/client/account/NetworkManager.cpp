@@ -114,25 +114,3 @@ void NetworkManager::closeConnection() {
         WSACleanup();
     #endif
 }
-/*
-std::string NetworkManager::sendData(const std::string& message) {
-    // Send the message
-    int sendResult = SSL_write(ssl, message.c_str(), message.size() + 1);
-    if (sendResult <= 0) {
-        // handle error
-        return "";
-    }
-
-    // Receive the response
-    int bufferSize = Settings::GetInstance().messageBufferSize;
-    char buf[bufferSize];
-    memset(buf, 0, bufferSize);
-    int bytesReceived = SSL_read(ssl, buf, bufferSize);
-    if (bytesReceived > 0) {
-        std::string response(buf, 0, bytesReceived);
-        return response;
-    }
-    
-    return "";
-}
-*/
