@@ -43,7 +43,8 @@ public:
     static void Initialize();
     static void UpdateCommandBuffers();
 
-    static VkFormat GetSupportedFormat(VkFormat format, VkImageTiling tiling, VkFormatFeatureFlags features);
+    static VkFormat GetSupportedFormat(std::vector<VkFormat> candidates, VkImageTiling tiling, VkFormatFeatureFlags features);
+    static inline bool HasStencilComponent(VkFormat format);
 };
 
 class ImageImpl{
