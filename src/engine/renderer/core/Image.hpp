@@ -35,8 +35,8 @@ typedef struct LoadDataIntoImageInfo{
 class Image{
 public:
 
-    static ImageHandle CreateImage(VkImageLayout layout, VkFormat format, VkImageAspectFlags aspectMask, uint32_t width,
-     uint32_t height, size_t size, void* data);
+    static ImageHandle CreateImage(VkImageLayout layout, VkFormat format, VkImageAspectFlags aspectMask,
+     uint32_t width, uint32_t height, size_t size, void* data);
 
     static void Free(ImageHandle image);
 
@@ -61,11 +61,15 @@ public:
 
     VkImage GetImage();
     void LoadDataIntoImage();
-
     void TransitionLayout(VkImageLayout oldLayout, VkImageLayout newLayout);
+
+    VkImageView GetImageView();
 
     static void UpdateCommandBuffers();
 private:
+    void CreateImage(uint32_t width, uint32_t height, VkFormat format);
+    void CreateImageView(VkFormat format, VkImageAspectFlags aspectMask);
+
     static void CreateCommandBuffers();
     static CommandBuffer GetFreeCommandBuffer(ImageHandle image);
 
@@ -78,6 +82,7 @@ private:
     LoadDataIntoImageInfo loadDataInfo;
 
     VkImage image;
+    VkImageView imageView;
     VkDeviceMemory memory;
 
     VkImageAspectFlags aspectMask;
