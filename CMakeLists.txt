@@ -1,6 +1,9 @@
 cmake_minimum_required(VERSION 3.20)
 
 project(InsertName)
+
+include_directories("src")
+
 if(WIN32)
     include_directories("lib\\win")
     include_directories("C:\\Program Files (x86)\\libpqxx\\include")
@@ -68,7 +71,7 @@ if(BUILD_SERVER)
 endif()
 
 if(BUILD_ENGINE)
-    file(GLOB enginesrc src/engine/renderer/core/*.cpp src/engine/renderer/ext/*.cpp src/engine/renderer/window/*.cpp src/engine/account/*.cpp)
+    file(GLOB enginesrc src/engine/renderer/core/*.cpp src/engine/renderer/ext/*.cpp src/engine/renderer/window/*.cpp src/client/account/Settings.cpp)
     add_library(engine SHARED ${enginesrc})
 
     if(WIN32)
@@ -106,4 +109,5 @@ if(BUILD_CLIENT)
         target_link_libraries(client PUBLIC engine)
     endif()
 endif()
+
 set_target_properties(client PROPERTIES CXX_STANDARD 20 CXX_STANDARD_REQUIRED ON)
