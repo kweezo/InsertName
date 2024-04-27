@@ -21,17 +21,19 @@ public:
     static void DestroySwapchain();
 
     static VkSwapchainKHR GetSwapchain();
-
     static VkExtent2D GetExtent();
     static VkFormat GetImageFormat();
-
+    static VkFormat GetDepthFormat();
     static uint32_t GetImageCount();
+    static ImageHandle GetDepthImage();
+
 
     static std::vector<VkImageView> GetSwapchainImageViews();
 private:
     static VkSwapchainKHR swapchain;
     static std::vector<VkImageView> swapchainImageViews;
     static ImageHandle depthImage;
+    static VkFormat depthFormat;
 
     static void CreateDepthImage();
 

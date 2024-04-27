@@ -7,6 +7,7 @@ namespace renderer{
 VkSwapchainKHR Swapchain::swapchain = VK_NULL_HANDLE;
 std::vector<VkImageView> Swapchain::swapchainImageViews = {};
 ImageHandle Swapchain::depthImage = nullptr;
+VkFormat Swapchain::depthFormat = {};
 
 void Swapchain::CreateSwapchain(){
     VkSurfaceCapabilitiesKHR surfaceCapabilities;
@@ -104,8 +105,16 @@ void Swapchain::CreateSwapchainImageViews(){
     }
 }
 
+VkFormat Swapchain::GetDepthFormat(){
+    return depthFormat;
+}
+
+ImageHandle Swapchain::GetDepthImage(){
+    return depthImage;
+}
+
 void Swapchain::CreateDepthImage(){
-    VkFormat depthFormat = Image::GetSupportedFormat({VK_FORMAT_D32_SFLOAT, VK_FORMAT_D32_SFLOAT_S8_UINT, VK_FORMAT_D24_UNORM_S8_UINT},
+    depthFormat = Image::GetSupportedFormat({VK_FORMAT_D32_SFLOAT, VK_FORMAT_D32_SFLOAT_S8_UINT, VK_FORMAT_D24_UNORM_S8_UINT},
      VK_IMAGE_TILING_OPTIMAL, VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT);
 
     depthImage = Image::CreateImage(VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL, depthFormat, VK_IMAGE_ASPECT_DEPTH_BIT, 

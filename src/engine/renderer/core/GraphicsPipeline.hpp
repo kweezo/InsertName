@@ -10,16 +10,13 @@
 #include "Device.hpp"
 #include "Shader.hpp"
 #include "Swapchain.hpp"
+#include "DataBuffer.hpp"
+
 namespace renderer{
 
 class GraphicsPipeline{
 public:
-    GraphicsPipeline(VkPipelineVertexInputStateCreateInfo vertexInputInfo, VkPrimitiveTopology topology,
-    VkPolygonMode polygonMode, VkPipelineMultisampleStateCreateInfo multisampling,
-     VkPipelineDepthStencilStateCreateInfo depthStencilInfo,
-      VkPipelineColorBlendStateCreateInfo colorBlendAttachment,
-       VkRenderPassCreateInfo renderPassInfo, VkPipelineLayoutCreateInfo pipelineLayoutInfo,
-        ShaderImpl& shader);
+    GraphicsPipeline(ShaderImpl& shader, BufferDescriptions& bufferDescriptions);
     
     ~GraphicsPipeline();
 
