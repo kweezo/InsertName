@@ -30,7 +30,8 @@ public:
     void closeConnection();
     //std::string sendData(const std::string& message);
     template <typename T>
-    std::string sendData(const T& data);
+    std::string sendData(unsigned char identifier, const T& data);
+    struct EmptyStruct {};
 
 private:
     std::string serverIP;

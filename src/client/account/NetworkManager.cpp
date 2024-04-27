@@ -92,7 +92,7 @@ bool NetworkManager::connectToServer() {
 
 void NetworkManager::closeConnection() {
     // Send a message to the server to close the connection
-    sendData('c');
+    sendData(static_cast<unsigned char>('c'), EmptyStruct{});
 
     int shutdownResult = SSL_shutdown(ssl);
     if (shutdownResult == 0) {
@@ -137,10 +137,13 @@ std::string NetworkManager::sendData(const std::string& message) {
 }
 */
 template <typename T>
-std::string NetworkManager::sendData(const T& data) {
+std::string NetworkManager::sendData(unsigned char identifier, const T& data) {
     // Convert the data to binary
     const char* binaryData = reinterpret_cast<const char*>(&data);
     std::string binaryString(binaryData, binaryData + sizeof(T));
+
+    // Prepend the identifier
+    binaryString.insert(binaryString.begin(), identifier);
 
     // Send the binary data
     int sendResult = SSL_write(ssl, binaryString.c_str(), binaryString.size());

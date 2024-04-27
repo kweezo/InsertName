@@ -6,7 +6,6 @@ ClientHandler::ClientHandler(int clientSocket, SSL* ssl, pqxx::connection& c)
     if (!c.is_open()) {
         std::cerr << "Can't open database" << std::endl;
         dbConnectionFailed = true;
-        return;
     }
 }
 
@@ -30,60 +29,76 @@ void ClientHandler::handleConnection() {
             break;
         }
 
-        std::string receivedMsg(buffer);
-        std::string response = handleMsg(receivedMsg);
-        SSL_write(ssl, response.c_str(), response.size() + 1);
+        // Pass the binary data to handleMsg
+        std::string response = handleMsg(buffer, bytesReceived);
+        // Convert the response to binary
+        const char* binaryResponse = reinterpret_cast<const char*>(&response);
+        std::string binaryString(binaryResponse, binaryResponse + sizeof(std::string));
+        SSL_write(ssl, binaryString.c_str(), binaryString.size());
         if (response == "c" || response == "q") {
             return;
         }
     }
 }
 
-std::string ClientHandler::handleMsg(const std::string& receivedMsg) {
+std::string ClientHandler::handleMsg(const char* receivedData, int dataSize) {
     std::string response;
-    std::string msg = receivedMsg;
 
-    if (receivedMsg[0] == 'r') {
-        std::string username = getNextArg(msg);
-        std::string password = getNextArg(msg);
-        response = registerUser(username, password);
+    if (receivedData[0] == 's') {
+        // Convert the binary data back to glm::vec3
+        glm::vec3 v1[8];
+        glm::vec3 v2[8];
+        memcpy(v1, receivedData + 1, sizeof(glm::vec3) * 8);
+        memcpy(v2, receivedData + 1 + sizeof(glm::vec3) * 8, sizeof(glm::vec3) * 8);
 
-    } else if (receivedMsg[0] == 'l') {
-        std::string username = getNextArg(msg);
-        std::string password = getNextArg(msg);
-        response = loginUser(username, password);
-
-    } else if (receivedMsg[0] == 'm') {
-        std::string reciverUsername = getNextArg(msg);
-        msg = getNextArg(msg);
-        response = sendMessage(reciverUsername, msg);
-
-    } else if (receivedMsg[0] == 'g') {
-        std::string senderUsername = getNextArg(msg);
-        int offset = std::stoi(getNextArg(msg));
-        std::vector<std::pair<std::string, std::string>> messages = getMessages(senderUsername, offset);
-        response = "g";
-        for (const auto& pair : messages) {
-            std::string timestamp = pair.second;
-            std::string message = pair.first;
-            response += timestamp + (char)30 + message + (char)30;
-        }
-
-    } else if (receivedMsg[0] == 'n') {
-        std::string senderUsername = getNextArg(msg);
-        std::vector<std::pair<std::string, std::string>> messages = getNewMessages(senderUsername);
-        response = "n";
-        for (const auto& pair : messages) {
-            std::string timestamp = pair.second;
-            std::string message = pair.first;
-            response += timestamp + (char)30 + message + (char)30;
-        }
-
-    } else if (receivedMsg[0] == 'c') {
-        response = "c";
+        //TODO Handle the glm::vec3 data...
 
     } else {
-        response = "q";
+        // Convert the binary data to a string
+        std::string msg(receivedData, dataSize);
+
+        if (msg[0] == 'r') {
+            std::string username = getNextArg(msg);
+            std::string password = getNextArg(msg);
+            response = registerUser(username, password);
+
+        } else if (msg[0] == 'l') {
+            std::string username = getNextArg(msg);
+            std::string password = getNextArg(msg);
+            response = loginUser(username, password);
+
+        } else if (msg[0] == 'm') {
+            std::string reciverUsername = getNextArg(msg);
+            msg = getNextArg(msg);
+            response = sendMessage(reciverUsername, msg);
+
+        } else if (msg[0] == 'g') {
+            std::string senderUsername = getNextArg(msg);
+            int offset = std::stoi(getNextArg(msg));
+            std::vector<std::pair<std::string, std::string>> messages = getMessages(senderUsername, offset);
+            response = "g";
+            for (const auto& pair : messages) {
+                std::string timestamp = pair.second;
+                std::string message = pair.first;
+                response += timestamp + (char)30 + message + (char)30;
+            }
+
+        } else if (msg[0] == 'n') {
+            std::string senderUsername = getNextArg(msg);
+            std::vector<std::pair<std::string, std::string>> messages = getNewMessages(senderUsername);
+            response = "n";
+            for (const auto& pair : messages) {
+                std::string timestamp = pair.second;
+                std::string message = pair.first;
+                response += timestamp + (char)30 + message + (char)30;
+            }
+
+        } else if (msg[0] == 'c') {
+            response = "c";
+
+        } else {
+            response = "q";
+        }
     }
 
     return response;
