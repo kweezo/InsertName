@@ -6,6 +6,7 @@ namespace renderer{
 
 VkSwapchainKHR Swapchain::swapchain = VK_NULL_HANDLE;
 std::vector<VkImageView> Swapchain::swapchainImageViews = {};
+ImageHandle Swapchain::depthImage = nullptr;
 
 void Swapchain::CreateSwapchain(){
     VkSurfaceCapabilitiesKHR surfaceCapabilities;
@@ -58,6 +59,7 @@ void Swapchain::CreateSwapchain(){
     }
 
     CreateSwapchainImageViews();
+    CreateDepthImage();
 }
 
 VkFormat Swapchain::ChooseSwapchainImageFormat(){
@@ -102,6 +104,18 @@ void Swapchain::CreateSwapchainImageViews(){
     }
 }
 
+void Swapchain::CreateDepthImage(){
+    VkFormat depthFormat = Image::GetSupportedFormat({VK_FORMAT_D32_SFLOAT, VK_FORMAT_D32_SFLOAT_S8_UINT, VK_FORMAT_D24_UNORM_S8_UINT},
+     VK_IMAGE_TILING_OPTIMAL, VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT);
+
+    depthImage = Image::CreateImage(VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL, depthFormat, VK_IMAGE_ASPECT_DEPTH_BIT, 
+    VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, GetExtent().width, GetExtent().height, 0, nullptr);
+
+    depthImage->TransitionLayout(VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL);
+
+    
+}
+
 VkSwapchainKHR Swapchain::GetSwapchain(){
     return swapchain;
 }
@@ -131,7 +145,7 @@ void Swapchain::DestroySwapchain(){
     for(auto imageView : swapchainImageViews){
         vkDestroyImageView(Device::GetDevice(), imageView, nullptr);
     }
-
+    Image::Free(depthImage);
     vkDestroySwapchainKHR(Device::GetDevice(), swapchain, nullptr);
 }
 

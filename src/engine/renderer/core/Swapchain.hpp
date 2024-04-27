@@ -9,6 +9,7 @@
 
 #include "../window/Window.hpp"
 #include "Device.hpp"
+#include "Image.hpp"
 
 #define PREFERRED_IMAGE_COUNT (uint32_t)3
 
@@ -30,11 +31,12 @@ public:
 private:
     static VkSwapchainKHR swapchain;
     static std::vector<VkImageView> swapchainImageViews;
+    static ImageHandle depthImage;
 
-    std::vector<VkFramebuffer> framebuffers;
+    static void CreateDepthImage();
+
 
     static VkFormat ChooseSwapchainImageFormat();
-
     static void CreateSwapchainImageViews();
 };
 

@@ -35,7 +35,7 @@ typedef struct LoadDataIntoImageInfo{
 class Image{
 public:
 
-    static ImageHandle CreateImage(VkImageLayout layout, VkFormat format, VkImageAspectFlags aspectMask,
+    static ImageHandle CreateImage(VkImageLayout layout, VkFormat format, VkImageAspectFlags aspectMask, VkImageUsageFlags usage,
      uint32_t width, uint32_t height, size_t size, void* data);
 
     static void Free(ImageHandle image);
@@ -43,13 +43,14 @@ public:
     static void Initialize();
     static void UpdateCommandBuffers();
 
-    static VkFormat GetSupportedFormat(VkFormat format, VkImageTiling tiling, VkFormatFeatureFlags features);
+    static VkFormat GetSupportedFormat(std::vector<VkFormat> candidates, VkImageTiling tiling, VkFormatFeatureFlags features);
+    static inline bool HasStencilComponent(VkFormat format);
 };
 
 class ImageImpl{
 public:
     ImageImpl();
-    ImageImpl(VkImageLayout layout, VkFormat format, VkImageAspectFlags aspectMask, uint32_t width,
+    ImageImpl(VkImageLayout layout, VkFormat format, VkImageAspectFlags aspectMask, uint32_t width, VkImageUsageFlags usage,
      uint32_t height, size_t size, void* data);
 
     ~ImageImpl();
@@ -67,7 +68,7 @@ public:
 
     static void UpdateCommandBuffers();
 private:
-    void CreateImage(uint32_t width, uint32_t height, VkFormat format);
+    void CreateImage(uint32_t width, uint32_t height, VkFormat format, VkImageUsageFlags usage);
     void CreateImageView(VkFormat format, VkImageAspectFlags aspectMask);
 
     static void CreateCommandBuffers();

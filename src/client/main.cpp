@@ -243,7 +243,7 @@ int main(){
      VK_POLYGON_MODE_FILL, multisampling,
      depthStencilInfo, colorBlending, renderPassInfo, pipelineLayoutInfo, *shader);
 
-    CommandBuffer buffer = CommandBuffer(VK_COMMAND_BUFFER_LEVEL_PRIMARY, COMMAND_BUFFER_GRAPHICS_FLAG, &pipeline);
+    CommandBuffer buffer = CommandBuffer(VK_COMMAND_BUFFER_LEVEL_PRIMARY, COMMAND_BUFFER_GRAPHICS_FLAG);
 
     uint32_t imageIndex = 0;
 
@@ -299,12 +299,14 @@ int main(){
 
 
         buffer.BeginCommandBuffer(imageIndex, nullptr);
+        pipeline.BeginRenderPassAndBindPipeline(imageIndex, buffer.GetCommandBuffer());
         shader->UpdateDescriptorSet(descriptorWrite);
         shader->Bind(buffer.GetCommandBuffer(), pipeline.GetPipelineLayout());
         VkBuffer buff = vertexBuffer.GetBuffer();
         vkCmdBindVertexBuffers(buffer.GetCommandBuffer(), 0, 1, &buff, offsets);
         vkCmdBindIndexBuffer(buffer.GetCommandBuffer(), indexBuffer.GetBuffer(), 0, VK_INDEX_TYPE_UINT32);
         vkCmdDrawIndexed(buffer.GetCommandBuffer(), 6, 1, 0, 0, 0);
+        pipeline.EndRenderPass(buffer.GetCommandBuffer());
         buffer.EndCommandBuffer();
 
         VkSubmitInfo submitInfo = {};

@@ -8,7 +8,6 @@
 #include <vulkan/vulkan.h>
 
 #include "CommandPool.hpp"
-#include "GraphicsPipeline.hpp"
 
 #define COMMAND_BUFFER_GRAPHICS_FLAG 1
 #define COMMAND_BUFFER_TRANSFER_FLAG 2
@@ -19,7 +18,7 @@ namespace renderer{
 class CommandBuffer{
 public:
     //You can ONLY pass the pipeline as nullptr if its a transfer command buffer
-    CommandBuffer(VkCommandBufferLevel level, uint32_t flags, GraphicsPipeline* pipeline);
+    CommandBuffer(VkCommandBufferLevel level, uint32_t flags);
     CommandBuffer();
     ~CommandBuffer();
 
@@ -39,7 +38,6 @@ private:
 
     uint32_t* useCount;
 
-    GraphicsPipeline* pipeline;
     VkCommandBuffer commandBuffer;
 };
 
