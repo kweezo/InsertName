@@ -263,9 +263,9 @@ void ImageImpl::UpdateCommandBuffers(){
 void ImageImpl::CreateCommandBuffers(){
     for(int i = 0; i < MAX_FREE_COMMAND_BUFFER_COUNT; i++){
         stagingBuffers.push_back({CommandBuffer(VK_COMMAND_BUFFER_LEVEL_SECONDARY,
-        COMMAND_BUFFER_ONE_TIME_SUBMIT_FLAG | COMMAND_BUFFER_TRANSFER_FLAG, nullptr), true});
+        COMMAND_BUFFER_ONE_TIME_SUBMIT_FLAG | COMMAND_BUFFER_TRANSFER_FLAG), true});
     }
-    primaryCommandBuffer = CommandBuffer(VK_COMMAND_BUFFER_LEVEL_PRIMARY, COMMAND_BUFFER_TRANSFER_FLAG, nullptr);
+    primaryCommandBuffer = CommandBuffer(VK_COMMAND_BUFFER_LEVEL_PRIMARY, COMMAND_BUFFER_TRANSFER_FLAG);
 }
 
 VkImage ImageImpl::GetImage(){
@@ -283,7 +283,7 @@ CommandBuffer ImageImpl::GetFreeCommandBuffer(ImageHandle image){
     }
 
     stagingBuffers.push_back({CommandBuffer(VK_COMMAND_BUFFER_LEVEL_SECONDARY,
-     COMMAND_BUFFER_ONE_TIME_SUBMIT_FLAG | COMMAND_BUFFER_TRANSFER_FLAG, nullptr), false});
+     COMMAND_BUFFER_ONE_TIME_SUBMIT_FLAG | COMMAND_BUFFER_TRANSFER_FLAG), false});
 
     return stagingBuffers.back().commandBuffer;
 }

@@ -7,12 +7,7 @@ CommandBuffer::CommandBuffer(): commandBuffer(VK_NULL_HANDLE) {
     flags = 0;
 }
 
-CommandBuffer::CommandBuffer(VkCommandBufferLevel level, uint32_t flags, GraphicsPipeline* pipeline){
-
-    if(pipeline == nullptr && (flags & COMMAND_BUFFER_GRAPHICS_FLAG) == COMMAND_BUFFER_GRAPHICS_FLAG){
-        throw std::runtime_error("Tried to create a graphics command buffer without a pipeline");
-    }
-
+CommandBuffer::CommandBuffer(VkCommandBufferLevel level, uint32_t flagspipeline){
     VkCommandBufferAllocateInfo allocInfo = {};
     allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
     allocInfo.commandPool = ((flags & COMMAND_BUFFER_GRAPHICS_FLAG) == COMMAND_BUFFER_GRAPHICS_FLAG)
@@ -28,7 +23,6 @@ CommandBuffer::CommandBuffer(VkCommandBufferLevel level, uint32_t flags, Graphic
     useCount[0] = 1;
 
     this->flags = flags;
-    this->pipeline = pipeline;
     this->level = level;
 
 }
@@ -59,16 +53,9 @@ void CommandBuffer::BeginCommandBuffer(uint32_t imageIndex, VkCommandBufferInher
         throw std::runtime_error("Failed to begin recording command buffer");
     }
 
-    if((flags & COMMAND_BUFFER_GRAPHICS_FLAG) == COMMAND_BUFFER_GRAPHICS_FLAG){
-        pipeline->BeginRenderPassAndBindPipeline(imageIndex, commandBuffer);
-    }
 }
 
 void CommandBuffer::EndCommandBuffer(){
-    if((flags & COMMAND_BUFFER_GRAPHICS_FLAG) == COMMAND_BUFFER_GRAPHICS_FLAG){
-        pipeline->EndRenderPass(commandBuffer);
-    }
-
     if(vkEndCommandBuffer(commandBuffer) != VK_SUCCESS){
         throw std::runtime_error("Failed to record command buffer");
     }
@@ -82,7 +69,6 @@ VkCommandBuffer CommandBuffer::GetCommandBuffer(){
 CommandBuffer::CommandBuffer(const CommandBuffer& other){
     commandBuffer = other.commandBuffer;
     useCount = other.useCount;
-    pipeline = other.pipeline;
     flags = other.flags;
     useCount[0]++;
 }
@@ -93,7 +79,6 @@ CommandBuffer CommandBuffer::operator=(const CommandBuffer& other) {
     }
 
     commandBuffer = other.commandBuffer;
-    pipeline = other.pipeline;
     useCount = other.useCount;
     flags = other.flags;
     useCount[0]++;

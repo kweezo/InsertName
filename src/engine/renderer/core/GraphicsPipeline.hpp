@@ -10,7 +10,6 @@
 #include "Device.hpp"
 #include "Shader.hpp"
 #include "Swapchain.hpp"
-
 namespace renderer{
 
 class GraphicsPipeline{
