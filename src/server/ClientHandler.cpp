@@ -87,7 +87,6 @@ std::string ClientHandler::handleMsg(const char* receivedData, int dataSize) {
             }
             case 'l': {
                 std::string username = getNextArg(msg);
-                std::cout << msg << std::endl;
                 response = loginUser(username, msg);
                 break;
             }
