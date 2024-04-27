@@ -162,7 +162,7 @@ int main(){
     ModelDat modelDat;
     modelDat.model = glm::mat4(1.0f);
     modelDat.view = glm::lookAt(glm::vec3(0.0f, 0.0f, 2.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
-    modelDat.proj = glm::perspective(glm::radians(45.0f), 800.0f / 600.0f, 0.1f, 10.0f);
+    modelDat.proj = glm::perspective(glm::radians(45.0f), (float)Settings::GetInstance().windowWidth / Settings::GetInstance().windowHeight, 0.1f, 10.0f);
     UniformBufferHandle uniformBuffer = UniformBuffer::Create(reinterpret_cast<void*>(&modelDat), sizeof(modelDat), 0,
     shader->GetDescriptorSet()); 
 
@@ -214,7 +214,7 @@ int main(){
 
         VkDeviceSize offsets[] = {0};
 
-        modelDat.model = glm::rotate(modelDat.model, (float)glm::radians(cos(glfwGetTime())), glm::vec3(0.0f, 0.0f, 1.0f));
+        modelDat.model = glm::rotate(glm::mat4(1.0f), (float)cos(glfwGetTime()), glm::vec3(0.0f, 0.0f, 1.0f));
         uniformBuffer->UpdateData(reinterpret_cast<void*>(&modelDat), sizeof(modelDat));
 
         std::vector<VkWriteDescriptorSet> descriptorWrite = {
