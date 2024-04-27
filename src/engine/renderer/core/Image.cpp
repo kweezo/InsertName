@@ -7,9 +7,9 @@ std::vector<ImageTransitionCMDInfo> ImageImpl::stagingBuffers = {};
 Fence ImageImpl::finishedTransitioningFence = Fence();
 CommandBuffer ImageImpl::primaryCommandBuffer = CommandBuffer();
 
-ImageHandle Image::CreateImage(VkImageLayout layout, VkFormat format, VkImageAspectFlags aspectMask,
+ImageHandle Image::CreateImage(VkImageLayout layout, VkFormat format, VkImageAspectFlags aspectMask, VkImageUsageFlags usage,
      uint32_t width, uint32_t height, size_t size, void* data){
-        return new ImageImpl(layout, format, aspectMask, width, height, size, data);
+        return new ImageImpl(layout, format, aspectMask, usage, width, height, size, data);
 }
 
 void Image::Free(ImageHandle image){
@@ -53,11 +53,11 @@ ImageImpl::ImageImpl(){
     (*useCount) = 1;
 }
 
-ImageImpl::ImageImpl(VkImageLayout layout, VkFormat format, VkImageAspectFlags aspectMask, uint32_t width,
-     uint32_t height, size_t size, void* data){
+ImageImpl::ImageImpl(VkImageLayout layout, VkFormat format, VkImageAspectFlags aspectMask, VkImageUsageFlags usage,
+ uint32_t width, uint32_t height, size_t size, void* data){
 
 
-    CreateImage(width, height, format);
+    CreateImage(width, height, format, usage);
 
     VkMemoryRequirements memRequirements;
     vkGetImageMemoryRequirements(Device::GetDevice(), image, &memRequirements);
@@ -107,7 +107,7 @@ ImageImpl::ImageImpl(VkImageLayout layout, VkFormat format, VkImageAspectFlags a
 
 }
 
-void ImageImpl::CreateImage(uint32_t width, uint32_t height, VkFormat format){
+void ImageImpl::CreateImage(uint32_t width, uint32_t height, VkFormat format, VkImageUsageFlags usage){
     VkImageCreateInfo imageInfo = {};
 
     QueueFamilyInfo queueFamilyInfo = Device::GetQueueFamilyInfo();
@@ -134,7 +134,7 @@ void ImageImpl::CreateImage(uint32_t width, uint32_t height, VkFormat format){
     imageInfo.format = format;
     imageInfo.tiling = VK_IMAGE_TILING_OPTIMAL;
     imageInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-    imageInfo.usage = VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT;
+    imageInfo.usage = VK_IMAGE_USAGE_TRANSFER_DST_BIT | usage;
     imageInfo.samples = VK_SAMPLE_COUNT_1_BIT;
 
     if(vkCreateImage(Device::GetDevice(), &imageInfo, nullptr, &image) != VK_SUCCESS){
@@ -240,7 +240,7 @@ void ImageImpl::UpdateCommandBuffers(){
     submitInfo.waitSemaphoreCount = 0;
     submitInfo.signalSemaphoreCount = 0;
 
-    if(vkQueueSubmit(Device::GetTransferQueue(), 1, &submitInfo, finishedTransitioningFence.GetFence()) != VK_SUCCESS){
+    if(vkQueueSubmit(Device::GetGraphicsQueue(), 1, &submitInfo, finishedTransitioningFence.GetFence()) != VK_SUCCESS){
         throw std::runtime_error("Failed to submit transfer command buffer");
     }
     
@@ -263,9 +263,9 @@ void ImageImpl::UpdateCommandBuffers(){
 void ImageImpl::CreateCommandBuffers(){
     for(int i = 0; i < MAX_FREE_COMMAND_BUFFER_COUNT; i++){
         stagingBuffers.push_back({CommandBuffer(VK_COMMAND_BUFFER_LEVEL_SECONDARY,
-        COMMAND_BUFFER_ONE_TIME_SUBMIT_FLAG | COMMAND_BUFFER_TRANSFER_FLAG), true});
+        COMMAND_BUFFER_ONE_TIME_SUBMIT_FLAG | COMMAND_BUFFER_GRAPHICS_FLAG/*cuz of stencil formats and shit*/), true});
     }
-    primaryCommandBuffer = CommandBuffer(VK_COMMAND_BUFFER_LEVEL_PRIMARY, COMMAND_BUFFER_TRANSFER_FLAG);
+    primaryCommandBuffer = CommandBuffer(VK_COMMAND_BUFFER_LEVEL_PRIMARY, COMMAND_BUFFER_GRAPHICS_FLAG);
 }
 
 VkImage ImageImpl::GetImage(){

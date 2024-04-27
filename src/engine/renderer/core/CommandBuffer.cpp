@@ -7,7 +7,7 @@ CommandBuffer::CommandBuffer(): commandBuffer(VK_NULL_HANDLE) {
     flags = 0;
 }
 
-CommandBuffer::CommandBuffer(VkCommandBufferLevel level, uint32_t flagspipeline){
+CommandBuffer::CommandBuffer(VkCommandBufferLevel level, uint32_t flags){
     VkCommandBufferAllocateInfo allocInfo = {};
     allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
     allocInfo.commandPool = ((flags & COMMAND_BUFFER_GRAPHICS_FLAG) == COMMAND_BUFFER_GRAPHICS_FLAG)

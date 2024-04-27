@@ -306,6 +306,7 @@ int main(){
         vkCmdBindVertexBuffers(buffer.GetCommandBuffer(), 0, 1, &buff, offsets);
         vkCmdBindIndexBuffer(buffer.GetCommandBuffer(), indexBuffer.GetBuffer(), 0, VK_INDEX_TYPE_UINT32);
         vkCmdDrawIndexed(buffer.GetCommandBuffer(), 6, 1, 0, 0, 0);
+        pipeline.EndRenderPass(buffer.GetCommandBuffer());
         buffer.EndCommandBuffer();
 
         VkSubmitInfo submitInfo = {};

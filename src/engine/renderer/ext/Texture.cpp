@@ -92,6 +92,7 @@ void TextureImpl::LoadTexture(const std::string& path){
 
 void TextureImpl::CreateTextureImage(){
     image = Image::CreateImage (VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_ASPECT_COLOR_BIT,
+    VK_IMAGE_USAGE_SAMPLED_BIT,
      imageData.width, imageData.height, imageData.width * imageData.height * 4, imageData.dat);
 }
 

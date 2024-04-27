@@ -108,7 +108,8 @@ void Swapchain::CreateDepthImage(){
     VkFormat depthFormat = Image::GetSupportedFormat({VK_FORMAT_D32_SFLOAT, VK_FORMAT_D32_SFLOAT_S8_UINT, VK_FORMAT_D24_UNORM_S8_UINT},
      VK_IMAGE_TILING_OPTIMAL, VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT);
 
-    depthImage = Image::CreateImage(VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL, depthFormat, VK_IMAGE_ASPECT_DEPTH_BIT, GetExtent().width, GetExtent().height, 0, nullptr);
+    depthImage = Image::CreateImage(VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL, depthFormat, VK_IMAGE_ASPECT_DEPTH_BIT, 
+    VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, GetExtent().width, GetExtent().height, 0, nullptr);
 
     depthImage->TransitionLayout(VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL);
 
@@ -144,7 +145,7 @@ void Swapchain::DestroySwapchain(){
     for(auto imageView : swapchainImageViews){
         vkDestroyImageView(Device::GetDevice(), imageView, nullptr);
     }
-
+    Image::Free(depthImage);
     vkDestroySwapchainKHR(Device::GetDevice(), swapchain, nullptr);
 }
 
