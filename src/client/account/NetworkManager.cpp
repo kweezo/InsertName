@@ -91,6 +91,10 @@ bool NetworkManager::connectToServer() {
 }
 
 void NetworkManager::closeConnection() {
+    if(ctx == nullptr){
+        return;
+    }
+
     // Send a message to the server to close the connection
     sendData(static_cast<unsigned char>('c'), EmptyStruct{});
 
