@@ -27,6 +27,25 @@ using namespace renderer;//here beacuse this is again, all temp and i cant be bo
 void chatThread(UserManager* userManager) {
     std::this_thread::sleep_for(std::chrono::seconds(1));
     std::string typeOfRequest;
+{ // TEMPORARY CODE
+    struct TestStruct {
+        glm::vec3 v1[8];
+        glm::vec3 v2[8];
+    };
+
+    TestStruct ts;
+
+    // Set the values for v1
+    for (int i = 0; i < 8; ++i) {
+        ts.v1[i] = glm::vec3(i, i, i);
+    }
+
+    // Set the values for v2
+    for (int i = 0; i < 8; ++i) {
+        ts.v2[i] = glm::vec3(i * 2, i * 2, i * 2);
+    }
+    userManager->sendStruct(ts.v1, ts.v2);
+}
     while (true) {
         std::cout << "Enter type of request: ";
         std::cin >> typeOfRequest;
@@ -287,6 +306,7 @@ int main(){
     Renderer::DestroyRenderer();
     Window::DestroyWindowContext();
 
+    userManager->closeConnection();
     delete userManager;
 
     return 0;

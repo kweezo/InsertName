@@ -1,5 +1,7 @@
 #pragma once
 
+#define GLM_ENABLE_EXPERIMENTAL
+
 #ifdef _WIN32
     #include <winsock2.h>
 #else
@@ -22,6 +24,7 @@
 #include <openssl/sha.h>
 #include <openssl/rand.h>
 #include <glm/glm.hpp>
+#include <glm/gtx/string_cast.hpp>
 
 #include "Config.hpp"
 
