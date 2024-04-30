@@ -154,11 +154,11 @@ char ClientHandler::registerUser(const std::string& username, const std::string&
         
         char buffer[26];
 
-#ifdef _WIN32
-        ctime_s(buffer, sizeof buffer, &now_c);
-#else
-        ctime_r(&now_c, buffer);
-#endif
+        #ifdef _WIN32
+            ctime_s(buffer, sizeof buffer, &now_c);
+        #else
+            ctime_r(&now_c, buffer);
+        #endif
         
         std::string creationDate(buffer);
 
