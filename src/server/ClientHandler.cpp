@@ -142,7 +142,13 @@ char ClientHandler::registerUser(const std::string& username, const std::string&
         std::time_t now_c = std::chrono::system_clock::to_time_t(now);
         
         char buffer[26];
+
+#ifdef _WIN32
         ctime_s(buffer, sizeof buffer, &now_c);
+#else
+        ctime_r(&now_c, buffer);
+#endif
+        
         std::string creationDate(buffer);
 
         std::string sql = "INSERT INTO Users (Username, PasswordHash, Salt, CreationDate) VALUES ($1, $2, $3, $4);";

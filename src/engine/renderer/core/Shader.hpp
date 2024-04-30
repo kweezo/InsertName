@@ -25,7 +25,8 @@ typedef struct ShaderBindingInfo{
 
 class Shader{
 public:
-    static ShaderHandle CreateShader(const char* vertexShaderPath, const char* fragmentShaderPath, std::vector<VkDescriptorSetLayoutBinding> bindings);
+    static ShaderHandle CreateShader(const char* vertexShaderPath, const char* fragmentShaderPath,
+     const char* name, std::vector<VkDescriptorSetLayoutBinding> bindings);
     static void Free(ShaderHandle shader);
 
     static void EnableNewShaders();
@@ -34,7 +35,8 @@ public:
 
 class ShaderImpl{
 public:
-    ShaderImpl(const char* vertexShaderPath, const char* fragmentShaderPath, std::vector<VkDescriptorSetLayoutBinding> bindings);
+    ShaderImpl(const char* vertexShaderPath, const char* fragmentShaderPath, const char* name, 
+     std::vector<VkDescriptorSetLayoutBinding> bindings);    
     ~ShaderImpl();
     ShaderImpl(const ShaderImpl& other);
     ShaderImpl operator=(const ShaderImpl& other);
@@ -51,6 +53,8 @@ public:
 
     std::array<VkPipelineShaderStageCreateInfo, 2> GetShaderStageCreateInfo() const;
 
+    const char* GetName();
+
     static void EnableNewShaders();
 private:
     static std::vector<ShaderBindingInfo> shaderBindings;
@@ -61,6 +65,8 @@ private:
     VkShaderModule fragmentShaderModule;
 
     VkDescriptorSet descriptorSet;
+
+    const char* name;
 
     uint32_t* useCount;
 

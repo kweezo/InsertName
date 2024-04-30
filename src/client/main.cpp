@@ -15,7 +15,7 @@
 #include "engine/renderer/core/Fence.hpp"
 #include "engine/renderer/core/DescriptorManager.hpp"
 #include "engine/renderer/core/UniformBuffer.hpp"
-#include "engine/renderer/ext/Texture.hpp"
+#include "engine/renderer/core/Texture.hpp"
 
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
@@ -119,7 +119,7 @@ int main(){
     samplerBinding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
 
 
-    ShaderHandle shader = Shader::CreateShader("shaders/bin/triangleVert.spv", "shaders/bin/triangleFrag.spv", {uniformBufferBinding, samplerBinding}); // TEMP REMOVE LATER
+    ShaderHandle shader = Shader::CreateShader("shaders/bin/triangleVert.spv", "shaders/bin/triangleFrag.spv", "triangle", {uniformBufferBinding, samplerBinding}); // TEMP REMOVE LATER
     Shader::EnableNewShaders();
 
     std::vector<VkVertexInputAttributeDescription> attributeDescriptions(2);
