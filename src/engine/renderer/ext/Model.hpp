@@ -3,6 +3,7 @@
 #include <cstdint>
 #include <string>
 #include <memory>
+#include <unordered_map>
 
 #include <assimp/Importer.hpp>
 #include <assimp/scene.h>
@@ -37,6 +38,8 @@ public:
 
 private: //copied from learnopengl.com mostly shamelessly
     void ProcessNode(aiNode* node, const aiScene* scene);
+
+    std::unordered_map<std::string, Texture> loadedTextures;
 };
 
 class Mesh{

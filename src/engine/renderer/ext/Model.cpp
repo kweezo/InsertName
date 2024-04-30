@@ -46,11 +46,16 @@ void ModelImpl::ProcessNode(aiNode* node, const aiScene* scene){
 
         if(mesh->mMaterialIndex >= 0){
             aiMaterial* material = scene->mMaterials[mesh->mMaterialIndex];
-//            material->GetTexture(3)
-            //Texture texture = LoadMaterialTextures(material, aiTextureType_DIFFUSE, "texture_diffuse");
-            //textures.push_back(texture);
-            //texture = LoadMaterialTextures(material, aiTextureType_SPECULAR, "texture_specular");
-            //textures.push_back(texture);
+
+            if(material->GetTextureCount(aiTextureType_DIFFUSE) == 1){
+                aiString path;
+                material->GetTexture(aiTextureType_DIFFUSE, 0, &path);
+                std::string texturePath = path.C_Str();
+//                 TextureHandle texture = Texture::CreateTexture(texturePath, 0, descriptorSet);
+            }
+            else{
+                std::runtime_error("No texture found for mesh or there is more than one, neither is supported");
+            }
         }
 
         Mesh meshObj = Mesh(vertices, indices);
