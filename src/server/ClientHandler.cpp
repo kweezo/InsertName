@@ -46,14 +46,15 @@ void ClientHandler::handleConnection() {
 
         // Send the binary data
         SSL_write(ssl, binaryString.c_str(), binaryString.size());
-        if (response == "c" || response == "q") {
+        if (response == "c" || response == "E") {
+            std::cout << "Closing connection with client " << username << std::endl;
             return;
         }
     }
 }
 
 std::string ClientHandler::handleMsg(const char* receivedData, int dataSize) {
-    std::string response;
+    std::string response="E";
 
     // Extract the identifier from the received data
     unsigned char identifier = receivedData[0]; // The identifier is the first byte
@@ -62,7 +63,17 @@ std::string ClientHandler::handleMsg(const char* receivedData, int dataSize) {
     const char* dataStart = receivedData + 1;
     int dataLength = dataSize - 1;
 
+    if (this->username.empty() && identifier != 'r' && identifier != 'l') {
+        std::cerr << "Client is not logged in. Closing connection." << std::endl;
+        return "c";
+    }
+
     if (receivedData[0] == 's') {
+        if (dataLength != sizeof(glm::vec3) * 16) {
+            std::cerr << "Invalid data size for identifier 's'. Expected " << sizeof(glm::vec3) * 16 << " bytes, got " << dataLength << " bytes." << std::endl;
+            return "E";
+        }
+
         // Convert the binary data back to glm::vec3
         glm::vec3 v1[8];
         glm::vec3 v2[8];
@@ -74,7 +85,7 @@ std::string ClientHandler::handleMsg(const char* receivedData, int dataSize) {
             std::cout << "v2[" << i << "] = " << glm::to_string(v2[i]) << std::endl;
         }
         //TODO Handle the glm::vec3 data...
-        response = "F";
+        response = "S";
 
     } else {
         std::string msg(dataStart, dataLength);
@@ -122,10 +133,6 @@ std::string ClientHandler::handleMsg(const char* receivedData, int dataSize) {
                 response = "c";
                 break;
             }
-            default: {
-                response = "q";
-                break;
-            }
         }
     }
 
@@ -147,11 +154,11 @@ char ClientHandler::registerUser(const std::string& username, const std::string&
         
         char buffer[26];
 
-#ifdef _WIN32
-        ctime_s(buffer, sizeof buffer, &now_c);
-#else
-        ctime_r(&now_c, buffer);
-#endif
+        #ifdef _WIN32
+            ctime_s(buffer, sizeof buffer, &now_c);
+        #else
+            ctime_r(&now_c, buffer);
+        #endif
         
         std::string creationDate(buffer);
 

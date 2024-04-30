@@ -8,7 +8,7 @@
   - w (failed to log in client - wrong password)
   - f (failed to login client - error, username probably does not exist)
 - m (send message):
-  - s (message send sucussfully)
+  - s (message sended sucussfully)
   - c (failed to send message)
 - g (get messages):
   - g (messages get)
@@ -16,5 +16,7 @@
   - n (new messages get)
 - c (close connection):
   - c (closing network connection)
+- s (send struct):
+  - S (struct sended sucessfully)
 
-if server does not recognize client request, then server return "q"
+if server does not recognize client request, then server return "E"
