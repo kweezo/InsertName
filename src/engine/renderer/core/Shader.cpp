@@ -5,9 +5,9 @@ namespace renderer{
 std::vector<ShaderBindingInfo> ShaderImpl::shaderBindings = {};
 
 
-ShaderHandle Shader::CreateShader(const char* vertexShaderPath, const char* fragmentShaderPath,
+ShaderHandle Shader::CreateShader(const char* vertexShaderPath, const char* fragmentShaderPath, const char* name,
  std::vector<VkDescriptorSetLayoutBinding> bindings){
-    return new ShaderImpl(vertexShaderPath, fragmentShaderPath, bindings);
+    return new ShaderImpl(vertexShaderPath, fragmentShaderPath, name, bindings);
 }
 
 void Shader::Free(ShaderHandle shader){
@@ -63,6 +63,7 @@ void ShaderImpl::EnableNewShaders(){
     for(uint32_t i = 0; i < handles.size(); i++){
         shaderBindings[i].handle->SetDescriptorSet(DescriptorManager::GetDescriptorSet(handles[i]));
     }
+
 }
 
 void ShaderImpl::Bind(VkCommandBuffer commandBuffer, VkPipelineLayout pipelineLayout){
@@ -78,7 +79,8 @@ VkDescriptorSet ShaderImpl::GetDescriptorSet() const{
     return descriptorSet;
 }
 
-ShaderImpl::ShaderImpl(const char* vertexShaderPath, const char* fragmentShaderPath, std::vector<VkDescriptorSetLayoutBinding> bindings){
+ShaderImpl::ShaderImpl(const char* vertexShaderPath, const char* fragmentShaderPath, const char* name,
+ std::vector<VkDescriptorSetLayoutBinding> bindings){
     useCount = new uint32_t;
     useCount[0] = 1;
 
@@ -102,6 +104,7 @@ ShaderImpl::ShaderImpl(const char* vertexShaderPath, const char* fragmentShaderP
     }
 
     shaderBindings.push_back({this, bindings});
+    this->name = name;
 }
 
 std::vector<unsigned char> ShaderImpl::ReadBytecode(const char* path){
@@ -125,6 +128,10 @@ std::vector<unsigned char> ShaderImpl::ReadBytecode(const char* path){
 
 void ShaderImpl::UpdateDescriptorSet(std::vector<VkWriteDescriptorSet> writeDescriptorSets){
     vkUpdateDescriptorSets(Device::GetDevice(), writeDescriptorSets.size(), writeDescriptorSets.data(), 0, nullptr);
+}
+
+const char* ShaderImpl::GetName(){
+    return name;
 }
 
 std::array<VkPipelineShaderStageCreateInfo, 2> ShaderImpl::GetShaderStageCreateInfo() const{

@@ -40,10 +40,15 @@ option(BUILD_INSTALLER "Build the installer executable" OFF)
 option(BUILD_SERVER "Build the server executable" OFF)
 option(BUILD_ENGINE "Build the engine library" OFF)
 option(DEBUG "Build with debug flags" OFF)
+option(RELEASE "Build with release flags" OFF)
 option(GFX_RECONSTRUCT "Build with graphics reconstruction" OFF)
 
 if(DEBUG)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g -DNDEBUG ")
+endif()
+
+if(RELEASE)
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O3")
 endif()
 
 if(GFX_RECONSTRUCT)
@@ -67,6 +72,10 @@ if(BUILD_SERVER)
             ${SSL_LIBRARY}
             ${CRYPTO_LIBRARY}
         )
+    else()
+        target_link_libraries(server PUBLIC pqxx)
+        target_link_libraries(server PUBLIC ssl)
+        target_link_libraries(server PUBLIC crypto)
     endif()
 endif()
 

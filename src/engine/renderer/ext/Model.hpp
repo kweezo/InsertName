@@ -1,15 +1,50 @@
-
-
 #include <iostream>
 #include <vector>
 #include <cstdint>
+#include <string>
+#include <memory>
 
-#define Model uint32_t
+#include <assimp/Importer.hpp>
+#include <assimp/scene.h>
+#include <assimp/postprocess.h>
 
-class ModelManager{
+#include <glm/glm.hpp>
+
+#include "../core/DataBuffer.hpp"
+#include "../core/Texture.hpp"
+
+#define ModelHandle ModelImpl*
+
+namespace renderer{
+
+class ModelImpl;
+
+typedef struct BasicMeshVertex{
+    glm::vec3 pos;
+    glm::vec2 texCoord;
+    glm::vec3 normal;
+}BasicMeshVertex;
+
+class Model{
 public:
-    static Model LoadModel(std::vector<float> vertices, std::vector<uint32_t> indices);
-    static Model LoadModel(const char* path);
-private:
-
+    static ModelHandle CreateModel(std::string path);
+    static void Free(ModelHandle model);
 };
+
+class ModelImpl{
+public:
+    ModelImpl(std::string path);
+
+private: //copied from learnopengl.com mostly shamelessly
+    void ProcessNode(aiNode* node, const aiScene* scene);
+};
+
+class Mesh{
+public:
+    Mesh(std::vector<BasicMeshVertex>& vertices, std::vector<uint32_t>& indices);
+private:
+    DataBuffer vtnBuffer;
+    DataBuffer indexBuffer;
+};
+
+}
