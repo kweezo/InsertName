@@ -48,5 +48,5 @@ private:
     std::string getNextArg(std::string& msg);
     std::string generateSalt();
     std::string generateHash(const std::string& password, const std::string& salt);
-    int ClientHandler::getClientId(int clientSocket, std::unordered_map<int, int>& clientUsernames, std::mutex& mapMutex);
+    int getClientId(int clientSocket, std::unordered_map<int, int>& clientUsernames, std::mutex& mapMutex);
 };

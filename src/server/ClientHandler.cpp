@@ -328,7 +328,7 @@ std::string ClientHandler::generateHash(const std::string& password, const std::
     return ss.str();
 }
 
-int ClientHandler::getClientId(int clientSocket, std::unordered_map<int, int>& clientUsernames, std::mutex& mapMutex) {
+int ClientHandler::getClientId(int clientSocket, std::unordered_map<int, int>& clientIds, std::mutex& mapMutex) {
     std::lock_guard<std::mutex> lock(mapMutex);
-    return clientUsernames.at(clientSocket);
+    return clientIds.at(clientSocket);
 }
