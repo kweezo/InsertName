@@ -119,4 +119,3 @@ if(BUILD_CLIENT)
     endif()
 endif()
 
-set_target_properties(client PROPERTIES CXX_STANDARD 20 CXX_STANDARD_REQUIRED ON)
