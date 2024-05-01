@@ -184,7 +184,7 @@ void Server::handleClients() {
         
             if (FD_ISSET(sd, &readfds)) {
                 // Add a new job to the thread pool
-                pool.enqueue([this, sd]() {
+                pool.enqueue([this, sd, ssl = this->ssl, &c = this->c]() {
                     std::unique_ptr<ClientHandler> handler = std::make_unique<ClientHandler>();
                     handler->handleConnection(ssl, *c, sd, clientIds, mapMutex);
                 });

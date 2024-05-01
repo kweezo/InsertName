@@ -62,7 +62,7 @@ std::string ClientHandler::handleMsg(const char* receivedData, int dataSize, int
     const char* dataStart = receivedData + 1;
     int dataLength = dataSize - 1;
 
-    if (!clientId && (identifier != 'r' || identifier != 'l')) {
+    if (clientId == 0 && identifier != 'r' && identifier != 'l') {
         std::cerr << "Client is not logged in, closing connection" << std::endl;
         return "c";
     }

@@ -31,14 +31,14 @@ public:
     int acceptClient();
     void handleClients();
 
+private:
     std::unique_ptr<pqxx::connection> c;
     SSL* ssl;
     std::unordered_map<int, int> clientIds;
     std::mutex mapMutex;
 
     ClientHandler clientHandler;
-
-private:
+    
     std::string dir;
     int port;
 
