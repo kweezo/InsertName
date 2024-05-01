@@ -39,6 +39,7 @@ private:
     SOCKET sock;
     SSL_CTX* ctx;
     SSL* ssl;
+    const int bufferSize = 4096;
 };
 
 template <typename T>
@@ -70,7 +71,6 @@ std::string NetworkManager::sendData(unsigned char identifier, const T& data) {
     }
 
     // Receive the response
-    int bufferSize = Settings::GetInstance().messageBufferSize;
     char buf[bufferSize];
     memset(buf, 0, bufferSize);
     int bytesReceived = SSL_read(ssl, buf, bufferSize);
