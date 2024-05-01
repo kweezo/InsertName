@@ -16,6 +16,7 @@ void Renderer::HardInit(){
 
 void Renderer::SoftInit(){
     Swapchain::CreateSwapchain();
+    Shader::Initialize();
 }
 
 void Renderer::RenderFrame(){
@@ -23,6 +24,7 @@ void Renderer::RenderFrame(){
 }
 
 void Renderer::DestroyRenderer(){
+    Shader::Cleanup();
     Swapchain::DestroySwapchain();
     DescriptorManager::Cleanup();
     DataBuffer::Cleanup();

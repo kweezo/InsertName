@@ -6,6 +6,7 @@
 #include <vector>
 #include <array>
 #include <unordered_map>
+#include <jsoncpp/json/json.h>
 
 #include <vulkan/vulkan.h>
 
@@ -25,11 +26,14 @@ typedef struct ShaderBindingInfo{
 
 class Shader{
 public:
-    static ShaderHandle CreateShader(const char* vertexShaderPath, const char* fragmentShaderPath,
-     const char* name, std::vector<VkDescriptorSetLayoutBinding> bindings);
-    static void Free(ShaderHandle shader);
+    static void Initialize();
+    static void Cleanup();
 
-    static void EnableNewShaders();
+    static ShaderHandle GetShader(std::string name);
+
+private:
+
+    static std::unordered_map<std::string, ShaderHandle> shaders;
 };
 
 
@@ -43,17 +47,15 @@ public:
 
     VkShaderModule GetVertexShaderModule() const;
     VkShaderModule GetFragmentShaderModule() const;
+    const char* GetName();
 
     void SetDescriptorSet(VkDescriptorSet descriptorSet);
-    VkDescriptorSet GetDescriptorSet() const;
-
     void UpdateDescriptorSet(std::vector<VkWriteDescriptorSet> writeDescriptorSets);
+    VkDescriptorSet GetDescriptorSet() const;
 
     void Bind(VkCommandBuffer commandBuffer, VkPipelineLayout pipelineLayout);
 
     std::array<VkPipelineShaderStageCreateInfo, 2> GetShaderStageCreateInfo() const;
-
-    const char* GetName();
 
     static void EnableNewShaders();
 private:

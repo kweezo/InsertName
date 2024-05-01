@@ -10,6 +10,7 @@
 #include "DataBuffer.hpp"
 #include "DescriptorManager.hpp"
 #include "Image.hpp"
+#include "Shader.hpp"
 
 namespace renderer{
 
