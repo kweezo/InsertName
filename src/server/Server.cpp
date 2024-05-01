@@ -131,13 +131,5 @@ int Server::acceptClient() {
         return -1;
     }
 
-    std::cout << "Accepted client connection\n";
-    return clientSocket;  // Return the clientSocket
-}
-
-void Server::handleClient(int clientSocket) {
-    handlers.push_back(std::make_unique<ClientHandler>(clientSocket, ssl, *c));
-    handlers.back()->handleConnection();
-    // When you're done with the connection, remove the handler object to close the socket.
-    handlers.pop_back();
+    return clientSocket;
 }

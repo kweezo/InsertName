@@ -50,6 +50,10 @@ void Config::LoadConfig(const std::string& filename) {
         settings["messageBufferSize"] = "4096";
         outFile << "messageBufferSize=4096\n";
     }
+    if (settings.find("serverPort") == settings.end()) {
+        settings["serverPort"] = "55832";
+        outFile << "serverPort=55832\n";
+    }
 
     // Now you can use the settings map to set your variables
     dbname = settings["dbname"];
@@ -59,6 +63,7 @@ void Config::LoadConfig(const std::string& filename) {
     dbport = settings["dbport"];
     messageBatchSize = std::stoi(settings["messageBatchSize"]);
     messageBufferSize = std::stoi(settings["messageBufferSize"]);
+    serverPort = std::stoi(settings["serverPort"]);
 }
 
 void Config::SaveConfig() {
@@ -71,4 +76,5 @@ void Config::SaveConfig() {
     outFile << "dbport=" << dbport << "\n";
     outFile << "messageBatchSize=" << messageBatchSize << "\n";
     outFile << "messageBufferSize=" << messageBufferSize << "\n";
+    outFile << "serverPort=" << serverPort << "\n";	
 }

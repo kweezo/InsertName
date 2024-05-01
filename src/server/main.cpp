@@ -1,16 +1,19 @@
 #include "Server.hpp"
-#include <thread>
+#include "Config.hpp"
 
 int main() {
     std::string dir = "./server_data/";
 
     Config::GetInstance().LoadConfig(dir + "config.cfg");
-    Server server(12345, dir);
+    Server server(Config::GetInstance().serverPort, dir);
     server.initNetwork();
 
     while (true) {
         int clientSocket = server.acceptClient();
-        std::thread clientThread(&Server::handleClient, &server, clientSocket);
+        std::thread clientThread([clientSocket, &server]() {
+            std::unique_ptr<ClientHandler> handler = std::make_unique<ClientHandler>(clientSocket, server.ssl, *server.c);
+            handler->handleConnection();
+        });
         clientThread.detach();
     }
 

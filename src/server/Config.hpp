@@ -17,6 +17,8 @@ public:
     int messageBatchSize;
     int messageBufferSize;
 
+    int serverPort;
+
     std::string filename;
     static Config& GetInstance();
     void LoadConfig(const std::string& filename);
