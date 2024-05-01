@@ -6,15 +6,17 @@ include_directories("src")
 
 if(WIN32)
     include_directories("lib\\win")
+    include_directories("lib\\win\\g-truc-glm-0af55cc")
     include_directories("C:\\Program Files (x86)\\libpqxx\\include")
     include_directories("C:\\Strawberry\\c\\include")
     include_directories("C:\\Program Files (x86)\\Assimp\\include")
-    include_directories("lib\\win\\g-truc-glm-0af55cc")
+    include_directories("C:\\Program Files (x86)\\jsoncpp\\include")
 
     link_directories("lib\\win\\GLFW\\lib-mingw-w64")
     link_directories("lib\\win\\VulkanSDK\\1.3.275.0\\Lib")
     link_directories("C:\\Program Files (x86)\\libpqxx\\lib")
     link_directories("C:\\Program Files (x86)\\Assimp\\lib")
+    link_directories("C:\\Program Files (x86)\\jsoncpp\\lib")
     find_library(SSL_LIBRARY
         NAMES libssl.a
         PATHS C:\\Strawberry\\c\\lib
@@ -90,7 +92,8 @@ if(BUILD_ENGINE)
             assimp
             gdi32
             vulkan-1
-            )
+            jsoncpp
+        )
     else()
         target_link_libraries(engine PUBLIC glfw)
         target_link_libraries(engine PUBLIC assimp)
@@ -111,7 +114,7 @@ if(BUILD_CLIENT)
             ${SSL_LIBRARY}
             ${CRYPTO_LIBRARY}
             engine
-            )
+        )
     else()
         target_link_libraries(client PUBLIC ssl)
         target_link_libraries(client PUBLIC crypto)

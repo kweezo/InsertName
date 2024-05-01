@@ -1,5 +1,6 @@
 #include "Server.hpp"
 #include "Config.hpp"
+#include <thread>
 
 int main() {
     std::string dir = "./server_data/";
