@@ -1,60 +1,59 @@
 #include "ClientHandler.hpp"
 
-ClientHandler::ClientHandler(int clientSocket, SSL* ssl, pqxx::connection& c)
-: clientSocket(clientSocket), ssl(ssl), c(c), dbConnectionFailed(false) {
-    // Preverjanje povezave z bazo podatkov
-    if (!c.is_open()) {
-        std::cerr << "Can't open database" << std::endl;
-        dbConnectionFailed = true;
+void ClientHandler::handleConnection(SSL* ssl, pqxx::connection& c, int clientSocket, std::unordered_map<int, int>& clientIds, std::mutex& mapMutex) {
+    int clientId = getClientId(clientSocket, clientIds, mapMutex);
+
+    // Read the size of the incoming data
+    uint32_t size;
+    int bytesReceived = SSL_read(ssl, reinterpret_cast<char*>(&size), sizeof(uint32_t));
+    if (bytesReceived <= 0) {
+        int errorCode = SSL_get_error(ssl, bytesReceived);
+        std::cerr << "Error in SSL_read(). Error code: " << errorCode << ". Quitting" << std::endl;
+        return;
+    }
+    size = ntohl(size); // Convert from network byte order to host byte order
+
+    // Read the actual data
+    char buffer[size];
+    bytesReceived = SSL_read(ssl, buffer, size);
+    if (bytesReceived <= 0) {
+        int errorCode = SSL_get_error(ssl, bytesReceived);
+        std::cerr << "Error in SSL_read(). Error code: " << errorCode << ". Quitting" << std::endl;
+        return;
+    }
+
+    // Pass the binary data to handleMsg
+    std::string response = handleMsg(buffer, bytesReceived, clientSocket, clientIds, mapMutex, c);
+
+    // Convert the response to binary
+    std::string binaryString(response.begin(), response.end());
+
+
+    // Send the binary data
+    SSL_write(ssl, binaryString.c_str(), binaryString.size());
+    if (response == "c" || response == "E") {
+        std::cout << "Closing connection with client " << clientId << std::endl;
+
+        // Lock the mutex before accessing the shared map
+        std::lock_guard<std::mutex> lock(mapMutex);
+
+        // Remove the client from the map
+        clientIds.erase(clientSocket);
+
+        // Close the socket
+        #ifdef _WIN32
+            closesocket(clientSocket);
+        #else
+            close(clientSocket);
+        #endif
+
+        return;
     }
 }
 
-ClientHandler::~ClientHandler() {
-    #ifdef _WIN32
-        closesocket(clientSocket);
-    #else
-        close(clientSocket);
-    #endif
-}
-
-void ClientHandler::handleConnection() {
-    while (true) {
-        // Read the size of the incoming data
-        uint32_t size;
-        int bytesReceived = SSL_read(ssl, reinterpret_cast<char*>(&size), sizeof(uint32_t));
-        if (bytesReceived <= 0) {
-            int errorCode = SSL_get_error(ssl, bytesReceived);
-            std::cerr << "Error in SSL_read(). Error code: " << errorCode << ". Quitting" << std::endl;
-            break;
-        }
-        size = ntohl(size); // Convert from network byte order to host byte order
-
-        // Read the actual data
-        char buffer[size];
-        bytesReceived = SSL_read(ssl, buffer, size);
-        if (bytesReceived <= 0) {
-            int errorCode = SSL_get_error(ssl, bytesReceived);
-            std::cerr << "Error in SSL_read(). Error code: " << errorCode << ". Quitting" << std::endl;
-            break;
-        }
-
-        // Pass the binary data to handleMsg
-        std::string response = handleMsg(buffer, bytesReceived);
-
-        // Convert the response to binary
-        std::string binaryString(response.begin(), response.end());
-
-        // Send the binary data
-        SSL_write(ssl, binaryString.c_str(), binaryString.size());
-        if (response == "c" || response == "E") {
-            std::cout << "Closing connection with client " << username << std::endl;
-            return;
-        }
-    }
-}
-
-std::string ClientHandler::handleMsg(const char* receivedData, int dataSize) {
+std::string ClientHandler::handleMsg(const char* receivedData, int dataSize, int clientSocket, std::unordered_map<int, int>& clientIds, std::mutex& mapMutex, pqxx::connection& c) {
     std::string response="E";
+    int clientId = getClientId(clientSocket, clientIds, mapMutex);
 
     // Extract the identifier from the received data
     unsigned char identifier = receivedData[0]; // The identifier is the first byte
@@ -63,7 +62,7 @@ std::string ClientHandler::handleMsg(const char* receivedData, int dataSize) {
     const char* dataStart = receivedData + 1;
     int dataLength = dataSize - 1;
 
-    if (this->username.empty() && identifier != 'r' && identifier != 'l') {
+    if (!clientId && (identifier != 'r' || identifier != 'l')) {
         std::cerr << "Client is not logged in, closing connection" << std::endl;
         return "c";
     }
@@ -89,15 +88,15 @@ std::string ClientHandler::handleMsg(const char* receivedData, int dataSize) {
         switch (receivedData[0]) {
             case 'r': {
                 std::string username = getNextArg(msg);
-                response = registerUser(username, msg);
+                response = registerUser(username, msg, clientSocket, clientIds, mapMutex, c);
                 break;
             }
             case 'l': {
                 std::string username = getNextArg(msg);
-                response = loginUser(username, msg);
+                response = loginUser(username, msg, clientSocket, clientIds, mapMutex, c);
                 break;
             }
-            case 'm': {
+/*            case 'm': {
                 std::string reciverUsername = getNextArg(msg);
                 response = sendMessage(reciverUsername, msg);
                 break;
@@ -124,7 +123,7 @@ std::string ClientHandler::handleMsg(const char* receivedData, int dataSize) {
                     response += timestamp + (char)30 + message + (char)30;
                 }
                 break;
-            }
+            }*/
             case 'c': {
                 response = "c";
                 break;
@@ -135,7 +134,7 @@ std::string ClientHandler::handleMsg(const char* receivedData, int dataSize) {
     return response;
 }
 
-char ClientHandler::registerUser(const std::string& username, const std::string& password) {
+char ClientHandler::registerUser(const std::string& username, const std::string& password, int clientSocket, std::unordered_map<int, int>& clientIds, std::mutex& mapMutex, pqxx::connection& c) {
     std::cout << "Registering user: " << username << std::endl;
 
     try {
@@ -158,33 +157,39 @@ char ClientHandler::registerUser(const std::string& username, const std::string&
         
         std::string creationDate(buffer);
 
-        std::string sql = "INSERT INTO Users (Username, PasswordHash, Salt, CreationDate) VALUES ($1, $2, $3, $4);";
-        W.exec_params(sql, username, passwordHash, salt, creationDate);
+        std::string sql = "INSERT INTO Users (UserId, Username, PasswordHash, Salt, CreationDate) VALUES (DEFAULT, $1, $2, $3, $4) RETURNING UserId;";
+        pqxx::result R = W.exec_params(sql, username, passwordHash, salt, creationDate);
         W.commit();
+        int userId = R[0][0].as<int>();
+
+        std::lock_guard<std::mutex> lock(mapMutex);
+        clientIds[clientSocket] = userId;
     } catch (const std::exception &e) {
         std::cerr << "Failed to register user: " << e.what() << std::endl;
         return 'e';
     }
-    this->username = username;
+
     return 'r';
 }
 
-char ClientHandler::loginUser(const std::string& username, const std::string& password) {
+char ClientHandler::loginUser(const std::string& username, const std::string& password, int clientSocket, std::unordered_map<int, int>& clientIds, std::mutex& mapMutex, pqxx::connection& c) {
     std::cout << "Logging in user: " << username << std::endl;
 
     try {
         pqxx::work W(c);
 
-        std::string sql = "SELECT PasswordHash, Salt FROM Users WHERE Username = $1;";
+        std::string sql = "SELECT UserId, PasswordHash, Salt FROM Users WHERE Username = $1;";
         pqxx::result R = W.exec_params(sql, username);
 
         if (!R.empty()) {
-            std::string storedPasswordHash = R[0][0].as<std::string>();
-            std::string salt = R[0][1].as<std::string>();
+            int userId = R[0][0].as<int>();
+            std::string storedPasswordHash = R[0][1].as<std::string>();
+            std::string salt = R[0][2].as<std::string>();
             std::string passwordHash = generateHash(password, salt);
 
             if (storedPasswordHash == passwordHash) {
-                this->username = username;
+                std::lock_guard<std::mutex> lock(mapMutex);
+                clientIds[clientSocket] = userId;
                 return 'l';
             } else {
                 return 'w';
@@ -197,7 +202,7 @@ char ClientHandler::loginUser(const std::string& username, const std::string& pa
         return 'f';
     }
 }
-
+/*
 char ClientHandler::sendMessage(const std::string& receiverUsername, const std::string& message) {
     char response = 's';
     try {
@@ -286,7 +291,7 @@ std::vector<std::pair<std::string, std::string>> ClientHandler::getNewMessages(s
 
     return messages;
 }
-
+*/
 std::string ClientHandler::getNextArg(std::string& msg) {
     size_t pos = msg.find((char)30);
     if (pos == std::string::npos) {
@@ -321,4 +326,9 @@ std::string ClientHandler::generateHash(const std::string& password, const std::
         ss << std::hex << std::setw(2) << std::setfill('0') << (int)hash[i];
 
     return ss.str();
+}
+
+int ClientHandler::getClientId(int clientSocket, std::unordered_map<int, int>& clientUsernames, std::mutex& mapMutex) {
+    std::lock_guard<std::mutex> lock(mapMutex);
+    return clientUsernames.at(clientSocket);
 }

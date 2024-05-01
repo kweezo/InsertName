@@ -1,21 +1,26 @@
 #pragma once
 
-#include "ClientHandler.hpp"
 #include "Config.hpp"
-
+#include "ThreadPool.hpp"
+#include "ClientHandler.hpp"
 
 #include <openssl/ssl.h>
 #include <openssl/err.h>
-
 
 #ifdef _WIN32
     #include <winsock2.h>
     #pragma comment(lib, "ws2_32.lib")
 #else
-    #include <sys/socket.h>
-    #include <arpa/inet.h>
     #include <unistd.h>
+    #include <arpa/inet.h>
+    #include <sys/socket.h>
+    #include <sys/select.h>
 #endif
+
+#include <mutex>
+#include <thread>
+#include <vector>
+#include <unordered_map>
 
 
 class Server {
@@ -24,10 +29,15 @@ public:
     ~Server();
     int initNetwork();
     int acceptClient();
+    void handleClients();
 
     std::unique_ptr<pqxx::connection> c;
     SSL* ssl;
-    
+    std::unordered_map<int, int> clientIds;
+    std::mutex mapMutex;
+
+    ClientHandler clientHandler;
+
 private:
     std::string dir;
     int port;

@@ -14,19 +14,20 @@ Server::Server(int port, const std::string& dir) : port(port), dir(dir), ctx(nul
     pqxx::work W(*c);
 
     std::string sql = "CREATE TABLE IF NOT EXISTS Users ("
-                      "Username TEXT PRIMARY KEY NOT NULL,"
-                      "PasswordHash TEXT NOT NULL,"
-                      "Salt TEXT NOT NULL,"
-                      "CreationDate TEXT NOT NULL);";
+                          "UserId SERIAL PRIMARY KEY,"
+                          "Username TEXT NOT NULL,"
+                          "PasswordHash TEXT NOT NULL,"
+                          "Salt TEXT NOT NULL,"
+                          "CreationDate TEXT NOT NULL);";
     W.exec(sql);
 
     sql = "CREATE TABLE IF NOT EXISTS Messages ("
-          "ID SERIAL PRIMARY KEY,"
-          "SenderUsername VARCHAR(255),"
-          "ReceiverUsername VARCHAR(255),"
-          "Message TEXT,"
-          "Timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,"
-          "IsRead BOOLEAN DEFAULT FALSE);";
+              "ID SERIAL PRIMARY KEY,"
+              "SenderUsername VARCHAR(255),"
+              "ReceiverUsername VARCHAR(255),"
+              "Message TEXT,"
+              "Timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,"
+              "IsRead BOOLEAN DEFAULT FALSE);";
     W.exec(sql);
 
     W.commit();
@@ -131,5 +132,63 @@ int Server::acceptClient() {
         return -1;
     }
 
+    std::lock_guard<std::mutex> lock(mapMutex);
+    clientIds[clientSocket] = 0;
+
     return clientSocket;
+}
+
+void Server::handleClients() {
+    fd_set readfds;
+    int max_sd, sd;
+
+    // Create a thread pool with 128 threads
+    ThreadPool pool(128);
+
+    while (true) {
+        FD_ZERO(&readfds);
+
+        // add server socket to set
+        FD_SET(serverSocket, &readfds);
+        max_sd = serverSocket;
+
+        // add child sockets to set
+        for (auto& client : clientIds) {
+            // socket descriptor
+            sd = client.first;
+
+            // if valid socket descriptor then add to read list
+            if(sd > 0)
+                FD_SET(sd, &readfds);
+
+            // highest file descriptor number, need it for the select function
+            if(sd > max_sd)
+                max_sd = sd;
+        }
+
+        // wait for an activity on one of the sockets, timeout is NULL, so wait indefinitely
+        int activity = select(max_sd + 1, &readfds, NULL, NULL, NULL);
+
+        if ((activity < 0) && (errno != EINTR)) {
+            printf("select error");
+        }
+
+        // If something happened on the server socket, then its an incoming connection
+        if (FD_ISSET(serverSocket, &readfds)) {
+            int clientSocket = acceptClient();
+        }
+
+        // else its some IO operation on some other socket
+        for (auto& client : clientIds) {
+            sd = client.first;
+        
+            if (FD_ISSET(sd, &readfds)) {
+                // Add a new job to the thread pool
+                pool.enqueue([this, sd]() {
+                    std::unique_ptr<ClientHandler> handler = std::make_unique<ClientHandler>();
+                    handler->handleConnection(ssl, *c, sd, clientIds, mapMutex);
+                });
+            }
+        }
+    }
 }

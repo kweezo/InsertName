@@ -10,13 +10,15 @@
     #include <arpa/inet.h>
 #endif
 
+#include <ctime>
+#include <mutex>
 #include <string>
-#include <iostream>
+#include <chrono>
 #include <sstream>
 #include <iomanip>
 #include <cstring>
-#include <ctime>
-#include <chrono>
+#include <iostream>
+#include <unordered_map>
 
 #include <pqxx/pqxx>
 #include <openssl/ssl.h>
@@ -28,31 +30,23 @@
 
 #include "Config.hpp"
 
+
 class ClientHandler {
 public:
-    ClientHandler(int clientSocket, SSL* ssl, pqxx::connection& c);
-    ~ClientHandler();
+    void handleConnection(SSL* ssl, pqxx::connection& c, int clientSocket, std::unordered_map<int, int>& clientIds, std::mutex& mapMutex);
 
-    void handleConnection();
-    std::string handleMsg(const char* receivedData, int dataSize);
+private:
+    std::string handleMsg(const char* receivedData, int dataSize, int clientSocket, std::unordered_map<int, int>& clientIds, std::mutex& mapMutex, pqxx::connection& c);
 
-    char registerUser(const std::string& username, const std::string& password);
-    char loginUser(const std::string& username, const std::string& password);
-    char sendMessage(const std::string& receiverUsername, const std::string& message);
-    std::vector<std::pair<std::string, std::string>> getMessages(std::string senderUsername, int offset = 0);
-    std::vector<std::pair<std::string, std::string>> getNewMessages(std::string senderUsername);
+    char registerUser(const std::string& username, const std::string& password, int clientSocket, std::unordered_map<int, int>& clientIds, std::mutex& mapMutex, pqxx::connection& c);
+    char loginUser(const std::string& username, const std::string& password, int clientSocket, std::unordered_map<int, int>& clientIds, std::mutex& mapMutex, pqxx::connection& c);
+
+//    char sendMessage(const std::string& receiverUsername, const std::string& message, int clientSocket, SSL* ssl);
+//    std::vector<std::pair<std::string, std::string>> getMessages(std::string senderUsername, int clientSocket, SSL* ssl, int offset = 0);
+//    std::vector<std::pair<std::string, std::string>> getNewMessages(std::string senderUsername, int clientSocket, SSL* ssl);
 
     std::string getNextArg(std::string& msg);
     std::string generateSalt();
     std::string generateHash(const std::string& password, const std::string& salt);
-
-
-private:
-    int clientSocket;
-    SSL* ssl;
-    bool dbConnectionFailed;
-    pqxx::connection& c;
-
-    std::string username;
-    int msgBatchSize;
+    int ClientHandler::getClientId(int clientSocket, std::unordered_map<int, int>& clientUsernames, std::mutex& mapMutex);
 };
