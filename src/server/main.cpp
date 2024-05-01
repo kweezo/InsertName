@@ -10,7 +10,8 @@ int main() {
 
     while (true) {
         int clientSocket = server.acceptClient();
-        server.handleClient(clientSocket);
+        std::thread clientThread(&Server::handleClient, &server, clientSocket);
+        clientThread.detach();
     }
 
     return 0;

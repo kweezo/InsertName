@@ -14,7 +14,7 @@ if(WIN32)
     link_directories("lib\\win\\GLFW\\lib-mingw-w64")
     link_directories("lib\\win\\VulkanSDK\\1.3.275.0\\Lib")
     link_directories("C:\\Program Files (x86)\\libpqxx\\lib")
-    link_directories("C:\\Program Files (x86)\\Assimp\\bin")
+    link_directories("C:\\Program Files (x86)\\Assimp\\lib")
     find_library(SSL_LIBRARY
         NAMES libssl.a
         PATHS C:\\Strawberry\\c\\lib
@@ -87,7 +87,7 @@ if(BUILD_ENGINE)
         target_link_libraries(engine PUBLIC
             glfw3
             glfw3dll
-            assimp-5
+            assimp
             gdi32
             vulkan-1
             )
