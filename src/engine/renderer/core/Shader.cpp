@@ -2,21 +2,92 @@
 
 namespace renderer{
 
+const std::string shaderPath = "client_data/shaders/bin/";
+
 std::vector<ShaderBindingInfo> ShaderImpl::shaderBindings = {};
+std::unordered_map<std::string, ShaderHandle> Shader::shaders = {};
+
+void Shader::Initialize(){
+    std::ifstream stream("client_data/shaders/shaders.json");
+    if(!stream.is_open()){
+        throw std::runtime_error("Failed to open shaders.json");
+    }
+
+    Json::Value root;
+    Json::CharReaderBuilder builder;
+    std::string err;
+    if(!Json::parseFromStream(builder, stream, &root, &err)){
+        throw std::runtime_error("Failed to parse shaders.json: " + err);
+    }
 
 
-ShaderHandle Shader::CreateShader(const char* vertexShaderPath, const char* fragmentShaderPath, const char* name,
- std::vector<VkDescriptorSetLayoutBinding> bindings){
-    return new ShaderImpl(vertexShaderPath, fragmentShaderPath, name, bindings);
-}
+    const Json::Value& shaders = root["shaders"];
+    for(const Json::Value& shader : shaders){
+        std::vector<VkDescriptorSetLayoutBinding> descriptorBindings;
+        
+        std::string vertexPath = shader["vertexPath"].asString();
+        std::string fragmentPath = shader["fragmentPath"].asString();
+        std::string name = shader["name"].asString();
 
-void Shader::Free(ShaderHandle shader){
-    delete shader;
-}
+        const Json::Value& bindings = shader["bindings"];
+        for (const Json::Value& binding : bindings){
+            int bindingIndex = binding["binding"].asInt();
+            std::string type = binding["type"].asString();
+            std::string stage = binding["stage"].asString();
 
-void Shader::EnableNewShaders(){
+            VkDescriptorSetLayoutBinding descriptorBinding{};
+            descriptorBinding.binding = bindingIndex;
+            descriptorBinding.descriptorCount = 1;
+            
+            if(!type.compare("uniform_buffer")){
+                descriptorBinding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+            }
+            else if(!type.compare("sampler")){
+                descriptorBinding.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+            }
+            else{
+                throw std::runtime_error("Error when reading shaders.json, invalid descriptor type");
+            }
+
+            if(!stage.compare("vertex")){
+                descriptorBinding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
+            }
+            else if(!stage.compare("fragment")){
+                descriptorBinding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+            }
+            else{
+                throw std::runtime_error("Error when reading shaders.json, invalid shader stage");
+            }
+
+            descriptorBindings.push_back(descriptorBinding);
+
+        }
+
+        vertexPath = shaderPath + vertexPath;
+        fragmentPath = shaderPath + fragmentPath;
+
+        Shader::shaders[name] = new ShaderImpl(vertexPath.c_str(), fragmentPath.c_str(),
+        name.c_str(), descriptorBindings);
+    }
+
     ShaderImpl::EnableNewShaders();
+
+    stream.close();
 }
+
+ShaderHandle Shader::GetShader(std::string name){
+    if(shaders.find(name) == shaders.end()){
+        throw std::runtime_error("Attempting to get nonexistent shader with name " + name);
+    }
+    return shaders[name];
+}
+
+void Shader::Cleanup(){
+    for(auto& [name, shader] : shaders){
+        delete shader;
+    }
+}
+
 
 void ShaderImpl::EnableNewShaders(){
     if(shaderBindings.empty()){
@@ -112,7 +183,7 @@ std::vector<unsigned char> ShaderImpl::ReadBytecode(const char* path){
 
     if(!file.is_open()){
         std::string error = "Failed to open file: " + std::string(path);
-        throw std::runtime_error(path);
+        throw std::runtime_error(error);
     }
 
     size_t fileSize = (size_t) file.tellg();

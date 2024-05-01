@@ -116,6 +116,7 @@ if(BUILD_CLIENT)
         target_link_libraries(client PUBLIC ssl)
         target_link_libraries(client PUBLIC crypto)
         target_link_libraries(client PUBLIC engine)
+        target_link_libraries(client PUBLIC jsoncpp)
     endif()
 endif()
 

@@ -1,0 +1,21 @@
+{
+    "shaders": [
+        {
+        "vertexPath": "triangleVert.spv",
+        "fragmentPath": "triangleFrag.spv",
+        "name": "triangle",
+        "bindings": [
+            {
+                "binding": 0,
+                "type": "uniform_buffer",
+                "stage": "vertex"
+            },
+            {
+                "binding": 1,
+                "type": "sampler",
+                "stage": "fragment"
+            }
+        ]
+        }
+    ] 
+}

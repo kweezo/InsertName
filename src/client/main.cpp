@@ -138,8 +138,8 @@ int main(){
     samplerBinding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
 
 
-    ShaderHandle shader = Shader::CreateShader("shaders/bin/triangleVert.spv", "shaders/bin/triangleFrag.spv", "triangle", {uniformBufferBinding, samplerBinding}); // TEMP REMOVE LATER
-    Shader::EnableNewShaders();
+
+    ShaderHandle shader = Shader::GetShader("triangle");
 
     std::vector<VkVertexInputAttributeDescription> attributeDescriptions(2);
 
@@ -296,7 +296,6 @@ int main(){
 
     UniformBuffer::Free(uniformBuffer);
     Texture::Free(texture);
-    Shader::Free(shader);
 
     vkDestroySemaphore(Device::GetDevice(), renderFinishedSemaphore, nullptr);
     vkDestroySemaphore(Device::GetDevice(), imageAvailableSemaphore, nullptr);
