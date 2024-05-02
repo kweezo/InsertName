@@ -1,7 +1,7 @@
 #include "Server.hpp"
 
 
-Server::Server(int port, const std::string& dir) : port(port), dir(dir), ctx(nullptr), ssl(nullptr) {
+Server::Server(int port, const std::string& dir) : port(port), dir(dir), ctx(nullptr) {
     // Vzpostavitev povezave z bazo podatkov
     std::string conn_str = "dbname=" + Config::GetInstance().dbname +
                           " user=" + Config::GetInstance().dbuser +
@@ -52,8 +52,6 @@ Server::Server(int port, const std::string& dir) : port(port), dir(dir), ctx(nul
 }
 
 Server::~Server() {
-    SSL_shutdown(ssl);
-    SSL_free(ssl);
     SSL_CTX_free(ctx);
     #ifdef _WIN32
         closesocket(serverSocket);
@@ -115,7 +113,7 @@ int Server::acceptClient() {
     }
 
     // Create new SSL connection
-    ssl = SSL_new(ctx);
+    SSL* ssl = SSL_new(ctx);
     if (ssl == nullptr) {
         // handle error
         return -1;
@@ -133,7 +131,7 @@ int Server::acceptClient() {
     }
 
     std::lock_guard<std::mutex> lock(mapMutex);
-    clientIds[clientSocket] = 0;
+    clientIds[clientSocket] = std::make_pair(0, ssl);
 
     return clientSocket;
 }
@@ -142,8 +140,7 @@ void Server::handleClients() {
     fd_set readfds;
     int max_sd, sd;
 
-    // Create a thread pool with 128 threads
-    ThreadPool pool(128);
+    ThreadPool pool(2);
 
     while (true) {
         FD_ZERO(&readfds);
@@ -178,15 +175,24 @@ void Server::handleClients() {
             int clientSocket = acceptClient();
         }
 
-        // else its some IO operation on some other socket
         for (auto& client : clientIds) {
             sd = client.first;
         
             if (FD_ISSET(sd, &readfds)) {
-                // Add a new job to the thread pool
-                pool.enqueue([this, sd, ssl = this->ssl, &c = this->c]() {
+                // Check if the client has disconnected
+                if (clientIds.find(sd) == clientIds.end()) {
+                    // The client has disconnected, so continue to the next iteration
+                    continue;
+                }
+                // Lock the client mutex before adding the job to the thread pool
+                clientMutexes[sd].lock();
+        
+                pool.enqueue([this, sd, &c = this->c, &readfds]() {
                     std::unique_ptr<ClientHandler> handler = std::make_unique<ClientHandler>();
-                    handler->handleConnection(ssl, *c, sd, clientIds, mapMutex);
+                    handler->handleConnection(*c, sd, clientIds, mapMutex, readfds);
+        
+                    // Unlock the client mutex when done
+                    clientMutexes[sd].unlock();
                 });
             }
         }

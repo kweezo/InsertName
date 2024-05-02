@@ -1,7 +1,23 @@
 #include "ClientHandler.hpp"
 
-void ClientHandler::handleConnection(SSL* ssl, pqxx::connection& c, int clientSocket, std::unordered_map<int, int>& clientIds, std::mutex& mapMutex) {
+void ClientHandler::handleConnection(pqxx::connection& c, int clientSocket, std::unordered_map<int, std::pair<int, SSL*>>& clientIds, std::mutex& mapMutex, fd_set& readfds) {
     int clientId = getClientId(clientSocket, clientIds, mapMutex);
+
+    // Use std::unique_lock instead of std::lock_guard
+    std::unique_lock<std::mutex> lock(mapMutex);
+
+    // Find the pair associated with the clientSocket
+    auto it = clientIds.find(clientSocket);
+    if (it == clientIds.end()) {
+        // Handle error: no such clientSocket in the map
+        return;
+    }
+
+    // Unlock the mutex
+    lock.unlock();
+
+    // Get the SSL object from the pair
+    SSL* ssl = it->second.second;
 
     // Read the size of the incoming data
     uint32_t size;
@@ -9,6 +25,7 @@ void ClientHandler::handleConnection(SSL* ssl, pqxx::connection& c, int clientSo
     if (bytesReceived <= 0) {
         int errorCode = SSL_get_error(ssl, bytesReceived);
         std::cerr << "Error in SSL_read(). Error code: " << errorCode << ". Quitting" << std::endl;
+        cleanupConnection(clientSocket, clientIds, ssl, mapMutex, readfds);
         return;
     }
     size = ntohl(size); // Convert from network byte order to host byte order
@@ -19,6 +36,7 @@ void ClientHandler::handleConnection(SSL* ssl, pqxx::connection& c, int clientSo
     if (bytesReceived <= 0) {
         int errorCode = SSL_get_error(ssl, bytesReceived);
         std::cerr << "Error in SSL_read(). Error code: " << errorCode << ". Quitting" << std::endl;
+        cleanupConnection(clientSocket, clientIds, ssl, mapMutex, readfds);
         return;
     }
 
@@ -28,32 +46,18 @@ void ClientHandler::handleConnection(SSL* ssl, pqxx::connection& c, int clientSo
     // Convert the response to binary
     std::string binaryString(response.begin(), response.end());
 
-
     // Send the binary data
     SSL_write(ssl, binaryString.c_str(), binaryString.size());
     if (response == "c" || response == "E") {
-        std::cout << "Closing connection with client " << clientId << std::endl;
-
-        // Lock the mutex before accessing the shared map
-        std::lock_guard<std::mutex> lock(mapMutex);
-
-        // Remove the client from the map
-        clientIds.erase(clientSocket);
-
-        // Close the socket
-        #ifdef _WIN32
-            closesocket(clientSocket);
-        #else
-            close(clientSocket);
-        #endif
-
+        std::cout << "Closing connection with userId " << clientId << " (clientSocket: " << clientSocket << ")" << std::endl;
+        cleanupConnection(clientSocket, clientIds, ssl, mapMutex, readfds);
         return;
     }
 }
 
-std::string ClientHandler::handleMsg(const char* receivedData, int dataSize, int clientSocket, std::unordered_map<int, int>& clientIds, std::mutex& mapMutex, pqxx::connection& c) {
-    std::string response="E";
+std::string ClientHandler::handleMsg(const char* receivedData, int dataSize, int clientSocket, std::unordered_map<int, std::pair<int, SSL*>>& clientIds, std::mutex& mapMutex, pqxx::connection& c) {
     int clientId = getClientId(clientSocket, clientIds, mapMutex);
+    std::string response="E";
 
     // Extract the identifier from the received data
     unsigned char identifier = receivedData[0]; // The identifier is the first byte
@@ -134,7 +138,7 @@ std::string ClientHandler::handleMsg(const char* receivedData, int dataSize, int
     return response;
 }
 
-char ClientHandler::registerUser(const std::string& username, const std::string& password, int clientSocket, std::unordered_map<int, int>& clientIds, std::mutex& mapMutex, pqxx::connection& c) {
+char ClientHandler::registerUser(const std::string& username, const std::string& password, int clientSocket, std::unordered_map<int, std::pair<int, SSL*>>& clientIds, std::mutex& mapMutex, pqxx::connection& c) {
     std::cout << "Registering user: " << username << std::endl;
 
     try {
@@ -163,7 +167,8 @@ char ClientHandler::registerUser(const std::string& username, const std::string&
         int userId = R[0][0].as<int>();
 
         std::lock_guard<std::mutex> lock(mapMutex);
-        clientIds[clientSocket] = userId;
+        SSL* ssl = clientIds[clientSocket].second;
+        clientIds[clientSocket] = std::make_pair(userId, ssl);
     } catch (const std::exception &e) {
         std::cerr << "Failed to register user: " << e.what() << std::endl;
         return 'e';
@@ -172,7 +177,7 @@ char ClientHandler::registerUser(const std::string& username, const std::string&
     return 'r';
 }
 
-char ClientHandler::loginUser(const std::string& username, const std::string& password, int clientSocket, std::unordered_map<int, int>& clientIds, std::mutex& mapMutex, pqxx::connection& c) {
+char ClientHandler::loginUser(const std::string& username, const std::string& password, int clientSocket, std::unordered_map<int, std::pair<int, SSL*>>& clientIds, std::mutex& mapMutex, pqxx::connection& c) {
     std::cout << "Logging in user: " << username << std::endl;
 
     try {
@@ -189,7 +194,8 @@ char ClientHandler::loginUser(const std::string& username, const std::string& pa
 
             if (storedPasswordHash == passwordHash) {
                 std::lock_guard<std::mutex> lock(mapMutex);
-                clientIds[clientSocket] = userId;
+                SSL* ssl = clientIds[clientSocket].second;
+                clientIds[clientSocket] = std::make_pair(userId, ssl);
                 return 'l';
             } else {
                 return 'w';
@@ -292,6 +298,27 @@ std::vector<std::pair<std::string, std::string>> ClientHandler::getNewMessages(s
     return messages;
 }
 */
+void ClientHandler::cleanupConnection(int clientSocket, std::unordered_map<int, std::pair<int, SSL*>>& clientIds, SSL* ssl, std::mutex& mapMutex, fd_set& readfds) {
+    // Lock the mutex before accessing the shared map
+    std::lock_guard<std::mutex> lock(mapMutex);
+
+    // Remove the client from the map
+    clientIds.erase(clientSocket);
+
+    // Remove the client's socket descriptor from the readfds set
+    FD_CLR(clientSocket, &readfds);
+
+    // Properly clean up the SSL object
+    SSL_shutdown(ssl);
+    SSL_free(ssl);
+
+    #ifdef _WIN32
+        closesocket(clientSocket);
+    #else
+        close(clientSocket);
+    #endif
+}
+
 std::string ClientHandler::getNextArg(std::string& msg) {
     size_t pos = msg.find((char)30);
     if (pos == std::string::npos) {
@@ -328,7 +355,12 @@ std::string ClientHandler::generateHash(const std::string& password, const std::
     return ss.str();
 }
 
-int ClientHandler::getClientId(int clientSocket, std::unordered_map<int, int>& clientIds, std::mutex& mapMutex) {
+int ClientHandler::getClientId(int clientSocket, std::unordered_map<int, std::pair<int, SSL*>>& clientIds, std::mutex& mapMutex) {
     std::lock_guard<std::mutex> lock(mapMutex);
-    return clientIds.at(clientSocket);
+    auto it = clientIds.find(clientSocket);
+    if (it != clientIds.end()) {
+        return it->second.first; // Vrnite ID klienta iz para
+    } else {
+        return 0;
+    }
 }

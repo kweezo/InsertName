@@ -33,13 +33,13 @@
 
 class ClientHandler {
 public:
-    void handleConnection(SSL* ssl, pqxx::connection& c, int clientSocket, std::unordered_map<int, int>& clientIds, std::mutex& mapMutex);
+    void handleConnection(pqxx::connection& c, int clientSocket, std::unordered_map<int, std::pair<int, SSL*>>& clientIds, std::mutex& mapMutex, fd_set& readfds);
 
 private:
-    std::string handleMsg(const char* receivedData, int dataSize, int clientSocket, std::unordered_map<int, int>& clientIds, std::mutex& mapMutex, pqxx::connection& c);
+    std::string handleMsg(const char* receivedData, int dataSize, int clientSocket, std::unordered_map<int, std::pair<int, SSL*>>& clientIds, std::mutex& mapMutex, pqxx::connection& c);
 
-    char registerUser(const std::string& username, const std::string& password, int clientSocket, std::unordered_map<int, int>& clientIds, std::mutex& mapMutex, pqxx::connection& c);
-    char loginUser(const std::string& username, const std::string& password, int clientSocket, std::unordered_map<int, int>& clientIds, std::mutex& mapMutex, pqxx::connection& c);
+    char registerUser(const std::string& username, const std::string& password, int clientSocket, std::unordered_map<int, std::pair<int, SSL*>>& clientIds, std::mutex& mapMutex, pqxx::connection& c);
+    char loginUser(const std::string& username, const std::string& password, int clientSocket, std::unordered_map<int, std::pair<int, SSL*>>& clientIds, std::mutex& mapMutex, pqxx::connection& c);
 
 //    char sendMessage(const std::string& receiverUsername, const std::string& message, int clientSocket, SSL* ssl);
 //    std::vector<std::pair<std::string, std::string>> getMessages(std::string senderUsername, int clientSocket, SSL* ssl, int offset = 0);
@@ -48,5 +48,6 @@ private:
     std::string getNextArg(std::string& msg);
     std::string generateSalt();
     std::string generateHash(const std::string& password, const std::string& salt);
-    int getClientId(int clientSocket, std::unordered_map<int, int>& clientUsernames, std::mutex& mapMutex);
+    int getClientId(int clientSocket, std::unordered_map<int, std::pair<int, SSL*>>& clientIds, std::mutex& mapMutex);
+    void cleanupConnection(int clientSocket, std::unordered_map<int, std::pair<int, SSL*>>& clientIds, SSL* ssl, std::mutex& mapMutex, fd_set& readfds);
 };

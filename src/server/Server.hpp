@@ -33,9 +33,9 @@ public:
 
 private:
     std::unique_ptr<pqxx::connection> c;
-    SSL* ssl;
-    std::unordered_map<int, int> clientIds;
+    std::unordered_map<int, std::pair<int, SSL*>> clientIds;
     std::mutex mapMutex;
+    std::unordered_map<int, std::mutex> clientMutexes;
 
     ClientHandler clientHandler;
     
