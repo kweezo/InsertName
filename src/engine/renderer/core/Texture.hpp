@@ -43,11 +43,12 @@ public:
     TextureImpl(const TextureImpl& other);
     TextureImpl& operator=(const TextureImpl& other);
 
+    ImageHandle GetImage();
+
     VkImageView GetTextureImageView();
     VkSampler GetTextureSampler();
     VkWriteDescriptorSet GetWriteDescriptorSet();
 
-    ImageHandle GetImage();
 
     void SetDescriptorSet(VkDescriptorSet descriptorSet);
     void FreeImageData();

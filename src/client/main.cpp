@@ -16,6 +16,7 @@
 #include "engine/renderer/core/DescriptorManager.hpp"
 #include "engine/renderer/core/UniformBuffer.hpp"
 #include "engine/renderer/core/Texture.hpp"
+#include "engine/renderer/ext/model/Model.hpp"
 
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
@@ -122,23 +123,6 @@ int main(){
     Renderer::InitRenderer();
 {
 
-    VkDescriptorSetLayoutBinding uniformBufferBinding{};
-    uniformBufferBinding.binding = 0;
-    uniformBufferBinding.descriptorCount = 1;
-    uniformBufferBinding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-    uniformBufferBinding.pImmutableSamplers = nullptr;
-    uniformBufferBinding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
-
-
-    VkDescriptorSetLayoutBinding samplerBinding{};
-    samplerBinding.binding = 1;
-    samplerBinding.descriptorCount = 1;
-    samplerBinding.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-    samplerBinding.pImmutableSamplers = nullptr;
-    samplerBinding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
-
-
-
     ShaderHandle shader = Shader::GetShader("triangle");
 
     std::vector<VkVertexInputAttributeDescription> attributeDescriptions(2);
@@ -214,6 +198,8 @@ int main(){
     TextureHandle texture = Texture::CreateTexture(dir + "res/textures/test.jpeg", 1, shader->GetDescriptorSet());
     Texture::EnableTextures();
 
+    ModelHandle model = Model::CreateModel("client_data/res/models/backpack/Survival_BackPack_2.fbx",
+     shader);
 
     while(!glfwWindowShouldClose(Window::GetGLFWwindow())){
         glfwPollEvents();
@@ -242,7 +228,7 @@ int main(){
         };
 
 
-        buffer.BeginCommandBuffer(imageIndex, nullptr);
+        buffer.BeginCommandBuffer(nullptr);
         pipeline.BeginRenderPassAndBindPipeline(imageIndex, buffer.GetCommandBuffer());
         shader->UpdateDescriptorSet(descriptorWrite);
         shader->Bind(buffer.GetCommandBuffer(), pipeline.GetPipelineLayout());

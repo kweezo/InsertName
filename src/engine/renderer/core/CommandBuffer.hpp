@@ -27,7 +27,7 @@ public:
 
     void ResetCommandBuffer();
 
-    void BeginCommandBuffer(uint32_t imageIndex, VkCommandBufferInheritanceInfo* inheritanceInfo);
+    void BeginCommandBuffer(VkCommandBufferInheritanceInfo* inheritanceInfo);
     void EndCommandBuffer();
 
     VkCommandBuffer GetCommandBuffer();

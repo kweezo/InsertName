@@ -200,7 +200,7 @@ void ImageImpl::TransitionLayout(VkImageLayout oldLayout, VkImageLayout newLayou
     inheritanceInfo.pipelineStatistics = 0;
 
     CommandBuffer commandBuffer = GetFreeCommandBuffer(this);
-    commandBuffer.BeginCommandBuffer(0, &inheritanceInfo); 
+    commandBuffer.BeginCommandBuffer(&inheritanceInfo); 
     vkCmdPipelineBarrier(commandBuffer.GetCommandBuffer(), VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
     VK_PIPELINE_STAGE_TRANSFER_BIT, 0, 0, nullptr, 0, nullptr, 1, &imageMemoryBarrier);
     commandBuffer.EndCommandBuffer();
@@ -226,7 +226,7 @@ void ImageImpl::UpdateCommandBuffers(){
 
     vkResetFences(Device::GetDevice(), 1, &fence);
 
-    primaryCommandBuffer.BeginCommandBuffer(0, nullptr);
+    primaryCommandBuffer.BeginCommandBuffer(nullptr);
     vkCmdExecuteCommands(primaryCommandBuffer.GetCommandBuffer(), commandBuffers.size(), commandBuffers.data());
     primaryCommandBuffer.EndCommandBuffer();
 

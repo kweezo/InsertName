@@ -31,7 +31,7 @@ void CommandBuffer::ResetCommandBuffer(){
     vkResetCommandBuffer(commandBuffer, 0);
 }
 
-void CommandBuffer::BeginCommandBuffer(uint32_t imageIndex, VkCommandBufferInheritanceInfo* inheritanceInfo){
+void CommandBuffer::BeginCommandBuffer(VkCommandBufferInheritanceInfo* inheritanceInfo){
 //    if(level == VK_COMMAND_BUFFER_LEVEL_SECONDARY){
 //        throw std::runtime_error("Tried to record a secondary command buffer, aborting!");
 //    }
