@@ -2,15 +2,15 @@ So thus far no real issues or anything, this is a passion project done by a coup
 
 # Gameplay Notes
 
-## Advanture
+## Adventure
 
 ### Teams
-In team can join up to 7 plyers.
+Up to 7 players in a team.
 
 ### Clans
-Teams can join together to create clans (min. requirements: Two full teams)
+Teams can join together to create clans (min. requirements: two full teams)
 
-### Advanture Guild
+### Adventure Guild
 
 For quests
 
@@ -20,16 +20,16 @@ For quests
 
 ### Level Upgrade Info
 
-Unlocking game quests together with skills (when you unlock skill, you will also unlock quest)
+Unlocking game quests together with skills (when you unlock a skill, you will also unlock a quest)
 
-With doing diferent things, you will get skill points for some things
+By performing certain actions, you will gain skill points for the relevant skill.
 
 ### Character Stats
 
 - mana
-- hp
-- atk
-- def
+- HP
+- ATK
+- DEF
 - stamina
 
 ### Character Start Stats
@@ -41,12 +41,12 @@ With doing diferent things, you will get skill points for some things
       - Base attack
       - Crit rate
       - Crit chance
-    - Defence
-      - Physical defence
-        - Physical defence
+    - Defense
+      - Physical defense
+        - Physical defense
         - Physical resistance
-      - Magic defence
-        - Magic defence
+      - Magic defense
+        - Magic defense
         - Magic resistance
     - Crafting
       - Cartography
@@ -56,48 +56,48 @@ With doing diferent things, you will get skill points for some things
 
 2.  Fire:
     - Attack
-    - Defence
+    - Defense
     - Special
 
 3.  Water:
     - Attack
-    - Defence
+    - Defense
     - Special
 
 4.  Earth:
     - Attack
-    - Defence
+    - Defense
     - Special
 
 5.  Air:
     - Attack
-    - Defence
+    - Defense
     - Special
 
 6.  Nature:
     - Attack
-    - Defence
+    - Defense
     - Special
 
 7.  Electro:
     - Attack
-    - Defence
+    - Defense
     - Special
 
 8.  Light:
     - Attack
-    - Defence
+    - Defense
     - Special
 
 9.  Dark:
     - Attack
-    - Defence
+    - Defense
     - Special
 
 #### Skill Points
 
 - cooking
-- advanture
+- adventure
 - combat
 - nature
 - fire
