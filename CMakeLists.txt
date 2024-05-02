@@ -82,7 +82,8 @@ if(BUILD_SERVER)
 endif()
 
 if(BUILD_ENGINE)
-    file(GLOB enginesrc src/engine/renderer/core/*.cpp src/engine/renderer/ext/*.cpp src/engine/renderer/window/*.cpp src/client/account/Settings.cpp)
+    file(GLOB enginesrc src/engine/renderer/core/*.cpp src/engine/renderer/ext/*.cpp
+     src/engine/renderer/window/*.cpp src/client/account/Settings.cpp src/engine/renderer/ext/**/*.cpp)
     add_library(engine SHARED ${enginesrc})
 
     if(WIN32)

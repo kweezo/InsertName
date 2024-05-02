@@ -89,7 +89,7 @@ VkImageSubresourceLayers subresourceLayers, VkImageLayout format){
     VkCommandBufferInheritanceInfo inheritanceInfo{};
     inheritanceInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_INFO;
 
-    copyInfo.commandBuffer.BeginCommandBuffer(0, &inheritanceInfo);
+    copyInfo.commandBuffer.BeginCommandBuffer(&inheritanceInfo);
 
     VkBufferImageCopy copyRegion{};
     copyRegion.bufferOffset = 0;
@@ -162,7 +162,7 @@ void DataBuffer::CopyBufferData(VkBuffer dst, void* data, size_t size){
     memcpy(data, stagingData, size);
     vkUnmapMemory(Device::GetDevice(), stagingBuffer.bufferMemory);
 
-    stagingBuffer.commandBuffer.BeginCommandBuffer(0, &inheritanceInfo);
+    stagingBuffer.commandBuffer.BeginCommandBuffer(&inheritanceInfo);
 
     VkBufferCopy copyRegion{};
     copyRegion.size = size;
@@ -201,7 +201,7 @@ void DataBuffer::CopyFromBuffer(StagingBufferCopyCMDInfo stagingBuffer, VkDevice
     VkCommandBufferInheritanceInfo inheritanceInfo{};
     inheritanceInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_INFO;
 
-    stagingBuffer.commandBuffer.BeginCommandBuffer(0, &inheritanceInfo);
+    stagingBuffer.commandBuffer.BeginCommandBuffer(&inheritanceInfo);
 
     VkBufferCopy copyRegion{};
     copyRegion.size = size;
@@ -230,7 +230,7 @@ void DataBuffer::UpdateCommandBuffer(){
 
     vkResetFences(Device::GetDevice(), 1, &fence);
 
-    commandBuffer.BeginCommandBuffer(0, nullptr);
+    commandBuffer.BeginCommandBuffer(nullptr);
     vkCmdExecuteCommands(commandBuffer.GetCommandBuffer(), commandBuffers.size(), commandBuffers.data());
     commandBuffer.EndCommandBuffer();
 
