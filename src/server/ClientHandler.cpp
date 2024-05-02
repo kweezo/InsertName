@@ -21,24 +21,42 @@ void ClientHandler::handleConnection(pqxx::connection& c, int clientSocket, std:
 
     // Read the size of the incoming data
     uint32_t size;
-    int bytesReceived = SSL_read(ssl, reinterpret_cast<char*>(&size), sizeof(uint32_t));
-    if (bytesReceived <= 0) {
-        int errorCode = SSL_get_error(ssl, bytesReceived);
-        std::cerr << "Error in SSL_read(). Error code: " << errorCode << ". Quitting" << std::endl;
-        cleanupConnection(clientSocket, clientIds, ssl, mapMutex, readfds);
-        return;
-    }
+    int bytesReceived;
+    do {
+        bytesReceived = SSL_read(ssl, reinterpret_cast<char*>(&size), sizeof(uint32_t));
+        if (bytesReceived <= 0) {
+            int errorCode = SSL_get_error(ssl, bytesReceived);
+            if (errorCode == SSL_ERROR_WANT_READ || errorCode == SSL_ERROR_WANT_WRITE) {
+                // The operation would block, try again later
+                continue;
+            } else {
+                // An actual error occurred
+                std::cerr << "Error in SSL_read(). Error code: " << errorCode << ". Quitting" << std::endl;
+                cleanupConnection(clientSocket, clientIds, ssl, mapMutex, readfds);
+                return;
+            }
+        }
+    } while (bytesReceived <= 0);
+    
     size = ntohl(size); // Convert from network byte order to host byte order
-
+    
     // Read the actual data
     char buffer[size];
-    bytesReceived = SSL_read(ssl, buffer, size);
-    if (bytesReceived <= 0) {
-        int errorCode = SSL_get_error(ssl, bytesReceived);
-        std::cerr << "Error in SSL_read(). Error code: " << errorCode << ". Quitting" << std::endl;
-        cleanupConnection(clientSocket, clientIds, ssl, mapMutex, readfds);
-        return;
-    }
+    do {
+        bytesReceived = SSL_read(ssl, buffer, size);
+        if (bytesReceived <= 0) {
+            int errorCode = SSL_get_error(ssl, bytesReceived);
+            if (errorCode == SSL_ERROR_WANT_READ || errorCode == SSL_ERROR_WANT_WRITE) {
+                // The operation would block, try again later
+                continue;
+            } else {
+                // An actual error occurred
+                std::cerr << "Error in SSL_read(). Error code: " << errorCode << ". Quitting" << std::endl;
+                cleanupConnection(clientSocket, clientIds, ssl, mapMutex, readfds);
+                return;
+            }
+        }
+    } while (bytesReceived <= 0);
 
     // Pass the binary data to handleMsg
     std::string response = handleMsg(buffer, bytesReceived, clientSocket, clientIds, mapMutex, c);

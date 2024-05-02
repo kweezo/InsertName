@@ -140,7 +140,7 @@ void Server::handleClients() {
     fd_set readfds;
     int max_sd, sd;
 
-    ThreadPool pool(2);
+    ThreadPool pool(1);
 
     while (true) {
         FD_ZERO(&readfds);
@@ -167,34 +167,53 @@ void Server::handleClients() {
         int activity = select(max_sd + 1, &readfds, NULL, NULL, NULL);
 
         if ((activity < 0) && (errno != EINTR)) {
-            printf("select error");
+            perror("select error");
+            continue;
         }
 
         // If something happened on the server socket, then its an incoming connection
         if (FD_ISSET(serverSocket, &readfds)) {
             int clientSocket = acceptClient();
-        }
-
-        for (auto& client : clientIds) {
-            sd = client.first;
-        
-            if (FD_ISSET(sd, &readfds)) {
-                // Check if the client has disconnected
-                if (clientIds.find(sd) == clientIds.end()) {
-                    // The client has disconnected, so continue to the next iteration
+            if (clientSocket < 0) {
+                perror("accept error");
+                continue;
+            }
+            // Set the client socket to non-blocking mode
+            #ifdef _WIN32
+                unsigned long mode = 1;
+                if (ioctlsocket(clientSocket, FIONBIO, &mode) != 0) {
+                    perror("ioctlsocket error");
+                    closesocket(clientSocket);
                     continue;
                 }
-                // Lock the client mutex before adding the job to the thread pool
-                clientMutexes[sd].lock();
-        
-                pool.enqueue([this, sd, &c = this->c, &readfds]() {
-                    std::unique_ptr<ClientHandler> handler = std::make_unique<ClientHandler>();
-                    handler->handleConnection(*c, sd, clientIds, mapMutex, readfds);
-        
+            #else
+                int flags = fcntl(clientSocket, F_GETFL, 0);
+                if (flags < 0 || fcntl(clientSocket, F_SETFL, flags | O_NONBLOCK) < 0) {
+                    perror("fcntl error");
+                    close(clientSocket);
+                    continue;
+                }
+            #endif
+        }
+
+        // Create a single job that handles multiple clients
+        pool.enqueue([this, &c = this->c, &readfds]() {
+            while (true) {
+                for (auto& client : clientIds) {
+                    int sd = client.first;
+
+                    // Lock the client mutex before checking the socket
+                    clientMutexes[sd].lock();
+
+                    if (FD_ISSET(sd, &readfds)) {
+                        std::unique_ptr<ClientHandler> handler = std::make_unique<ClientHandler>();
+                        handler->handleConnection(*c, sd, clientIds, mapMutex, readfds);
+                    }
+
                     // Unlock the client mutex when done
                     clientMutexes[sd].unlock();
-                });
+                }
             }
-        }
+        });
     }
 }
