@@ -1,7 +1,6 @@
 #pragma once
 
 #include "Config.hpp"
-#include "ThreadPool.hpp"
 #include "ClientHandler.hpp"
 
 #include <openssl/ssl.h>

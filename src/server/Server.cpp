@@ -140,8 +140,6 @@ void Server::handleClients() {
     fd_set readfds;
     int max_sd, sd;
 
-    ThreadPool pool(1);
-
     while (true) {
         FD_ZERO(&readfds);
 
@@ -196,24 +194,20 @@ void Server::handleClients() {
             #endif
         }
 
-        // Create a single job that handles multiple clients
-        pool.enqueue([this, &c = this->c, &readfds]() {
-            while (true) {
-                for (auto& client : clientIds) {
-                    int sd = client.first;
+        // Instead of creating a job for the thread pool, handle the clients directly
+        for (auto& client : clientIds) {
+            int sd = client.first;
 
-                    // Lock the client mutex before checking the socket
-                    clientMutexes[sd].lock();
+            // Lock the client mutex before checking the socket
+            clientMutexes[sd].lock();
 
-                    if (FD_ISSET(sd, &readfds)) {
-                        std::unique_ptr<ClientHandler> handler = std::make_unique<ClientHandler>();
-                        handler->handleConnection(*c, sd, clientIds, mapMutex, readfds);
-                    }
-
-                    // Unlock the client mutex when done
-                    clientMutexes[sd].unlock();
-                }
+            if (FD_ISSET(sd, &readfds)) {
+                std::unique_ptr<ClientHandler> handler = std::make_unique<ClientHandler>();
+                handler->handleConnection(*c, sd, clientIds, mapMutex, readfds);
             }
-        });
+
+            // Unlock the client mutex when done
+            clientMutexes[sd].unlock();
+        }
     }
 }

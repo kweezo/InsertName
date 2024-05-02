@@ -65,7 +65,43 @@ void ClientHandler::handleConnection(pqxx::connection& c, int clientSocket, std:
     std::string binaryString(response.begin(), response.end());
 
     // Send the binary data
-    SSL_write(ssl, binaryString.c_str(), binaryString.size());
+    int bytesSent;
+    fd_set writefds;
+    struct timeval timeout;
+    timeout.tv_sec = 0;
+    timeout.tv_usec = 0; // Set the timeout to zero for non-blocking operation
+
+    do {
+        FD_ZERO(&writefds);
+        FD_SET(clientSocket, &writefds);
+
+        // Check if writing is possible
+        int selectResult = select(clientSocket + 1, NULL, &writefds, NULL, &timeout);
+        if (selectResult < 0) {
+            // An error occurred
+            perror("select error");
+            cleanupConnection(clientSocket, clientIds, ssl, mapMutex, readfds);
+            return;
+        } else if (selectResult == 0) {
+            // Writing would block, try again later
+            continue;
+        }
+
+        bytesSent = SSL_write(ssl, binaryString.c_str(), binaryString.size());
+        if (bytesSent <= 0) {
+            int errorCode = SSL_get_error(ssl, bytesSent);
+            if (errorCode == SSL_ERROR_WANT_READ || errorCode == SSL_ERROR_WANT_WRITE) {
+                // The operation would block, try again later
+                continue;
+            } else {
+                // An actual error occurred
+                std::cerr << "Error in SSL_write(). Error code: " << errorCode << ". Quitting" << std::endl;
+                cleanupConnection(clientSocket, clientIds, ssl, mapMutex, readfds);
+                return;
+            }
+        }
+    } while (bytesSent <= 0);
+
     if (response == "c" || response == "E") {
         std::cout << "Closing connection with userId " << clientId << " (clientSocket: " << clientSocket << ")" << std::endl;
         cleanupConnection(clientSocket, clientIds, ssl, mapMutex, readfds);
