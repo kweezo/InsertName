@@ -39,7 +39,7 @@ void Log::print(int alertLevel, const std::string& msg) {
     // Get current time as Unix timestamp
     std::time_t now = std::time(nullptr);
 
-    if (alertLevel >= 2-logLevel) {
+    if (alertLevel > 2-logLevel) {
         std::string color;
         if (alertLevel == 0) {
             color = "\033[0m"; // Reset color
