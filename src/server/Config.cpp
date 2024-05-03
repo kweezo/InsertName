@@ -55,8 +55,8 @@ void Config::LoadConfig(const std::string& filename) {
         outFile << "logLevel=2\n";
     }
     if (settings.find("maxLogBufferSize") == settings.end()) {
-        settings["maxLogBufferSize"] = "100";
-        outFile << "maxLogBufferSize=100\n";
+        settings["maxLogBufferSize"] = "64";
+        outFile << "maxLogBufferSize=64\n";
     }
 
     // Now you can use the settings map to set your variables
