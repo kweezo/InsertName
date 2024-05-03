@@ -198,7 +198,7 @@ int main(){
     TextureHandle texture = Texture::CreateTexture(dir + "res/textures/test.jpeg", 1, shader->GetDescriptorSet());
     Texture::EnableTextures();
 
-    ModelHandle model = Model::CreateModel("client_data/res/models/backpack/Survival_BackPack_2.fbx",
+    ModelHandle model = Model::CreateModel(dir + "res/models/backpack/Survival_BackPack_2.fbx",
      shader);
 
     while(!glfwWindowShouldClose(Window::GetGLFWwindow())){
