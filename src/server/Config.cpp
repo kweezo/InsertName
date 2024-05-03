@@ -51,8 +51,8 @@ void Config::LoadConfig(const std::string& filename) {
         outFile << "loginAttempts=3\n";
     }
     if (settings.find("logLevel") == settings.end()) {
-        settings["logLevel"] = "2";
-        outFile << "logLevel=2\n";
+        settings["logLevel"] = "3";
+        outFile << "logLevel=3\n";
     }
     if (settings.find("maxLogBufferSize") == settings.end()) {
         settings["maxLogBufferSize"] = "64";
