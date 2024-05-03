@@ -1,7 +1,8 @@
 #pragma once
 
-//* This define is used to disable the database functionality of the server for testing purposes
-//#define NO_DB
+#include "Log.hpp"
+#include "Config.hpp"
+#include "buildConfig.hpp"
 
 #ifdef _WIN32
     #include <winsock2.h>
@@ -11,14 +12,13 @@
     #include <arpa/inet.h>
 #endif
 
-#include <ctime>
+//#include <ctime>
 #include <mutex>
 #include <string>
-#include <chrono>
-#include <sstream>
+//#include <chrono>
+//#include <sstream>
 #include <iomanip>
 #include <cstring>
-#include <iostream>
 #include <unordered_map>
 
 #include <pqxx/pqxx>
@@ -28,7 +28,6 @@
 #include <openssl/rand.h>
 #include <glm/glm.hpp>
 
-#include "Config.hpp"
 
 
 class ClientHandler {

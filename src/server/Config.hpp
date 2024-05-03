@@ -14,10 +14,11 @@ public:
     std::string dbhostaddr;
     std::string dbport;
 
-    int messageBatchSize;
-    int messageBufferSize;
-
     int serverPort;
+
+    int loginAttempts;
+    int logLevel;
+    int maxLogBufferSize;
 
     std::string filename;
     static Config& GetInstance();

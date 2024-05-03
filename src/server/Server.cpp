@@ -75,7 +75,7 @@ int Server::initNetwork() {
         throw std::runtime_error("Failed to listen on socket");
     }
 
-    std::cout << "Server is listening on port " << ntohs(serverAddress.sin_port) << "...\n";
+    Log::getInstance(c.get()).print(0, "Server is listening on port " + std::to_string(ntohs(serverAddress.sin_port)) + "...");
     return 0;
 }
 
@@ -90,7 +90,7 @@ int Server::acceptClient() {
     #endif
 
     if (clientSocket == -1) {
-        std::cerr << "Failed to accept client connection";
+        Log::getInstance().print(2, "Failed to accept client connection");
     }
 
     ctx = SSL_CTX_new(TLS_server_method());
@@ -101,21 +101,19 @@ int Server::acceptClient() {
 
     // Load the server's private key and certificate
     if (SSL_CTX_use_PrivateKey_file(ctx, (dir + "network/server.key").c_str(), SSL_FILETYPE_PEM) <= 0) {
-        ERR_print_errors_fp(stderr);
-        // handle error
+        Log::getInstance().print(2, "Failed to load server private key");
         return -1;
     }
 
     if (SSL_CTX_use_certificate_file(ctx, (dir + "network/server.crt").c_str(), SSL_FILETYPE_PEM) <= 0) {
-        ERR_print_errors_fp(stderr);
-        // handle error
+        Log::getInstance().print(2, "Failed to load server certificate");
         return -1;
     }
 
     // Create new SSL connection
     SSL* ssl = SSL_new(ctx);
     if (ssl == nullptr) {
-        // handle error
+        Log::getInstance().print(2, "Failed to create new SSL connection");
         return -1;
     }
 
@@ -126,7 +124,7 @@ int Server::acceptClient() {
     int ret = SSL_accept(ssl);
     if (ret != 1) {
         int errorCode = SSL_get_error(ssl, ret);
-        fprintf(stderr, "SSL error: %s\n", ERR_error_string(errorCode, NULL));
+        Log::getInstance().print(2, "Failed to perform SSL/TLS handshake, error code: " + std::to_string(errorCode));
         return -1;
     }
 
@@ -169,7 +167,7 @@ void Server::handleClients() {
         int activity = select(max_sd + 1, &readfds, NULL, NULL, NULL);
 
         if ((activity < 0) && (errno != EINTR)) {
-            perror("select error");
+            Log::getInstance().print(2, "Select error occurred on server socket");
             continue;
         }
 
@@ -177,21 +175,21 @@ void Server::handleClients() {
         if (FD_ISSET(serverSocket, &readfds)) {
             int clientSocket = acceptClient();
             if (clientSocket < 0) {
-                perror("accept error");
+                Log::getInstance().print(2, "Failed to accept client connection");
                 continue;
             }
             // Set the client socket to non-blocking mode
             #ifdef _WIN32
                 unsigned long mode = 1;
                 if (ioctlsocket(clientSocket, FIONBIO, &mode) != 0) {
-                    perror("ioctlsocket error");
+                    Log::getInstance().print(2, "Failed to set client socket to non-blocking mode");
                     closesocket(clientSocket);
                     continue;
                 }
             #else
                 int flags = fcntl(clientSocket, F_GETFL, 0);
                 if (flags < 0 || fcntl(clientSocket, F_SETFL, flags | O_NONBLOCK) < 0) {
-                    perror("fcntl error");
+                    Log::getInstance().print(2, "Failed to set client socket to non-blocking mode");
                     close(clientSocket);
                     continue;
                 }
