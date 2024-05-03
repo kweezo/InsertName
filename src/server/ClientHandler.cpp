@@ -3,20 +3,16 @@
 void ClientHandler::handleConnection(pqxx::connection& c, int clientSocket, std::unordered_map<int, std::pair<int, SSL*>>& clientIds, std::mutex& mapMutex, fd_set& readfds) {
     int clientId = getClientId(clientSocket, clientIds, mapMutex);
 
-    // Use std::unique_lock instead of std::lock_guard
     std::unique_lock<std::mutex> lock(mapMutex);
 
-    // Find the pair associated with the clientSocket
     auto it = clientIds.find(clientSocket);
     if (it == clientIds.end()) {
         // Handle error: no such clientSocket in the map
         return;
     }
 
-    // Unlock the mutex
     lock.unlock();
 
-    // Get the SSL object from the pair
     SSL* ssl = it->second.second;
 
     // Read the size of the incoming data
@@ -58,10 +54,8 @@ void ClientHandler::handleConnection(pqxx::connection& c, int clientSocket, std:
         }
     } while (bytesReceived <= 0);
 
-    // Pass the binary data to handleMsg
     std::string response = handleMsg(buffer, bytesReceived, clientSocket, clientIds, mapMutex, c);
 
-    // Convert the response to binary
     std::string binaryString(response.begin(), response.end());
 
     // Send the binary data
@@ -120,10 +114,18 @@ std::string ClientHandler::handleMsg(const char* receivedData, int dataSize, int
     const char* dataStart = receivedData + 1;
     int dataLength = dataSize - 1;
 
-    if (clientId == 0 && identifier != 'r' && identifier != 'l') {
-        std::cerr << "Client is not logged in, closing connection" << std::endl;
-        return "c";
-    }
+    #ifndef NO_DB
+        if (clientId <= 0) {
+            auto it = clientIds.find(clientSocket);
+            if (it != clientIds.end()) {
+                --it->second.first;
+            }
+            clientId--;
+            if ((identifier != 'r' && identifier != 'l')) {
+                return "c";
+            }
+        }
+    #endif
 
     if (receivedData[0] == 's') {
         if (dataLength != sizeof(glm::vec3) * 16) {
@@ -188,6 +190,11 @@ std::string ClientHandler::handleMsg(const char* receivedData, int dataSize, int
             }
         }
     }
+    #ifndef NO_DB
+        if (clientId < -1 && response != "r" && response != "l") {
+            response = "c";
+        }
+    #endif
 
     return response;
 }
@@ -196,29 +203,33 @@ char ClientHandler::registerUser(const std::string& username, const std::string&
     std::cout << "Registering user: " << username << std::endl;
 
     try {
-        pqxx::work W(c);
+        #ifndef NO_DB
+            pqxx::work W(c);
 
-        std::string salt = generateSalt();
-        std::string passwordHash = generateHash(password, salt);
+            std::string salt = generateSalt();
+            std::string passwordHash = generateHash(password, salt);
 
-        // Get current date/time
-        auto now = std::chrono::system_clock::now();
-        std::time_t now_c = std::chrono::system_clock::to_time_t(now);
-        
-        char buffer[26];
+            // Get current date/time
+            auto now = std::chrono::system_clock::now();
+            std::time_t now_c = std::chrono::system_clock::to_time_t(now);
+            
+            char buffer[26];
 
-        #ifdef _WIN32
-            ctime_s(buffer, sizeof buffer, &now_c);
+            #ifdef _WIN32
+                ctime_s(buffer, sizeof buffer, &now_c);
+            #else
+                ctime_r(&now_c, buffer);
+            #endif
+            
+            std::string creationDate(buffer);
+
+            std::string sql = "INSERT INTO Users (UserId, Username, PasswordHash, Salt, CreationDate) VALUES (DEFAULT, $1, $2, $3, $4) RETURNING UserId;";
+            pqxx::result R = W.exec_params(sql, username, passwordHash, salt, creationDate);
+            W.commit();
+            int userId = R[0][0].as<int>();
         #else
-            ctime_r(&now_c, buffer);
+            int userId = clientSocket;
         #endif
-        
-        std::string creationDate(buffer);
-
-        std::string sql = "INSERT INTO Users (UserId, Username, PasswordHash, Salt, CreationDate) VALUES (DEFAULT, $1, $2, $3, $4) RETURNING UserId;";
-        pqxx::result R = W.exec_params(sql, username, passwordHash, salt, creationDate);
-        W.commit();
-        int userId = R[0][0].as<int>();
 
         std::lock_guard<std::mutex> lock(mapMutex);
         SSL* ssl = clientIds[clientSocket].second;
@@ -235,28 +246,35 @@ char ClientHandler::loginUser(const std::string& username, const std::string& pa
     std::cout << "Logging in user: " << username << std::endl;
 
     try {
-        pqxx::work W(c);
+        #ifndef NO_DB
+            pqxx::work W(c);
 
-        std::string sql = "SELECT UserId, PasswordHash, Salt FROM Users WHERE Username = $1;";
-        pqxx::result R = W.exec_params(sql, username);
+            std::string sql = "SELECT UserId, PasswordHash, Salt FROM Users WHERE Username = $1;";
+            pqxx::result R = W.exec_params(sql, username);
 
-        if (!R.empty()) {
-            int userId = R[0][0].as<int>();
-            std::string storedPasswordHash = R[0][1].as<std::string>();
-            std::string salt = R[0][2].as<std::string>();
-            std::string passwordHash = generateHash(password, salt);
+            if (!R.empty()) {
+                int userId = R[0][0].as<int>();
+                std::string storedPasswordHash = R[0][1].as<std::string>();
+                std::string salt = R[0][2].as<std::string>();
+                std::string passwordHash = generateHash(password, salt);
 
-            if (storedPasswordHash == passwordHash) {
-                std::lock_guard<std::mutex> lock(mapMutex);
-                SSL* ssl = clientIds[clientSocket].second;
-                clientIds[clientSocket] = std::make_pair(userId, ssl);
-                return 'l';
+                if (storedPasswordHash == passwordHash) {
+                    std::lock_guard<std::mutex> lock(mapMutex);
+                    SSL* ssl = clientIds[clientSocket].second;
+                    clientIds[clientSocket] = std::make_pair(userId, ssl);
+                    return 'l';
+                } else {
+                    return 'w';
+                }
             } else {
                 return 'w';
             }
-        } else {
-            return 'w';
-        }
+        #else
+            std::lock_guard<std::mutex> lock(mapMutex);
+            SSL* ssl = clientIds[clientSocket].second;
+            clientIds[clientSocket] = std::make_pair(clientSocket, ssl);
+            return 'l';
+        #endif
     } catch (const std::exception &e) {
         std::cerr << "Failed to login user: " << e.what() << std::endl;
         return 'f';

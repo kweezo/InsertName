@@ -1,6 +1,7 @@
 #pragma once
 
-#define GLM_ENABLE_EXPERIMENTAL
+//* This define is used to disable the database functionality of the server for testing purposes
+//#define NO_DB
 
 #ifdef _WIN32
     #include <winsock2.h>
@@ -26,7 +27,6 @@
 #include <openssl/sha.h>
 #include <openssl/rand.h>
 #include <glm/glm.hpp>
-#include <glm/gtx/string_cast.hpp>
 
 #include "Config.hpp"
 

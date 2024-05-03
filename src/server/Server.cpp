@@ -1,37 +1,37 @@
 #include "Server.hpp"
 
-
 Server::Server(int port, const std::string& dir) : port(port), dir(dir), ctx(nullptr) {
-    // Vzpostavitev povezave z bazo podatkov
-    std::string conn_str = "dbname=" + Config::GetInstance().dbname +
-                          " user=" + Config::GetInstance().dbuser +
-                          " password=" + Config::GetInstance().dbpassword +
-                          " hostaddr=" + Config::GetInstance().dbhostaddr +
-                          " port=" + Config::GetInstance().dbport;
-    c = std::make_unique<pqxx::connection>(conn_str);
+    #ifndef NO_DB
+        // Vzpostavitev povezave z bazo podatkov
+        std::string conn_str = "dbname=" + Config::GetInstance().dbname +
+                            " user=" + Config::GetInstance().dbuser +
+                            " password=" + Config::GetInstance().dbpassword +
+                            " hostaddr=" + Config::GetInstance().dbhostaddr +
+                            " port=" + Config::GetInstance().dbport;
+        c = std::make_unique<pqxx::connection>(conn_str);
 
-    // Ustvarjanje tabel v bazi podatkov
-    pqxx::work W(*c);
+        // Ustvarjanje tabel v bazi podatkov
+        pqxx::work W(*c);
 
-    std::string sql = "CREATE TABLE IF NOT EXISTS Users ("
-                          "UserId SERIAL PRIMARY KEY,"
-                          "Username TEXT NOT NULL,"
-                          "PasswordHash TEXT NOT NULL,"
-                          "Salt TEXT NOT NULL,"
-                          "CreationDate TEXT NOT NULL);";
-    W.exec(sql);
+        std::string sql = "CREATE TABLE IF NOT EXISTS Users ("
+                            "UserId SERIAL PRIMARY KEY,"
+                            "Username TEXT NOT NULL,"
+                            "PasswordHash TEXT NOT NULL,"
+                            "Salt TEXT NOT NULL,"
+                            "CreationDate TEXT NOT NULL);";
+        W.exec(sql);
 
-    sql = "CREATE TABLE IF NOT EXISTS Messages ("
-              "ID SERIAL PRIMARY KEY,"
-              "SenderUsername VARCHAR(255),"
-              "ReceiverUsername VARCHAR(255),"
-              "Message TEXT,"
-              "Timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,"
-              "IsRead BOOLEAN DEFAULT FALSE);";
-    W.exec(sql);
-
-    W.commit();
-
+    /*    sql = "CREATE TABLE IF NOT EXISTS Messages ("
+                "ID SERIAL PRIMARY KEY,"
+                "SenderUsername VARCHAR(255),"
+                "ReceiverUsername VARCHAR(255),"
+                "Message TEXT,"
+                "Timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,"
+                "IsRead BOOLEAN DEFAULT FALSE);";
+        W.exec(sql);
+    */
+        W.commit();
+    #endif
     // Initialize OpenSSL
     SSL_load_error_strings();	
     OpenSSL_add_ssl_algorithms();
@@ -131,8 +131,12 @@ int Server::acceptClient() {
     }
 
     std::lock_guard<std::mutex> lock(mapMutex);
-    clientIds[clientSocket] = std::make_pair(0, ssl);
-
+    #ifndef NO_DB
+        clientIds[clientSocket] = std::make_pair(0, ssl);
+    #else
+        clientIds[clientSocket] = std::make_pair(clientSocket, ssl);
+    #endif
+    
     return clientSocket;
 }
 
@@ -194,20 +198,17 @@ void Server::handleClients() {
             #endif
         }
 
-        // Instead of creating a job for the thread pool, handle the clients directly
+        // Else its some IO operation on some other socket
         for (auto& client : clientIds) {
             int sd = client.first;
-
+        
             // Lock the client mutex before checking the socket
-            clientMutexes[sd].lock();
-
+            std::lock_guard<std::mutex> lock(clientMutexes[sd]);
+        
             if (FD_ISSET(sd, &readfds)) {
                 std::unique_ptr<ClientHandler> handler = std::make_unique<ClientHandler>();
                 handler->handleConnection(*c, sd, clientIds, mapMutex, readfds);
             }
-
-            // Unlock the client mutex when done
-            clientMutexes[sd].unlock();
         }
     }
 }
