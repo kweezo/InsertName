@@ -7,6 +7,7 @@ include_directories("src")
 if(WIN32)
     include_directories("lib\\win")
     include_directories("lib\\win\\g-truc-glm-0af55cc")
+    include_directories("lib\\win\\linenoise-ng-master\\include")
     include_directories("C:\\Program Files (x86)\\libpqxx\\include")
     include_directories("C:\\Strawberry\\c\\include")
     include_directories("C:\\Program Files (x86)\\Assimp\\include")
@@ -29,6 +30,9 @@ if(WIN32)
         NAMES libpq.lib
         PATHS "C:\\Program Files\\PostgreSQL\\16\\lib"
     )
+
+    add_library(linenoise lib/win/linenoise-ng-master/src/ConvertUTF.cpp lib/win/linenoise-ng-master/src/wcwidth.cpp lib/win/linenoise-ng-master/src/linenoise.cpp)
+    set_target_properties(linenoise PROPERTIES ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/lib)
 endif()
 
 set(CMAKE_CXX_STANDARD 20)
@@ -73,6 +77,7 @@ if(BUILD_SERVER)
             ws2_32
             ${SSL_LIBRARY}
             ${CRYPTO_LIBRARY}
+            linenoise
         )
     else()
         target_link_libraries(server PUBLIC pqxx)
