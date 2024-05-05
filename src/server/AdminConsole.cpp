@@ -1,33 +1,39 @@
 #include "AdminConsole.hpp"
 #include <algorithm>
+#include <curses.h> // Include PDCurses header
 
-// Initialize the static member variable
 AdminConsole* AdminConsole::currentInstance = nullptr;
 
 AdminConsole::AdminConsole() {
     currentInstance = this;
-    linenoiseSetCompletionCallback(completionCallback);
+    initscr(); // Initialize PDCurses
+    addCommands();
 }
 
-void AdminConsole::addCommand(const std::string& command) {
-    commands.push_back(command);
+void AdminConsole::addCommands() {
+    commands.push_back("stop");
 }
 
 std::string AdminConsole::readLine(const std::string& prompt) {
-    char* line = linenoise(prompt.c_str());
-    if (line) {
-        linenoiseHistoryAdd(line);
-        std::string lineStr(line);
-        free(line); // use free instead of linenoiseFree
-        return lineStr;
+    if (currentInstance == nullptr) {
+        return "";
     }
-    return "";
+
+    printw(prompt.c_str()); // Use PDCurses printw instead of cout
+    char line[256];
+    getstr(line); // Use PDCurses getstr to read a line
+    return std::string(line);
 }
 
-void AdminConsole::completionCallback(const char* editBuffer, linenoiseCompletions* lc) {
-    for (const auto& command : currentInstance->commands) {
-        if (command.find(editBuffer) == 0) {
-            linenoiseAddCompletion(lc, command.c_str());
-        }
+void AdminConsole::processLine(const std::string& line) {
+    if (line == "stop") {
+        cmdStop();
+    } else {
+        printw("Unknown command: %s\n", line.c_str()); // Use PDCurses printw instead of cout
     }
+}
+
+void AdminConsole::cmdStop() {
+    currentInstance = nullptr;
+    endwin(); // End PDCurses session
 }

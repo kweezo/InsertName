@@ -1,17 +1,20 @@
-#include <linenoise.h>
+#include <curses.h>
 #include <string>
 #include <vector>
 #include <cstdlib> // for free
 
+
 class AdminConsole {
 public:
     AdminConsole();
-    void addCommand(const std::string& command);
     std::string readLine(const std::string& prompt);
+    void processLine(const std::string& line);
 
 private:
     static AdminConsole* currentInstance;
     std::vector<std::string> commands;
 
-    static void completionCallback(const char* editBuffer, linenoiseCompletions* lc);
+    void addCommands();
+
+    void cmdStop();
 };

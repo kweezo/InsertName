@@ -1,5 +1,6 @@
 #include "Log.hpp"
 
+
 Log::Log(pqxx::connection& conn) :
     c(conn),
     logLevel(Config::GetInstance().logLevel), 
