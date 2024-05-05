@@ -1,0 +1,3 @@
+So for the sake of simplicity of writing code the engine makes some presumptions about shader bindings.
+
+1) Binding 0 will always be reserved for the camera projection, perspective or orthographic
