@@ -19,12 +19,12 @@ public:
     static VkWriteDescriptorSet GetWriteDescriptorSetPerspective(uint32_t binding);
     static VkWriteDescriptorSet GetWriteDescriptorSetOrtho(uint32_t binding);
 private:
-    glm::mat4 view;
-    glm::mat4 perspectiveProjection;
-    glm::mat4 orthoProjection;
+    static glm::mat4 view;
+    static glm::mat4 perspectiveProjection;
+    static glm::mat4 orthoProjection;
 
-    UniformBufferHandle orthoCamera;
-    UniformBufferHandle perspectiveCamera;
+    static UniformBufferHandle orthoCamera;
+    static UniformBufferHandle perspectiveCamera;
 };
 
 }

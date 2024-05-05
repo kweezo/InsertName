@@ -11,6 +11,7 @@
 #include "DescriptorManager.hpp"
 #include "Image.hpp"
 #include "Shader.hpp"
+#include "engine/renderer/ext/camera/Camera.hpp"
 
 namespace renderer{
 

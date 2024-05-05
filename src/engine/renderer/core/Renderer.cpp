@@ -12,6 +12,7 @@ void Renderer::HardInit(){
     Window::CreateVulkanSurface();
     CommandPool::CreateCommandPools();
     ImageImpl::Initialize();
+    Camera::Init();
 }
 
 void Renderer::SoftInit(){
@@ -21,9 +22,11 @@ void Renderer::SoftInit(){
 
 void Renderer::RenderFrame(){
     DataBuffer::UpdateCommandBuffer();
+    Camera::Update();
 }
 
 void Renderer::DestroyRenderer(){
+    Camera::Cleanup();
     Shader::Cleanup();
     Swapchain::DestroySwapchain();
     DescriptorManager::Cleanup();
