@@ -2,6 +2,7 @@
 
 #include "buildConfig.hpp"
 #include "Config.hpp"
+#include "AdminConsole.hpp"
 
 #include <ctime>
 #include <string>

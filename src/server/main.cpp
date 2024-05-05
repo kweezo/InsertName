@@ -7,19 +7,19 @@ int main() {
     std::string dir = "./server_data/";
 
     Config::GetInstance().LoadConfig(dir + "config.cfg");
-    Server server(Config::GetInstance().serverPort, dir);
-    server.initNetwork();
 
-    // Create AdminConsole in a new thread
+    // Initialize AdminConsole in a new thread
     std::thread adminConsoleThread([]() {
-        AdminConsole adminConsole;
+        AdminConsole::init();
         std::string line;
         // Run the adminConsole in a loop
-        while ((line = adminConsole.readLine("> ")) != "") {
-            adminConsole.processLine(line);
+        while ((line = AdminConsole::readLine("> ")) != "") {
+            AdminConsole::processLine(line);
         }
     });
 
+    Server server(Config::GetInstance().serverPort, dir);
+    server.initNetwork();
     server.handleClients();
 
     // Join the adminConsoleThread before exiting the main function

@@ -41,13 +41,13 @@ void Log::print(int alertLevel, const std::string& msg) {
     std::time_t now = std::time(nullptr);
 
     if (alertLevel > 2-logLevel) {
-        std::string color;
+        int colorPair;
         if (alertLevel == 0) {
-            color = "\033[0m"; // Reset color
+            colorPair = 1; // White on black
         } else if (alertLevel == 1) {
-            color = "\033[33m"; // Yellow
+            colorPair = 2; // Yellow on black
         } else if (alertLevel == 2) {
-            color = "\033[31m"; // Red
+            colorPair = 3; // Red on black
         }
     
         // Format the timestamp
@@ -55,7 +55,9 @@ void Log::print(int alertLevel, const std::string& msg) {
         char buffer[20];
         std::strftime(buffer, sizeof(buffer), "%d.%m %H:%M:%S", tm);
     
-        std::cout << color << "[" << buffer << "] " << msg << "\033[0m" << std::endl;
+        // Construct and print the log message
+        std::string logMsg = "[" + std::string(buffer) + "] " + msg;
+        AdminConsole::printLog(logMsg, colorPair);
     }
 
 #ifndef NO_DB
