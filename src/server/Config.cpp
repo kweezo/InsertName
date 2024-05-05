@@ -42,17 +42,21 @@ void Config::LoadConfig(const std::string& filename) {
         settings["dbport"] = "5432";
         outFile << "dbport=5432\n";
     }
-    if (settings.find("messageBatchSize") == settings.end()) {
-        settings["messageBatchSize"] = "30";
-        outFile << "messageBatchSize=30\n";
-    }
-    if (settings.find("messageBufferSize") == settings.end()) {
-        settings["messageBufferSize"] = "4096";
-        outFile << "messageBufferSize=4096\n";
-    }
     if (settings.find("serverPort") == settings.end()) {
         settings["serverPort"] = "55832";
         outFile << "serverPort=55832\n";
+    }
+    if (settings.find("loginAttempts") == settings.end()) {
+        settings["loginAttempts"] = "3";
+        outFile << "loginAttempts=3\n";
+    }
+    if (settings.find("logLevel") == settings.end()) {
+        settings["logLevel"] = "3";
+        outFile << "logLevel=3\n";
+    }
+    if (settings.find("maxLogBufferSize") == settings.end()) {
+        settings["maxLogBufferSize"] = "64";
+        outFile << "maxLogBufferSize=64\n";
     }
 
     // Now you can use the settings map to set your variables
@@ -61,9 +65,10 @@ void Config::LoadConfig(const std::string& filename) {
     dbpassword = settings["dbpassword"];
     dbhostaddr = settings["dbhostaddr"];
     dbport = settings["dbport"];
-    messageBatchSize = std::stoi(settings["messageBatchSize"]);
-    messageBufferSize = std::stoi(settings["messageBufferSize"]);
     serverPort = std::stoi(settings["serverPort"]);
+    loginAttempts = std::stoi(settings["loginAttempts"]);
+    logLevel = std::stoi(settings["logLevel"]);
+    maxLogBufferSize = std::stoi(settings["maxLogBufferSize"]);
 }
 
 void Config::SaveConfig() {
@@ -74,7 +79,8 @@ void Config::SaveConfig() {
     outFile << "dbpassword=" << dbpassword << "\n";
     outFile << "dbhostaddr=" << dbhostaddr << "\n";
     outFile << "dbport=" << dbport << "\n";
-    outFile << "messageBatchSize=" << messageBatchSize << "\n";
-    outFile << "messageBufferSize=" << messageBufferSize << "\n";
-    outFile << "serverPort=" << serverPort << "\n";	
+    outFile << "serverPort=" << serverPort << "\n";
+    outFile << "loginAttempts=" << loginAttempts << "\n";
+    outFile << "logLevel=" << logLevel << "\n";
+    outFile << "maxLogBufferSize=" << maxLogBufferSize << "\n";
 }

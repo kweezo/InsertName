@@ -1,6 +1,8 @@
 #pragma once
 
+#include "Log.hpp"
 #include "Config.hpp"
+#include "buildConfig.hpp"
 #include "ClientHandler.hpp"
 
 #include <openssl/ssl.h>
@@ -18,8 +20,6 @@
 #endif
 
 #include <mutex>
-#include <thread>
-#include <vector>
 #include <unordered_map>
 
 
