@@ -18,6 +18,11 @@ namespace renderer{
 
 class ModelInstanceImpl;
 
+typedef struct ModelInstanceData{
+    DataBuffer instanceBuffer;
+    std::vector<ModelInstanceHandle> instanceList;
+} ModelInstanceData;
+
 class ModelInstance{
 public:
     static ModelInstanceHandle Create(ModelHandle model, Transform trasnform, bool isStatic);
@@ -28,13 +33,18 @@ public:
 class ModelInstanceImpl{
 public:
     ModelInstanceImpl(ModelHandle model, Transform transform, bool isStatic);
-    void ShouldDraw(bool shouldDraw);
+    bool GetShouldDraw();
+    void SetShouldDraw(bool shouldDraw);
+
+    glm::mat4 GetModelMatrix();
 
     static void UpdateStaticInstances();
 private:
+
+    bool shouldDraw;
     glm::mat4 model; 
 
-    static std::unordered_map<ModelHandle, DataBuffer> staticModelMatrices;
+    static std::unordered_map<ModelHandle, ModelInstanceData> staticModelMatrices;
 
 };
 
