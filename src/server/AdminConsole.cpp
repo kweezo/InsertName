@@ -102,6 +102,9 @@ void AdminConsole::printLog(const std::string& msg, int colorPair) {
     // Turn off the color pair
     wattroff(logWindow, COLOR_PAIR(colorPair));
     wrefresh(logWindow);
+
+    // Move the cursor back to the command line
+    move(LINES-1, strlen(line) + 2);  // +2 to account for the "> " prompt
 }
 
 std::string AdminConsole::readCommand() {
@@ -111,6 +114,9 @@ std::string AdminConsole::readCommand() {
 }
 
 void AdminConsole::processLine(const std::string& line) {
+    if (line.empty()) {
+        return;
+    }
     if (line == "stop") {
         cmdStop();
     } else {
