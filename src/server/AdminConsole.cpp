@@ -61,12 +61,14 @@ std::string AdminConsole::readLine(const std::string& prompt) {
             return "";  // Return an empty string if the line is empty
         }
     }
+
     std::string strLine(line);
     if (!strLine.empty()) {
         // Add the command to the history
         commandHistory.push_back(strLine);
         currentCommand = -1;
     }
+    
     return strLine;
 }
 
@@ -104,7 +106,8 @@ void AdminConsole::printLog(const std::string& msg, int colorPair) {
     wrefresh(logWindow);
 
     // Move the cursor back to the command line
-    move(LINES-1, strlen(line) + 2);  // +2 to account for the "> " prompt
+    wmove(commandWindow, 0, strlen(line) + 2);  // +2 to account for the "> " prompt
+    wrefresh(commandWindow);
 }
 
 std::string AdminConsole::readCommand() {

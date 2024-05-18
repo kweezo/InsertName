@@ -13,8 +13,11 @@ int main() {
         AdminConsole::init();
         std::string line;
         // Run the adminConsole in a loop
-        while ((line = AdminConsole::readLine("> ")) != "") {
-            AdminConsole::processLine(line);
+        while (true) {
+            line = AdminConsole::readLine("> ");
+            if (!line.empty()) {
+                AdminConsole::processLine(line);
+            }
         }
     });
 
