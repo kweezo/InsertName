@@ -68,7 +68,7 @@ std::string AdminConsole::readLine(const std::string& prompt) {
         commandHistory.push_back(strLine);
         currentCommand = -1;
     }
-    
+    line[0] = '\0';
     return strLine;
 }
 
