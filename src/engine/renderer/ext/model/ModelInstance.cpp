@@ -32,7 +32,15 @@ void ModelInstanceImpl::UpdateStaticInstances(){
             }
         }
 
-   //     instances.instanceBuffer = DataBuffer::CreateBuffer(
+        BufferDescriptions bufferDescriptions{};
+        bufferDescriptions.bindingDescriptions.push_back({0, sizeof(glm::mat4), VK_VERTEX_INPUT_RATE_INSTANCE});
+
+        bufferDescriptions.attributeDescriptions.push_back({1, 0, VK_FORMAT_R32G32B32A32_SFLOAT, 0});
+        bufferDescriptions.attributeDescriptions.push_back({2, 0, VK_FORMAT_R32G32B32A32_SFLOAT, sizeof(glm::vec4)});
+        bufferDescriptions.attributeDescriptions.push_back({3, 0, VK_FORMAT_R32G32B32A32_SFLOAT, 2 * sizeof(glm::vec4)});
+        bufferDescriptions.attributeDescriptions.push_back({4, 0, VK_FORMAT_R32G32B32A32_SFLOAT, 3 * sizeof(glm::vec4)});
+
+        instances.instanceBuffer = DataBuffer(bufferDescriptions, instanceModels.size() * sizeof(glm::mat4), instanceModels.data(), true, DATA_BUFFER_VERTEX_BIT);
     }
 }
 

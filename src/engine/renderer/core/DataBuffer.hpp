@@ -4,6 +4,7 @@
 #include <stdexcept>
 #include <cstring>
 #include <memory>
+#include <unordered_map>
 
 #include <vulkan/vulkan.h>
 
@@ -59,7 +60,7 @@ public:
 private:
     static void CreateStagingBuffers();
 
-    static std::vector<StagingBufferCopyCMDInfo> stagingBuffers;
+    static std::unordered_map<VkCommandBuffer, StagingBufferCopyCMDInfo> stagingBuffers;
     static bool createdStagingBuffers;
 
     static CommandBuffer commandBuffer;
@@ -74,6 +75,8 @@ private:
     
     VkBuffer buff;
     VkDeviceMemory mem;
+
+    VkCommandBuffer stagingBufferKey;
 
     BufferDescriptions descriptions;
 
