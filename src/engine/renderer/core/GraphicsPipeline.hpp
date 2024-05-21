@@ -16,6 +16,7 @@ namespace renderer{
 
 class GraphicsPipeline{
 public:
+    GraphicsPipeline();
     GraphicsPipeline(ShaderImpl& shader, BufferDescriptions& bufferDescriptions);
     
     ~GraphicsPipeline();

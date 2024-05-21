@@ -27,21 +27,29 @@ class ModelImpl;
 
 class Model{
 public:
-    static ModelHandle CreateModel(std::string path, ShaderHandle shader);
+    static ModelHandle CreateModel(std::string path, ShaderHandle shader, BufferDescriptions extraDescriptions);
     static void Free(ModelHandle model);
 };
 
 class ModelImpl{
 public:
-    ModelImpl(std::string path, ShaderHandle shader);
+    ModelImpl(std::string path, ShaderHandle shader, BufferDescriptions extraDescriptions);
+
+    static std::unordered_map<ShaderHandle, std::vector<ModelHandle>> GetModelList();
+
+    ShaderHandle GetShader();
+    BufferDescriptions GetExtraDescriptions();
 
 private: //copied from learnopengl.com mostly shamelessly
     void ProcessNode(aiNode* node, const aiScene* scene);
+
+    static std::unordered_map<ShaderHandle, std::vector<ModelHandle>> modelList;
 
     std::vector<Mesh> meshes;
     std::unordered_map<std::string, Texture> loadedTextures;
 
     ShaderHandle shader;
+    BufferDescriptions extraDescriptions;
 };
 
 

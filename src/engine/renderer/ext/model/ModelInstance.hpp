@@ -9,6 +9,7 @@
 #include "Model.hpp"
 #include "engine/renderer/core/DataBuffer.hpp"
 #include "engine/types/Transform.hpp"
+#include "engine/renderer/core/GraphicsPipeline.hpp"
 
 #define ModelInstanceHandle ModelInstanceImpl*
 
@@ -25,8 +26,10 @@ typedef struct ModelInstanceData{
 
 class ModelInstance{
 public:
+    static void Update();
     static ModelInstanceHandle Create(ModelHandle model, Transform trasnform, bool isStatic);
     static void Free(ModelInstanceHandle handle);
+    static void DrawStatic();
 };
 
 
@@ -38,13 +41,19 @@ public:
 
     glm::mat4 GetModelMatrix();
 
+    static void Update();
     static void UpdateStaticInstances();
+    static void DrawStatic();
+
 private:
+
+    static std::unordered_map<ShaderHandle, GraphicsPipeline> pipeline;
 
     bool shouldDraw;
     glm::mat4 model; 
 
     static std::unordered_map<ModelHandle, ModelInstanceData> staticModelMatrices;
+    static BufferDescriptions bufferDescriptions;
 
 };
 
