@@ -2,6 +2,8 @@
 
 namespace renderer{
 
+GraphicsPipeline::GraphicsPipeline(){}
+
 GraphicsPipeline::GraphicsPipeline(ShaderImpl& shader, BufferDescriptions& buffDescription){
     std::vector<VkDynamicState> dynamicStates = {VK_DYNAMIC_STATE_VIEWPORT, VK_DYNAMIC_STATE_SCISSOR};
 

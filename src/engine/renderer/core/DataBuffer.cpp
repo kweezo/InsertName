@@ -4,7 +4,7 @@
 
 namespace renderer{
 
-std::vector<StagingBufferCopyCMDInfo> DataBuffer::stagingBuffers = {};
+std::unordered_map<VkCommandBuffer, StagingBufferCopyCMDInfo> DataBuffer::stagingBuffers = {};
 bool DataBuffer::createdStagingBuffers = false;
 CommandBuffer DataBuffer::commandBuffer = CommandBuffer();
 Fence DataBuffer::finishedCopyingFence = Fence();
@@ -49,8 +49,8 @@ DataBuffer::DataBuffer(BufferDescriptions bufferDescriptions, size_t size,
         }
         memcpy(stagingData, data, size);
         vkUnmapMemory(Device::GetDevice(), stagingBuffer.bufferMemory);
-        
 
+        stagingBufferKey = stagingBuffer.commandBuffer.GetCommandBuffer(); 
         CopyFromBuffer(stagingBuffer, size);
     }
     else{
@@ -108,7 +108,7 @@ VkImageSubresourceLayers subresourceLayers, VkImageLayout format){
 StagingBufferCopyCMDInfo DataBuffer::GetStagingBuffer(size_t size){
         StagingBufferCopyCMDInfo *stagingBuffer;
         bool foundFreeBuff = false;
-        for(StagingBufferCopyCMDInfo& currStagingBuffer : stagingBuffers){
+        for(auto &[i, currStagingBuffer] : stagingBuffers){
             if(currStagingBuffer.free){
                 currStagingBuffer.free = false;
                 foundFreeBuff = true;
@@ -129,9 +129,9 @@ StagingBufferCopyCMDInfo DataBuffer::GetStagingBuffer(size_t size){
             AllocateMemory(tmpStagingBuffer.bufferMemory, tmpStagingBuffer.buffer, size,
              VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
 
-            stagingBuffers.push_back(tmpStagingBuffer);
+            stagingBuffers[tmpStagingBuffer.commandBuffer.GetCommandBuffer()] = tmpStagingBuffer;
 
-            stagingBuffer = &stagingBuffers[stagingBuffers.size() - 1];
+            stagingBuffer = &stagingBuffers[tmpStagingBuffer.commandBuffer.GetCommandBuffer()];
         }
 
     return *stagingBuffer;
@@ -144,7 +144,7 @@ void DataBuffer::CreateStagingBuffers(){
         stagingBuffer.commandBuffer = CommandBuffer(VK_COMMAND_BUFFER_LEVEL_SECONDARY,//one time usage
          COMMAND_BUFFER_TRANSFER_FLAG);
         
-        stagingBuffers.push_back(stagingBuffer);
+        stagingBuffers[stagingBuffer.commandBuffer.GetCommandBuffer()] = stagingBuffer;
     }
     createdStagingBuffers = true;
 }
@@ -212,9 +212,9 @@ void DataBuffer::CopyFromBuffer(StagingBufferCopyCMDInfo stagingBuffer, VkDevice
 
 
 void DataBuffer::UpdateCommandBuffer(){
-    std::vector<uint32_t> cleanupList;
+    std::vector<VkCommandBuffer> cleanupList;
     std::vector<VkCommandBuffer> commandBuffers;
-    for(int i = 0; i < stagingBuffers.size(); i++){
+    for(auto &[i, stagingBuffer] : stagingBuffers){
         if(!stagingBuffers[i].free){
             cleanupList.push_back(i);
             commandBuffers.push_back(stagingBuffers[i].commandBuffer.GetCommandBuffer());
@@ -255,7 +255,7 @@ void DataBuffer::UpdateCommandBuffer(){
         vkResetCommandBuffer(commandBuffer, 0);
     }
 
-    for(uint32_t i : cleanupList){
+    for(VkCommandBuffer i : cleanupList){
         stagingBuffers[i].free = true;
         vkDestroyBuffer(Device::GetDevice(), stagingBuffers[i].buffer, nullptr);
         vkFreeMemory(Device::GetDevice(), stagingBuffers[i].bufferMemory, nullptr);
@@ -319,7 +319,7 @@ VkBuffer DataBuffer::GetBuffer(){
 
 
 void DataBuffer::Cleanup(){
-    for(StagingBufferCopyCMDInfo& stagingBuffer : stagingBuffers){
+    for(auto &[tmp, stagingBuffer] : stagingBuffers){
         if(!stagingBuffer.free){
             stagingBuffer.free = true;
             vkDestroyBuffer(Device::GetDevice(), stagingBuffer.buffer, nullptr);
@@ -338,6 +338,7 @@ DataBuffer::DataBuffer(const DataBuffer& other){
     size = other.size;
     useCount = other.useCount;
     transferToLocalDevMem = other.transferToLocalDevMem;
+    stagingBufferKey = other.stagingBufferKey;
     useCount[0]++;
 }
 
@@ -352,6 +353,7 @@ DataBuffer DataBuffer::operator=(const DataBuffer& other){
     size = other.size;
     useCount = other.useCount;
     transferToLocalDevMem = other.transferToLocalDevMem;
+    stagingBufferKey = other.stagingBufferKey;
     useCount[0]++;
 
     return *this;
@@ -362,6 +364,14 @@ DataBuffer::~DataBuffer(){
     if(useCount[0] == 0){
         vkDestroyBuffer(Device::GetDevice(), buff, nullptr);
         vkFreeMemory(Device::GetDevice(), mem, nullptr);
+        if(stagingBuffers.find(stagingBufferKey) != stagingBuffers.end()){
+            StagingBufferCopyCMDInfo& stagingBuffer = stagingBuffers[stagingBufferKey];
+            if(!stagingBuffer.free){
+                vkDestroyBuffer(Device::GetDevice(), stagingBuffer.buffer, nullptr);
+                vkFreeMemory(Device::GetDevice(), stagingBuffer.bufferMemory, nullptr);
+                stagingBuffers[stagingBufferKey].free = true;
+            }
+        }
         delete useCount;
     }
 }

@@ -199,7 +199,7 @@ int main(){
     Texture::EnableTextures();
 
     ModelHandle model = Model::CreateModel(dir + "res/models/backpack/Survival_BackPack_2.fbx",
-     shader);
+     shader, {});
 
     while(!glfwWindowShouldClose(Window::GetGLFWwindow())){
         glfwPollEvents();
