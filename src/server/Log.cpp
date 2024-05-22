@@ -1,5 +1,7 @@
 #include "Log.hpp"
 
+#include "AdminConsole.hpp"
+
 
 Log::Log(pqxx::connection& conn) :
     c(conn),
@@ -21,19 +23,6 @@ Log::~Log() {
     // Send all remaining logs to the database
     sendLogsToDatabase();
 #endif
-}
-
-Log& Log::getInstance(pqxx::connection* conn) {
-    static Log* instance = nullptr;
-    static pqxx::connection* stored_conn = nullptr;
-    if (!instance) {
-        if (!conn) {
-            throw std::runtime_error("Must provide a connection for the first call to getInstance");
-        }
-        stored_conn = conn;
-        instance = new Log(*stored_conn);
-    }
-    return *instance;
 }
 
 void Log::print(int alertLevel, const std::string& msg) {

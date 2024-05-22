@@ -1,6 +1,6 @@
 #pragma once
 
-#include "Log.hpp"
+
 #include "Config.hpp"
 #include "buildConfig.hpp"
 

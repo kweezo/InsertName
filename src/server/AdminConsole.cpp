@@ -10,6 +10,8 @@ WINDOW* AdminConsole::commandWindow = nullptr;
 std::deque<std::string> AdminConsole::commandHistory;
 int AdminConsole::currentCommand = -1;
 char AdminConsole::line[256] = {0};
+pqxx::connection AdminConsole::conn;
+Log* AdminConsole::log = nullptr;
 
 void AdminConsole::init() {
     initscr(); // Initialize ncurses
@@ -17,6 +19,14 @@ void AdminConsole::init() {
     noecho();
     addCommands();
     initWindows();
+
+    std::string connStr = "dbname=" + Config::GetInstance().dbname +
+                         " user=" + Config::GetInstance().dbuser +
+                         " password=" + Config::GetInstance().dbpassword +
+                         " hostaddr=" + Config::GetInstance().dbhostaddr +
+                         " port=" + Config::GetInstance().dbport;
+    conn = pqxx::connection(connStr);
+    log = new Log(conn);
 }
 
 void AdminConsole::initWindows() {
@@ -110,12 +120,6 @@ void AdminConsole::printLog(const std::string& msg, int colorPair) {
     wrefresh(commandWindow);
 }
 
-std::string AdminConsole::readCommand() {
-    char line[256];
-    wgetstr(commandWindow, line);
-    return std::string(line);
-}
-
 void AdminConsole::processLine(const std::string& line) {
     if (line.empty()) {
         return;
@@ -128,6 +132,8 @@ void AdminConsole::processLine(const std::string& line) {
 }
 
 void AdminConsole::cmdStop() {
+    log->print(0, "Stopping server...");
     endwin(); // End PDCurses session
+    delete log;
     exit(0);
 }

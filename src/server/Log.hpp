@@ -2,7 +2,6 @@
 
 #include "buildConfig.hpp"
 #include "Config.hpp"
-#include "AdminConsole.hpp"
 
 #include <ctime>
 #include <string>
@@ -19,16 +18,12 @@ struct LogEntry {
 
 class Log {
 public:
-    static Log& getInstance(pqxx::connection* conn = nullptr);
-
-    Log(Log const&) = delete;
-    void operator=(Log const&) = delete;
+    Log(pqxx::connection& conn);
+    ~Log();
 
     void print(int alertLevel, const std::string& msg);
 
 private:
-    Log(pqxx::connection& conn);
-    ~Log();
 
     void sendLogsToDatabase();
 

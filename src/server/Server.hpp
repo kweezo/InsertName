@@ -1,6 +1,5 @@
 #pragma once
 
-#include "Log.hpp"
 #include "Config.hpp"
 #include "buildConfig.hpp"
 #include "ClientHandler.hpp"
