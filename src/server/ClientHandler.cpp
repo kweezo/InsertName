@@ -1,6 +1,7 @@
 #include "ClientHandler.hpp"
 
 #include "AdminConsole.hpp"
+#include "Log.hpp"
 
 
 void ClientHandler::handleConnection(pqxx::connection& c, int clientSocket, std::unordered_map<int, std::pair<int, SSL*>>& clientIds, std::mutex& mapMutex, fd_set& readfds) {

@@ -1,6 +1,7 @@
 #include "Server.hpp"
 
 #include "AdminConsole.hpp"
+#include "Log.hpp"
 
 
 Server::Server(int port, const std::string& dir) : port(port), dir(dir), ctx(nullptr) {
