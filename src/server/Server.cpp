@@ -78,8 +78,8 @@ int Server::initNetwork() {
     if (listen(serverSocket, 3) == -1) {
         throw std::runtime_error("Failed to listen on socket");
     }
-
     Log::print(0, "Server is listening on port " + std::to_string(ntohs(serverAddress.sin_port)) + "...");
+
     return 0;
 }
 

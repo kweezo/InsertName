@@ -32,6 +32,7 @@ std::string AdminConsole::readLine(const std::string& prompt) {
     move(LINES-1, 0);
     clrtoeol();
     printw(prompt.c_str());
+    wrefresh(commandWindow);
     int ch;
     int pos = 0;
     

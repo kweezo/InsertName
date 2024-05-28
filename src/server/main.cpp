@@ -25,7 +25,7 @@ int main() {
 
     Server server(Config::GetInstance().serverPort, dir);
     server.initNetwork();
-    
+
     server.handleClients();
 
     // Join the adminConsoleThread before exiting the main function
