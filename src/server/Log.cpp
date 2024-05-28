@@ -1,24 +1,36 @@
 #include "Log.hpp"
 
-#include "AdminConsole.hpp"
+#include "Config.hpp"
 
 
-Log::Log(pqxx::connection& conn) :
-    c(conn),
-    logLevel(Config::GetInstance().logLevel), 
-    maxLogBufferSize(Config::GetInstance().maxLogBufferSize) {
+std::unique_ptr<pqxx::connection> Log::c;
+int Log::logLevel;
+int Log::maxLogBufferSize;
+std::vector<LogEntry> Log::logsBuffer;
+
+void Log::init() {
+    std::string conn_str = "dbname=" + Config::GetInstance().dbname +
+                          " user=" + Config::GetInstance().dbuser +
+                          " password=" + Config::GetInstance().dbpassword +
+                          " hostaddr=" + Config::GetInstance().dbhostaddr +
+                          " port=" + Config::GetInstance().dbport;
+    c = std::make_unique<pqxx::connection>(conn_str); 
+
+    logLevel = Config::GetInstance().logLevel;
+    maxLogBufferSize = Config::GetInstance().maxLogBufferSize;
+
 #ifndef NO_DB
-    if (!c.is_open()) {
-        throw std::runtime_error("Database connection is not open (First time you need to provide a open connection to the database)");
+    if (!c->is_open()) {
+        throw std::runtime_error("Database connection is not open");
     }
     // Create logs table if it doesn't exist
-    pqxx::work w(c);
+    pqxx::work w(*c);
     w.exec("CREATE TABLE IF NOT EXISTS logs (timestamp INT, alert_level INT, message TEXT)");
     w.commit();
 #endif
 }
 
-Log::~Log() {
+void Log::destroy() {
 #ifndef NO_DB
     // Send all remaining logs to the database
     sendLogsToDatabase();
@@ -62,7 +74,7 @@ void Log::print(int alertLevel, const std::string& msg) {
 
 void Log::sendLogsToDatabase() {
     // Create log entries
-    pqxx::work w(c);
+    pqxx::work w(*c);
     for (const auto& log : logsBuffer) {
         std::string str_msg(log.message.begin(), log.message.end());
         w.exec_params("INSERT INTO logs (timestamp, alert_level, message) VALUES ($1, $2, $3)", log.timestamp, log.alertLevel, str_msg);

@@ -18,17 +18,17 @@ struct LogEntry {
 
 class Log {
 public:
-    Log(pqxx::connection& conn);
-    ~Log();
+    static void init();
+    static void destroy();
 
-    void print(int alertLevel, const std::string& msg);
+    static void print(int alertLevel, const std::string& msg);
+
 
 private:
+    static void sendLogsToDatabase();
 
-    void sendLogsToDatabase();
-
-    pqxx::connection& c;
-    int logLevel;
-    int maxLogBufferSize;
-    std::vector<LogEntry> logsBuffer;
+    static std::unique_ptr<pqxx::connection> c;
+    static int logLevel;
+    static int maxLogBufferSize;
+    static std::vector<LogEntry> logsBuffer;
 };
