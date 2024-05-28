@@ -4,14 +4,14 @@ Server::Server(int port, const std::string& dir) : port(port), dir(dir), ctx(nul
     #ifndef NO_DB
         // Vzpostavitev povezave z bazo podatkov
         std::string conn_str = "dbname=" + Config::GetInstance().dbname +
-                            " user=" + Config::GetInstance().dbuser +
-                            " password=" + Config::GetInstance().dbpassword +
-                            " hostaddr=" + Config::GetInstance().dbhostaddr +
-                            " port=" + Config::GetInstance().dbport;
+                              " user=" + Config::GetInstance().dbuser +
+                              " password=" + Config::GetInstance().dbpassword +
+                              " hostaddr=" + Config::GetInstance().dbhostaddr +
+                              " port=" + Config::GetInstance().dbport;
         c = std::make_unique<pqxx::connection>(conn_str);
 
         // Ustvarjanje tabel v bazi podatkov
-        pqxx::work W(*c);
+        pqxx::work w(*c);
 
         std::string sql = "CREATE TABLE IF NOT EXISTS Users ("
                             "UserId SERIAL PRIMARY KEY,"
@@ -19,7 +19,7 @@ Server::Server(int port, const std::string& dir) : port(port), dir(dir), ctx(nul
                             "PasswordHash TEXT NOT NULL,"
                             "Salt TEXT NOT NULL,"
                             "CreationDate TEXT NOT NULL);";
-        W.exec(sql);
+        w.exec(sql);
 
     /*    sql = "CREATE TABLE IF NOT EXISTS Messages ("
                 "ID SERIAL PRIMARY KEY,"
@@ -28,9 +28,9 @@ Server::Server(int port, const std::string& dir) : port(port), dir(dir), ctx(nul
                 "Message TEXT,"
                 "Timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,"
                 "IsRead BOOLEAN DEFAULT FALSE);";
-        W.exec(sql);
+        w.exec(sql);
     */
-        W.commit();
+        w.commit();
     #endif
     // Initialize OpenSSL
     SSL_load_error_strings();	
@@ -75,7 +75,7 @@ int Server::initNetwork() {
         throw std::runtime_error("Failed to listen on socket");
     }
 
-    Log::getInstance(c.get()).print(0, "Server is listening on port " + std::to_string(ntohs(serverAddress.sin_port)) + "...");
+    Log::print(0, "Server is listening on port " + std::to_string(ntohs(serverAddress.sin_port)) + "...");
     return 0;
 }
 
@@ -90,7 +90,7 @@ int Server::acceptClient() {
     #endif
 
     if (clientSocket == -1) {
-        Log::getInstance().print(2, "Failed to accept client connection");
+        Log::print(2, "Failed to accept client connection");
     }
 
     ctx = SSL_CTX_new(TLS_server_method());
@@ -101,19 +101,19 @@ int Server::acceptClient() {
 
     // Load the server's private key and certificate
     if (SSL_CTX_use_PrivateKey_file(ctx, (dir + "network/server.key").c_str(), SSL_FILETYPE_PEM) <= 0) {
-        Log::getInstance().print(2, "Failed to load server private key");
+        Log::print(2, "Failed to load server private key");
         return -1;
     }
 
     if (SSL_CTX_use_certificate_file(ctx, (dir + "network/server.crt").c_str(), SSL_FILETYPE_PEM) <= 0) {
-        Log::getInstance().print(2, "Failed to load server certificate");
+        Log::print(2, "Failed to load server certificate");
         return -1;
     }
 
     // Create new SSL connection
     SSL* ssl = SSL_new(ctx);
     if (ssl == nullptr) {
-        Log::getInstance().print(2, "Failed to create new SSL connection");
+        Log::print(2, "Failed to create new SSL connection");
         return -1;
     }
 
@@ -124,7 +124,7 @@ int Server::acceptClient() {
     int ret = SSL_accept(ssl);
     if (ret != 1) {
         int errorCode = SSL_get_error(ssl, ret);
-        Log::getInstance().print(2, "Failed to perform SSL/TLS handshake, error code: " + std::to_string(errorCode));
+        Log::print(2, "Failed to perform SSL/TLS handshake, error code: " + std::to_string(errorCode));
         return -1;
     }
 
@@ -167,7 +167,7 @@ void Server::handleClients() {
         int activity = select(max_sd + 1, &readfds, NULL, NULL, NULL);
 
         if ((activity < 0) && (errno != EINTR)) {
-            Log::getInstance().print(2, "Select error occurred on server socket");
+            Log::print(2, "Select error occurred on server socket");
             continue;
         }
 
@@ -175,21 +175,21 @@ void Server::handleClients() {
         if (FD_ISSET(serverSocket, &readfds)) {
             int clientSocket = acceptClient();
             if (clientSocket < 0) {
-                Log::getInstance().print(2, "Failed to accept client connection");
+                Log::print(2, "Failed to accept client connection");
                 continue;
             }
             // Set the client socket to non-blocking mode
             #ifdef _WIN32
                 unsigned long mode = 1;
                 if (ioctlsocket(clientSocket, FIONBIO, &mode) != 0) {
-                    Log::getInstance().print(2, "Failed to set client socket to non-blocking mode");
+                    Log::print(2, "Failed to set client socket to non-blocking mode");
                     closesocket(clientSocket);
                     continue;
                 }
             #else
                 int flags = fcntl(clientSocket, F_GETFL, 0);
                 if (flags < 0 || fcntl(clientSocket, F_SETFL, flags | O_NONBLOCK) < 0) {
-                    Log::getInstance().print(2, "Failed to set client socket to non-blocking mode");
+                    Log::print(2, "Failed to set client socket to non-blocking mode");
                     close(clientSocket);
                     continue;
                 }

@@ -27,7 +27,7 @@ void ClientHandler::handleConnection(pqxx::connection& c, int clientSocket, std:
                 continue;
             } else {
                 // An actual error occurred
-                Log::getInstance().print(1, "Error in SSL_read(). Error code: " + std::to_string(errorCode) + ". Quitting");
+                Log::print(1, "Error in SSL_read(). Error code: " + std::to_string(errorCode) + ". Quitting");
                 cleanupConnection(clientSocket, clientIds, ssl, mapMutex, readfds);
                 return;
             }
@@ -47,7 +47,7 @@ void ClientHandler::handleConnection(pqxx::connection& c, int clientSocket, std:
                 continue;
             } else {
                 // An actual error occurred
-                Log::getInstance().print(2, "Error in SSL_read(). Error code: " + std::to_string(errorCode) + ". Quitting");
+                Log::print(2, "Error in SSL_read(). Error code: " + std::to_string(errorCode) + ". Quitting");
                 cleanupConnection(clientSocket, clientIds, ssl, mapMutex, readfds);
                 return;
             }
@@ -73,7 +73,7 @@ void ClientHandler::handleConnection(pqxx::connection& c, int clientSocket, std:
         int selectResult = select(clientSocket + 1, NULL, &writefds, NULL, &timeout);
         if (selectResult < 0) {
             // An error occurred
-            Log::getInstance().print(2, "select error occurred on server socket");
+            Log::print(2, "select error occurred on server socket");
             cleanupConnection(clientSocket, clientIds, ssl, mapMutex, readfds);
             return;
         } else if (selectResult == 0) {
@@ -89,7 +89,7 @@ void ClientHandler::handleConnection(pqxx::connection& c, int clientSocket, std:
                 continue;
             } else {
                 // An actual error occurred
-                Log::getInstance().print(2, "Error in SSL_write(). Error code: " + std::to_string(errorCode) + ". Quitting");
+                Log::print(2, "Error in SSL_write(). Error code: " + std::to_string(errorCode) + ". Quitting");
                 cleanupConnection(clientSocket, clientIds, ssl, mapMutex, readfds);
                 return;
             }
@@ -97,7 +97,7 @@ void ClientHandler::handleConnection(pqxx::connection& c, int clientSocket, std:
     } while (bytesSent <= 0);
 
     if (response == "c" || response == "E") {
-        Log::getInstance().print((response == "E") ? 1 : 0, "Closing connection with userId " + std::to_string(clientId) + ((response == "E") ? (", clientSocket: " + std::to_string(clientSocket)) : ""));
+        Log::print((response == "E") ? 1 : 0, "Closing connection with userId " + std::to_string(clientId) + ((response == "E") ? (", clientSocket: " + std::to_string(clientSocket)) : ""));
         cleanupConnection(clientSocket, clientIds, ssl, mapMutex, readfds);
         return;
     }
@@ -129,7 +129,7 @@ std::string ClientHandler::handleMsg(const char* receivedData, int dataSize, int
 
     if (receivedData[0] == 's') {
         if (dataLength != sizeof(glm::vec3) * 16) {
-            Log::getInstance().print(1, "Invalid data size for identifier 's'. Expected " + std::to_string(sizeof(glm::vec3) * 16) + " bytes, got " + std::to_string(dataLength) + " bytes. User ID: " + std::to_string(clientId) + ", clientSocket: " + std::to_string(clientSocket));
+            Log::print(1, "Invalid data size for identifier 's'. Expected " + std::to_string(sizeof(glm::vec3) * 16) + " bytes, got " + std::to_string(dataLength) + " bytes. User ID: " + std::to_string(clientId) + ", clientSocket: " + std::to_string(clientSocket));
             return "E";
         }
 
@@ -200,7 +200,7 @@ std::string ClientHandler::handleMsg(const char* receivedData, int dataSize, int
 }
 
 char ClientHandler::registerUser(const std::string& username, const std::string& password, int clientSocket, std::unordered_map<int, std::pair<int, SSL*>>& clientIds, std::mutex& mapMutex, pqxx::connection& c) {
-    Log::getInstance().print(0, "Registering user: " + username);
+    Log::print(0, "Registering user: " + username);
 
     try {
         #ifndef NO_DB
@@ -235,7 +235,7 @@ char ClientHandler::registerUser(const std::string& username, const std::string&
         SSL* ssl = clientIds[clientSocket].second;
         clientIds[clientSocket] = std::make_pair(userId, ssl);
     } catch (const std::exception &e) {
-        Log::getInstance().print(0, "Failed to register user: " + std::string(e.what()));
+        Log::print(0, "Failed to register user: " + std::string(e.what()));
         return 'e';
     }
 
@@ -243,7 +243,7 @@ char ClientHandler::registerUser(const std::string& username, const std::string&
 }
 
 char ClientHandler::loginUser(const std::string& username, const std::string& password, int clientSocket, std::unordered_map<int, std::pair<int, SSL*>>& clientIds, std::mutex& mapMutex, pqxx::connection& c) {
-    Log::getInstance().print(0, "Logging in user: " + username);
+    Log::print(0, "Logging in user: " + username);
 
     try {
         #ifndef NO_DB
@@ -276,7 +276,7 @@ char ClientHandler::loginUser(const std::string& username, const std::string& pa
             return 'l';
         #endif
     } catch (const std::exception &e) {
-        Log::getInstance().print(0, "Failed to login user: " + std::string(e.what()));
+        Log::print(0, "Failed to login user: " + std::string(e.what()));
         return 'f';
     }
 }

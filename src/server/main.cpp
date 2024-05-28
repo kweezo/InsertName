@@ -1,3 +1,4 @@
+#include "Log.hpp"
 #include "Server.hpp"
 #include "Config.hpp"
 #include "AdminConsole.hpp"
@@ -7,10 +8,11 @@ int main() {
     std::string dir = "./server_data/";
 
     Config::GetInstance().LoadConfig(dir + "config.cfg");
+    Log::init();
+    AdminConsole::init();
 
-    // Initialize AdminConsole in a new thread
+    // Run AdminConsole in a new thread
     std::thread adminConsoleThread([]() {
-        AdminConsole::init();
         std::string line;
         // Run the adminConsole in a loop
         while (true) {
@@ -23,6 +25,7 @@ int main() {
 
     Server server(Config::GetInstance().serverPort, dir);
     server.initNetwork();
+    
     server.handleClients();
 
     // Join the adminConsoleThread before exiting the main function
