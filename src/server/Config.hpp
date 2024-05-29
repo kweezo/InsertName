@@ -19,6 +19,7 @@ public:
     int loginAttempts;
     int logLevel;
     int maxLogBufferSize;
+    std::string commandPrefix;
 
     std::string filename;
     static Config& GetInstance();

@@ -16,7 +16,7 @@ int main() {
         std::string line;
         // Run the adminConsole in a loop
         while (true) {
-            line = AdminConsole::readLine("> ");
+            line = AdminConsole::readLine();
             if (!line.empty()) {
                 AdminConsole::processLine(line);
             }

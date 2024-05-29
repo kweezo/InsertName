@@ -58,6 +58,10 @@ void Config::LoadConfig(const std::string& filename) {
         settings["maxLogBufferSize"] = "64";
         outFile << "maxLogBufferSize=64\n";
     }
+    if (settings.find("commandPrefix") == settings.end()) {
+        settings["commandPrefix"] = "> ";
+        outFile << "commandPrefix=> \n";
+    }
 
     // Now you can use the settings map to set your variables
     dbname = settings["dbname"];
@@ -69,6 +73,7 @@ void Config::LoadConfig(const std::string& filename) {
     loginAttempts = std::stoi(settings["loginAttempts"]);
     logLevel = std::stoi(settings["logLevel"]);
     maxLogBufferSize = std::stoi(settings["maxLogBufferSize"]);
+    commandPrefix = settings["commandPrefix"];
 }
 
 void Config::SaveConfig() {
@@ -83,4 +88,5 @@ void Config::SaveConfig() {
     outFile << "loginAttempts=" << loginAttempts << "\n";
     outFile << "logLevel=" << logLevel << "\n";
     outFile << "maxLogBufferSize=" << maxLogBufferSize << "\n";
+    outFile << "commandPrefix=" << commandPrefix << "\n";
 }

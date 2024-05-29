@@ -15,7 +15,7 @@
 class AdminConsole {
 public:
     static void init();
-    static std::string readLine(const std::string& prompt);
+    static std::string readLine();
     static void processLine(const std::string& line);
     static void printLog(const std::string& msg, int colorPair = 0);
     static std::string readCommand();
@@ -27,6 +27,7 @@ private:
 
     static std::deque<std::string> commandHistory;
     static int currentCommand;
+    static std::string prompt;
     static char line[256];
 
     static void initWindows();

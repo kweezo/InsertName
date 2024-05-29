@@ -1,5 +1,6 @@
 #include "AdminConsole.hpp"
 
+#include "Config.hpp"
 #include <algorithm>
 #include <cstring>
 
@@ -9,9 +10,11 @@ WINDOW* AdminConsole::logWindow = nullptr;
 WINDOW* AdminConsole::commandWindow = nullptr;
 std::deque<std::string> AdminConsole::commandHistory;
 int AdminConsole::currentCommand = -1;
+std::string AdminConsole::prompt;
 char AdminConsole::line[256] = {0};
 
 void AdminConsole::init() {
+    prompt = Config::GetInstance().commandPrefix;
     initscr(); // Initialize ncurses
     keypad(stdscr, TRUE);
     noecho();
@@ -28,7 +31,7 @@ void AdminConsole::addCommands() {
     commands.push_back("stop");
 }
 
-std::string AdminConsole::readLine(const std::string& prompt) {
+std::string AdminConsole::readLine() {
     move(LINES-1, 0);
     clrtoeol();
     printw(prompt.c_str());
@@ -107,7 +110,7 @@ void AdminConsole::printLog(const std::string& msg, int colorPair) {
     wrefresh(logWindow);
 
     // Move the cursor back to the command line
-    wmove(commandWindow, 0, strlen(line) + 2);  // +2 to account for the "> " prompt
+    wmove(commandWindow, 0, strlen(line) + prompt.size());
     wrefresh(commandWindow);
 }
 
