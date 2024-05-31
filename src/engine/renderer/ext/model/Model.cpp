@@ -4,15 +4,15 @@ namespace renderer{
 
 std::unordered_map<ShaderHandle, std::vector<ModelHandle>> ModelImpl::modelList = {};
 
-ModelHandle Model::CreateModel(std::string path, ShaderHandle shader, BufferDescriptions extraDescriptions){
-    return new ModelImpl(path, shader, extraDescriptions);
+ModelHandle Model::CreateModel(std::string path, ShaderHandle shader, BufferDescriptions extraDescriptions, std::function<void(void)> extraDrawCommands){
+    return new ModelImpl(path, shader, extraDescriptions, extraDrawCommands);
 }
 
 void Model::Free(ModelHandle model){
     delete model;
 }
 
-ModelImpl::ModelImpl(std::string path, ShaderHandle shader, BufferDescriptions extraDescriptions){
+ModelImpl::ModelImpl(std::string path, ShaderHandle shader, BufferDescriptions extraDescriptions, std::function<void(void)> extraDrawCommands){
     Assimp::Importer importer;
     const aiScene* scene = importer.ReadFile(path, aiProcess_Triangulate | aiProcess_FlipUVs |
      aiProcess_GenNormals);
@@ -25,6 +25,7 @@ ModelImpl::ModelImpl(std::string path, ShaderHandle shader, BufferDescriptions e
 
     this->shader = shader;
     this->extraDescriptions = extraDescriptions;
+    this->extraDrawCommands = extraDrawCommands;
     modelList[shader].push_back(this);
 }
 
@@ -75,6 +76,10 @@ void ModelImpl::ProcessNode(aiNode* node, const aiScene* scene){
         ProcessNode(node->mChildren[i], scene);
     }
 
+}
+
+std::function<void(void)> ModelImpl::GetExtraDrawCommands(){
+    return extraDrawCommands;
 }
 
 ShaderHandle ModelImpl::GetShader(){

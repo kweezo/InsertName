@@ -2,6 +2,8 @@
 
 #include <unordered_map>
 #include <vector>
+#include <thread>
+
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 
@@ -20,8 +22,10 @@ namespace renderer{
 class ModelInstanceImpl;
 
 typedef struct ModelInstanceData{
-    DataBuffer instanceBuffer;
     std::vector<ModelInstanceHandle> instanceList;
+    ShaderHandle shader;
+    CommandBuffer commandBuffer;
+    DataBuffer instanceBuffer;
 } ModelInstanceData;
 
 class ModelInstance{
@@ -47,6 +51,8 @@ public:
 
 private:
 
+    static void RecordStaticCommandBuffers();
+
     static std::unordered_map<ShaderHandle, GraphicsPipeline> pipeline;
 
     bool shouldDraw;
@@ -54,6 +60,8 @@ private:
 
     static std::unordered_map<ModelHandle, ModelInstanceData> staticModelMatrices;
     static BufferDescriptions bufferDescriptions;
+
+    static CommandBuffer staticInstancesCommandBuffer;
 
 };
 

@@ -4,6 +4,7 @@
 #include <string>
 #include <memory>
 #include <unordered_map>
+#include <functional>
 
 #include <assimp/Importer.hpp>
 #include <assimp/scene.h>
@@ -27,20 +28,21 @@ class ModelImpl;
 
 class Model{
 public:
-    static ModelHandle CreateModel(std::string path, ShaderHandle shader, BufferDescriptions extraDescriptions);
+    static ModelHandle CreateModel(std::string path, ShaderHandle shader, BufferDescriptions extraDescriptions, std::function<void(void)> extraDrawCommands);
     static void Free(ModelHandle model);
 };
 
 class ModelImpl{
 public:
-    ModelImpl(std::string path, ShaderHandle shader, BufferDescriptions extraDescriptions);
-
+    ModelImpl(std::string path, ShaderHandle shader, BufferDescriptions extraDescriptions, std::function<void(void)> extraDrawCommands);
+    
     static std::unordered_map<ShaderHandle, std::vector<ModelHandle>> GetModelList();
 
     ShaderHandle GetShader();
+    std::function<void(void)> GetExtraDrawCommands();
     BufferDescriptions GetExtraDescriptions();
 
-private: //copied from learnopengl.com mostly shamelessly
+private: //copied from learnopengl.com *mostly* shamelessly
     void ProcessNode(aiNode* node, const aiScene* scene);
 
     static std::unordered_map<ShaderHandle, std::vector<ModelHandle>> modelList;
@@ -50,6 +52,7 @@ private: //copied from learnopengl.com mostly shamelessly
 
     ShaderHandle shader;
     BufferDescriptions extraDescriptions;
+    std::function<void(void)> extraDrawCommands;
 };
 
 

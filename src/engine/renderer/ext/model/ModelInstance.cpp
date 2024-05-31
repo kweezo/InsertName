@@ -5,6 +5,7 @@ namespace renderer{
 std::unordered_map<ModelHandle, ModelInstanceData> ModelInstanceImpl::staticModelMatrices = {};
 std::unordered_map<ShaderHandle, GraphicsPipeline> ModelInstanceImpl::pipeline = {};
 BufferDescriptions ModelInstanceImpl::bufferDescriptions = {};
+CommandBuffer ModelInstanceImpl::staticInstancesCommandBuffer = {};
 
 void ModelInstance::Update(){
     ModelInstanceImpl::Update();
@@ -72,13 +73,24 @@ void ModelInstanceImpl::UpdateStaticInstances(){
         + static_cast<std::vector<double>::difference_type>(1), bufferDescriptions.bindingDescriptions.end());
 
         instances.instanceBuffer = DataBuffer(bufferDescriptions, instanceModels.size() * sizeof(glm::mat4), instanceModels.data(), true, DATA_BUFFER_VERTEX_BIT);
+        instances.commandBuffer = CommandBuffer(VK_COMMAND_BUFFER_LEVEL_SECONDARY, COMMAND_BUFFER_GRAPHICS_FLAG);
     }
 }
 
-void ModelInstanceImpl::DrawStatic(){
+void ModelInstanceImpl::RecordStaticCommandBuffers(){
     for(auto& [model, instances] : staticModelMatrices){
-//        model->GetShader()->Bind()
-    }
+        VkCommandBufferInheritanceInfo inheritanceInfo{};
+        inheritanceInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_INFO;
+//        inheritanceInfo.renderPass = instances
+
+        instances.commandBuffer.BeginCommandBuffer(&inheritanceInfo);
+    }   
+}
+
+void ModelInstanceImpl::DrawStatic(){
+
+
+
 }
 
 glm::mat4 ModelInstanceImpl::GetModelMatrix(){
