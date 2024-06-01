@@ -3,7 +3,7 @@
 namespace renderer{
 
 std::unordered_map<ModelHandle, ModelInstanceData> ModelInstanceImpl::staticModelMatrices = {};
-std::unordered_map<ShaderHandle, GraphicsPipeline> ModelInstanceImpl::pipeline = {};
+std::unordered_map<ShaderHandle, GraphicsPipeline> ModelInstanceImpl::pipelines = {};
 BufferDescriptions ModelInstanceImpl::bufferDescriptions = {};
 CommandBuffer ModelInstanceImpl::staticInstancesCommandBuffer = {};
 
@@ -32,7 +32,7 @@ void ModelInstanceImpl::Update(){
         bufferDescriptions.attributeDescriptions.end());
         modelDescriptions.bindingDescriptions.insert(modelDescriptions.bindingDescriptions.end(), bufferDescriptions.bindingDescriptions.begin(),
         bufferDescriptions.bindingDescriptions.end());
-        pipeline[shader] = GraphicsPipeline(*shader, modelDescriptions);
+        pipelines[shader] = GraphicsPipeline(*shader, modelDescriptions);
     }
 
    // pipeline = GraphicsPipeline(ModelImpl::GetShader(), shade);    
@@ -52,7 +52,24 @@ ModelInstanceImpl::ModelInstanceImpl(ModelHandle model, Transform transform, boo
 }
 
 void ModelInstanceImpl::UpdateStaticInstances(){
+    std::vector<std::thread> threads;
+
     for(auto& [buff, instances] : staticModelMatrices){
+        //threads.push_back(std::thread(&RecordStaticCommandBuffer, instances));
+        threads.back().detach();
+    }
+
+    for(uint32_t i = 0; i < threads.size(); i++){
+        if(threads[i].joinable()){
+            threads[i].join();
+            threads.erase(threads.begin() + i);
+            i--;
+        }
+    }
+}
+
+
+void ModelInstanceImpl::RecordStaticCommandBuffer(ModelInstanceData& instances){
         uint32_t drawCount;
         for(ModelInstanceHandle instance : instances.instanceList){
             drawCount += instance->GetShouldDraw();
@@ -65,6 +82,7 @@ void ModelInstanceImpl::UpdateStaticInstances(){
                 instanceModels.push_back(instance->GetModelMatrix());
             }
         }
+
     
         BufferDescriptions instanceDescriptions;
         instanceDescriptions.attributeDescriptions.insert(instanceDescriptions.attributeDescriptions.end(), bufferDescriptions.attributeDescriptions.begin()
@@ -72,19 +90,24 @@ void ModelInstanceImpl::UpdateStaticInstances(){
         instanceDescriptions.bindingDescriptions.insert(instanceDescriptions.bindingDescriptions.end(), bufferDescriptions.bindingDescriptions.begin()
         + static_cast<std::vector<double>::difference_type>(1), bufferDescriptions.bindingDescriptions.end());
 
+        if(pipelines.find(instances.shader) == pipelines.end()){
+            pipelines[instances.shader] = GraphicsPipeline(*instances.shader, instanceDescriptions);
+        }
+
         instances.instanceBuffer = DataBuffer(bufferDescriptions, instanceModels.size() * sizeof(glm::mat4), instanceModels.data(), true, DATA_BUFFER_VERTEX_BIT);
         instances.commandBuffer = CommandBuffer(VK_COMMAND_BUFFER_LEVEL_SECONDARY, COMMAND_BUFFER_GRAPHICS_FLAG);
-    }
-}
 
-void ModelInstanceImpl::RecordStaticCommandBuffers(){
-    for(auto& [model, instances] : staticModelMatrices){
         VkCommandBufferInheritanceInfo inheritanceInfo{};
         inheritanceInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_INFO;
-//        inheritanceInfo.renderPass = instances
+        //inheritanceInfo.renderPass = pipelines[instances.shader].GetRenderPass();
+//        inheritanceInfo.framebuffer = pipelines[instances.shader].
 
-        instances.commandBuffer.BeginCommandBuffer(&inheritanceInfo);
-    }   
+
+       // instances.commandBuffer.BeginCommandBuffer(&inheritanceInfo);
+        
+       // instances.model->GetExtraDrawCommands();
+
+//        instances.commandBuffer.En}dCommandBuffer();
 }
 
 void ModelInstanceImpl::DrawStatic(){

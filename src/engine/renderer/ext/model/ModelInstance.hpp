@@ -3,6 +3,7 @@
 #include <unordered_map>
 #include <vector>
 #include <thread>
+#include <mutex>
 
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
@@ -23,9 +24,11 @@ class ModelInstanceImpl;
 
 typedef struct ModelInstanceData{
     std::vector<ModelInstanceHandle> instanceList;
+    ModelHandle model;
     ShaderHandle shader;
     CommandBuffer commandBuffer;
     DataBuffer instanceBuffer;
+    GraphicsPipeline pipeline;
 } ModelInstanceData;
 
 class ModelInstance{
@@ -51,9 +54,9 @@ public:
 
 private:
 
-    static void RecordStaticCommandBuffers();
+    static void RecordStaticCommandBuffer(ModelInstanceData& instances);
 
-    static std::unordered_map<ShaderHandle, GraphicsPipeline> pipeline;
+    static std::unordered_map<ShaderHandle, GraphicsPipeline> pipelines;
 
     bool shouldDraw;
     glm::mat4 model; 
