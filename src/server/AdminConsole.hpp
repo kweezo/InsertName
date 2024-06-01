@@ -18,7 +18,6 @@ public:
     static std::string readLine();
     static void processLine(const std::string& line);
     static void printLog(const std::string& msg, int colorPair = 0);
-    static std::string readCommand();
 
 private:
     static std::vector<std::string> commands;
@@ -29,7 +28,9 @@ private:
     static int currentCommand;
     static std::string prompt;
     static char line[256];
+    static int commandWindowHeight;
 
+    static void loadVariables();
     static void initWindows();
     static void addCommands();
     static void processKey(int key, const std::string& prompt);

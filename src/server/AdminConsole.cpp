@@ -12,9 +12,10 @@ std::deque<std::string> AdminConsole::commandHistory;
 int AdminConsole::currentCommand = -1;
 std::string AdminConsole::prompt;
 char AdminConsole::line[256] = {0};
+int AdminConsole::commandWindowHeight;
 
 void AdminConsole::init() {
-    prompt = Config::GetInstance().commandPrefix;
+    loadVariables();
     initscr(); // Initialize ncurses
     keypad(stdscr, TRUE);
     noecho();
@@ -22,9 +23,14 @@ void AdminConsole::init() {
     initWindows();
 }
 
+void AdminConsole::loadVariables() {
+    commandWindowHeight = Config::GetInstance().commandWindowHeight;
+    prompt = Config::GetInstance().commandPrefix;
+}
+
 void AdminConsole::initWindows() {
-    logWindow = newwin(LINES - 1, COLS, 0, 0);
-    commandWindow = newwin(1, COLS, LINES - 1, 0);
+    logWindow = newwin(LINES-commandWindowHeight, COLS, 0, 0);
+    commandWindow = newwin(1, COLS, LINES-commandWindowHeight, 0);
 }
 
 void AdminConsole::addCommands() {
@@ -32,7 +38,7 @@ void AdminConsole::addCommands() {
 }
 
 std::string AdminConsole::readLine() {
-    move(LINES-1, 0);
+    move(LINES-commandWindowHeight, 0);
     clrtoeol();
     printw(prompt.c_str());
     wrefresh(commandWindow);
@@ -55,11 +61,11 @@ std::string AdminConsole::readLine() {
                 line[pos] = '\0';
                 currentCommand = -1;
             }
-            move(LINES-1, 0);
+            move(LINES-commandWindowHeight, 0);
             clrtoeol();
             printw(prompt.c_str());
             printw(line);
-            move(LINES-1, pos + prompt.size());  // Move the cursor to the correct position
+            move(LINES-commandWindowHeight, pos + prompt.size());  // Move the cursor to the correct position
         }
         if (pos == 0 && (ch == '\n' || ch == '\r')) {
             return "";  // Return an empty string if the line is empty
@@ -93,11 +99,11 @@ void AdminConsole::processKey(int key, const std::string& prompt) {
     }
     // Update the console
     int pos = strlen(line);
-    move(LINES-1, 0);
+    move(LINES-commandWindowHeight, 0);
     clrtoeol();
     printw(prompt.c_str());
     printw(line);
-    move(LINES-1, pos + prompt.size());  // Move the cursor to the correct position
+    move(LINES-commandWindowHeight, pos + prompt.size());  // Move the cursor to the correct position
 }
 
 void AdminConsole::printLog(const std::string& msg, int colorPair) {
@@ -112,12 +118,6 @@ void AdminConsole::printLog(const std::string& msg, int colorPair) {
     // Move the cursor back to the command line
     wmove(commandWindow, 0, strlen(line) + prompt.size());
     wrefresh(commandWindow);
-}
-
-std::string AdminConsole::readCommand() {
-    char line[256];
-    wgetstr(commandWindow, line);
-    return std::string(line);
 }
 
 void AdminConsole::processLine(const std::string& line) {
