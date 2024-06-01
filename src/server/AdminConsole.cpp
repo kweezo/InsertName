@@ -8,6 +8,7 @@
 std::vector<std::string> AdminConsole::commands;
 WINDOW* AdminConsole::logWindow = nullptr;
 WINDOW* AdminConsole::commandWindow = nullptr;
+WINDOW* AdminConsole::separatorWindow = nullptr;
 std::deque<std::string> AdminConsole::commandHistory;
 int AdminConsole::currentCommand = -1;
 std::string AdminConsole::prompt;
@@ -29,8 +30,12 @@ void AdminConsole::loadVariables() {
 }
 
 void AdminConsole::initWindows() {
-    logWindow = newwin(LINES-commandWindowHeight, COLS, 0, 0);
+    logWindow = newwin(LINES-commandWindowHeight-1, COLS, 0, 0);
+    separatorWindow = newwin(1, COLS, LINES-commandWindowHeight-1, 0);
     commandWindow = newwin(1, COLS, LINES-commandWindowHeight, 0);
+
+    mvwhline(separatorWindow, 0, 0, ACS_HLINE, COLS);
+    wrefresh(separatorWindow);
 }
 
 void AdminConsole::addCommands() {

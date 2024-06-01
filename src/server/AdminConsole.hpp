@@ -23,6 +23,7 @@ private:
     static std::vector<std::string> commands;
     static WINDOW* logWindow;
     static WINDOW* commandWindow;
+    static WINDOW* separatorWindow;
 
     static std::deque<std::string> commandHistory;
     static int currentCommand;
