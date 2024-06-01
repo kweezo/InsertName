@@ -20,6 +20,7 @@ public:
     int logLevel;
     int maxLogBufferSize;
     std::string commandPrefix;
+    int commandWindowHeight;
 
     std::string filename;
     static Config& GetInstance();

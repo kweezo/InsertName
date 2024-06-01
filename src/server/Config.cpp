@@ -62,6 +62,10 @@ void Config::LoadConfig(const std::string& filename) {
         settings["commandPrefix"] = "> ";
         outFile << "commandPrefix=> \n";
     }
+    if (settings.find("commandWindowHeight") == settings.end()) {
+        settings["commandWindowHeight"] = "3";
+        outFile << "commandWindowHeight=3\n";
+    }
 
     // Now you can use the settings map to set your variables
     dbname = settings["dbname"];
@@ -74,6 +78,7 @@ void Config::LoadConfig(const std::string& filename) {
     logLevel = std::stoi(settings["logLevel"]);
     maxLogBufferSize = std::stoi(settings["maxLogBufferSize"]);
     commandPrefix = settings["commandPrefix"];
+    commandWindowHeight = std::stoi(settings["commandWindowHeight"]);
 }
 
 void Config::SaveConfig() {
@@ -89,4 +94,5 @@ void Config::SaveConfig() {
     outFile << "logLevel=" << logLevel << "\n";
     outFile << "maxLogBufferSize=" << maxLogBufferSize << "\n";
     outFile << "commandPrefix=" << commandPrefix << "\n";
+    outFile << "commandWindowHeight=" << commandWindowHeight << "\n";
 }
