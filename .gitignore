@@ -12,3 +12,4 @@ lib/lnx/*
 bin/*
 client_data/settings.cfg
 lib/*
+build/*
