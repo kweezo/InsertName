@@ -234,6 +234,10 @@ void GraphicsPipeline::EndRenderPass(VkCommandBuffer commandBuffer){
 VkPipelineLayout GraphicsPipeline::GetPipelineLayout(){
     return pipelineLayout;
 }
+    
+VkFramebuffer GraphicsPipeline::GetFramebuffer(uint32_t index){
+    return framebuffers[index];
+}
 
 GraphicsPipeline::GraphicsPipeline(const GraphicsPipeline& other){
     pipeline = other.pipeline;

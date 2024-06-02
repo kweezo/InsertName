@@ -4,6 +4,8 @@
 #include <vector>
 #include <thread>
 #include <mutex>
+#include <array>
+#include <memory>
 
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
@@ -13,6 +15,8 @@
 #include "engine/renderer/core/DataBuffer.hpp"
 #include "engine/types/Transform.hpp"
 #include "engine/renderer/core/GraphicsPipeline.hpp"
+#include "engine/renderer/core/CommandBuffer.hpp"
+#include "engine/renderer/core/Swapchain.hpp"
 
 #define ModelInstanceHandle ModelInstanceImpl*
 
@@ -26,7 +30,7 @@ typedef struct ModelInstanceData{
     std::vector<ModelInstanceHandle> instanceList;
     ModelHandle model;
     ShaderHandle shader;
-    CommandBuffer commandBuffer;
+    std::vector<CommandBuffer> commandBuffer;
     DataBuffer instanceBuffer;
     GraphicsPipeline pipeline;
 } ModelInstanceData;
@@ -54,7 +58,7 @@ public:
 
 private:
 
-    static void RecordStaticCommandBuffer(ModelInstanceData& instances);
+    static void RecordStaticCommandBuffer(ModelInstanceData& instances, uint32_t imageIndex);
 
     static std::unordered_map<ShaderHandle, GraphicsPipeline> pipelines;
 
@@ -64,7 +68,7 @@ private:
     static std::unordered_map<ModelHandle, ModelInstanceData> staticModelMatrices;
     static BufferDescriptions bufferDescriptions;
 
-    static CommandBuffer staticInstancesCommandBuffer;
+    static std::vector<CommandBuffer> staticInstancesCommandBuffers;
 
 };
 

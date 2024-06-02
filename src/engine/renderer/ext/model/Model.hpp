@@ -35,6 +35,8 @@ public:
 class ModelImpl{
 public:
     ModelImpl(std::string path, ShaderHandle shader, BufferDescriptions extraDescriptions, std::function<void(void)> extraDrawCommands);
+
+    void RecordDrawCommands(CommandBuffer& commandBuffer, uint32_t instanceCount);
     
     static std::unordered_map<ShaderHandle, std::vector<ModelHandle>> GetModelList();
 

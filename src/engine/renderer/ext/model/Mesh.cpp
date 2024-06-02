@@ -43,30 +43,12 @@ Mesh::Mesh(std::vector<BasicMeshVertex>& vertices, std::vector<uint32_t>& indice
      indexCount = indices.size();
 }
 
-void Mesh::RecordCommandBuffer(CommandBuffer commandBuffer, VkBuffer instanceBuffer, uint32_t instanceCount){
-        VkDeviceSize offsets[] = {0, 0};
-
-        commandBuffer.BeginCommandBuffer(nullptr);
-        //shader->UpdateDescriptorSet(descriptorWrite); do in primary command buffer
-        //shader->Bind(buffer.GetCommandBuffer(), pipeline.GetPipelineLayout()); sam samee
-        VkBuffer buffers[] = {vtnBuffer.GetBuffer(), instanceBuffer};
-
-        vkCmdBindVertexBuffers(commandBuffer.GetCommandBuffer(), 0, 2, buffers, offsets);
-        vkCmdBindIndexBuffer(commandBuffer.GetCommandBuffer(), indexBuffer.GetBuffer(), 0, VK_INDEX_TYPE_UINT32);
-        vkCmdDrawIndexed(commandBuffer.GetCommandBuffer(), indexCount, instanceCount, 0, 0, 0);
-        commandBuffer.EndCommandBuffer();
-}
-void Mesh::RecordCommandBuffer(CommandBuffer commandBuffer){
-        VkDeviceSize offsets[] = {0};
-
-        commandBuffer.BeginCommandBuffer(nullptr);
-        VkBuffer buffers[] = {vtnBuffer.GetBuffer()};
-
-        vkCmdBindVertexBuffers(commandBuffer.GetCommandBuffer(), 0, 2, buffers, offsets);
-        vkCmdBindIndexBuffer(commandBuffer.GetCommandBuffer(), indexBuffer.GetBuffer(), 0, VK_INDEX_TYPE_UINT32);
+void Mesh::RecordDrawCommands(CommandBuffer& commandBuffer, uint32_t instanceCount){
+        VkBuffer buffers[] = {vtnBuffer.GetBuffer(), indexBuffer.GetBuffer()};
+        VkDeviceSize offset = 0;
+        vkCmdBindVertexBuffers(commandBuffer.GetCommandBuffer(), 0, 1, &buffers[0], &offset);
+        vkCmdBindIndexBuffer(commandBuffer.GetCommandBuffer(), buffers[1], 0, VK_INDEX_TYPE_UINT32);
         vkCmdDrawIndexed(commandBuffer.GetCommandBuffer(), indexCount, 1, 0, 0, 0);
-        commandBuffer.EndCommandBuffer();
-
 }
 
 }

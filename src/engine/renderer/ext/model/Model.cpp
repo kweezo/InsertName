@@ -78,6 +78,12 @@ void ModelImpl::ProcessNode(aiNode* node, const aiScene* scene){
 
 }
 
+void ModelImpl::RecordDrawCommands(CommandBuffer& commandBuffer, uint32_t instanceCount){
+    for(Mesh& mesh : meshes){
+        mesh.RecordDrawCommands(commandBuffer, instanceCount);
+    }
+}
+
 std::function<void(void)> ModelImpl::GetExtraDrawCommands(){
     return extraDrawCommands;
 }

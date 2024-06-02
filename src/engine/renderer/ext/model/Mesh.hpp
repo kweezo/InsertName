@@ -38,8 +38,7 @@ typedef struct TextureMaps{
 class Mesh{
 public:
     Mesh(std::vector<BasicMeshVertex>& vertices, std::vector<uint32_t>& indices, TextureMaps textureMaps);
-    void RecordCommandBuffer(CommandBuffer commandBuffer, VkBuffer instanceBuffer, uint32_t instanceCount);
-    void RecordCommandBuffer(CommandBuffer commandBuffer);
+    void RecordDrawCommands(CommandBuffer& commandBuffer, uint32_t instanceCount);
 private:
     DataBuffer vtnBuffer;
     DataBuffer indexBuffer;
