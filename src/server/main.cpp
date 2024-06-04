@@ -10,7 +10,7 @@ int main() {
     Config::GetInstance().LoadConfig(dir + "config.cfg");
     Log::init();
     AdminConsole::init();
-
+    
     // Run AdminConsole in a new thread
     std::thread adminConsoleThread([]() {
         std::string line;

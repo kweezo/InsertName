@@ -30,9 +30,9 @@ void AdminConsole::loadVariables() {
 }
 
 void AdminConsole::initWindows() {
-    logWindow = newwin(LINES-commandWindowHeight-1, COLS, 0, 0);
-    separatorWindow = newwin(1, COLS, LINES-commandWindowHeight-1, 0);
-    commandWindow = newwin(1, COLS, LINES-commandWindowHeight, 0);
+    logWindow = derwin(stdscr, LINES-commandWindowHeight-1, COLS, 0, 0);
+    separatorWindow = derwin(stdscr, 1, COLS, LINES-commandWindowHeight-1, 0);
+    commandWindow = derwin(stdscr, commandWindowHeight, COLS, LINES-commandWindowHeight, 0);
 
     mvwhline(separatorWindow, 0, 0, ACS_HLINE, COLS);
     wrefresh(separatorWindow);
@@ -84,6 +84,7 @@ std::string AdminConsole::readLine() {
         currentCommand = -1;
     }
     line[0] = '\0';
+
     return strLine;
 }
 
@@ -123,6 +124,7 @@ void AdminConsole::printLog(const std::string& msg, int colorPair) {
     // Move the cursor back to the command line
     wmove(commandWindow, 0, strlen(line) + prompt.size());
     wrefresh(commandWindow);
+    refresh();
 }
 
 void AdminConsole::processLine(const std::string& line) {
