@@ -124,7 +124,6 @@ void AdminConsole::printLog(const std::string& msg, int colorPair) {
     // Move the cursor back to the command line
     wmove(commandWindow, 0, strlen(line) + prompt.size());
     wrefresh(commandWindow);
-    refresh();
 }
 
 void AdminConsole::processLine(const std::string& line) {
