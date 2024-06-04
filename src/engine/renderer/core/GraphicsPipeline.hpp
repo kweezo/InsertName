@@ -29,6 +29,7 @@ public:
 
     VkPipelineLayout GetPipelineLayout();
     VkRenderPass GetRenderPass();
+    VkFramebuffer GetFramebuffer(uint32_t index);
 private:
     VkPipeline pipeline;
     VkPipelineLayout pipelineLayout;
