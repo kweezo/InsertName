@@ -32,7 +32,7 @@ class ModelInstanceImpl;
 class ModelInstance{
 public:
     static void Update();
-    static ModelInstanceHandle Create(ModelHandle model, Transform trasnform, bool isStatic);
+    static ModelInstanceHandle Create(ModelHandle model, Transform transform, bool isStatic);
     static void Free(ModelInstanceHandle handle);
     static void DrawStatic(uint32_t imageIndex);
 

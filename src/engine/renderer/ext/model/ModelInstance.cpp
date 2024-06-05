@@ -2,6 +2,10 @@
 
 namespace renderer{
 
+ModelInstanceHandle ModelInstance::Create(ModelHandle model, Transform transform, bool isStatic){
+    return new ModelInstanceImpl(model, transform, isStatic);
+}
+
 void ModelInstance::Update(){
     ModelInstanceImpl::Update();
 }

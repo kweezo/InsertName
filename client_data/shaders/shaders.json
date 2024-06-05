@@ -16,6 +16,13 @@
                 "stage": "fragment"
             }
         ]
+        }, 
+        {
+        "vertexPath": "basicMeshVert.spv",
+        "fragmentPath": "basicMeshFrag.spv",
+        "name": "basicMesh",
+        "bindings": [
+        ] 
         }
     ] 
 }

@@ -109,6 +109,7 @@ void ShaderImpl::EnableNewShaders(){
     descriptorSetLayoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
     descriptorSetLayoutInfo.bindingCount = firstBindingInfo.bindings.size();
     descriptorSetLayoutInfo.pBindings = firstBindingInfo.bindings.data();
+    descriptorSetLayoutInfo.flags = VK_DESCRIPTOR_SET_LAYOUT_CREATE_PER_STAGE_BIT_NV;
 
     uint32_t layoutIndex = DescriptorManager::CreateLayouts(descriptorSetLayoutInfo);
     
@@ -129,10 +130,12 @@ void ShaderImpl::EnableNewShaders(){
         batchInfos.push_back({count, descriptorType});
     }
 
-    std::vector<DescriptorHandle> handles = DescriptorManager::CreateDescriptors(batchInfos, shaderBindings.size(), layoutIndex);
+    for(uint32_t y = 0; y < shaderBindings.size(); y++){
+        std::vector<DescriptorHandle> handles = DescriptorManager::CreateDescriptors(batchInfos, shaderBindings[y].bindings.size(), layoutIndex);
 
-    for(uint32_t i = 0; i < handles.size(); i++){
-        shaderBindings[i].handle->SetDescriptorSet(DescriptorManager::GetDescriptorSet(handles[i]));
+        for(uint32_t i = 0; i < handles.size(); i++){
+            shaderBindings[i].handle->SetDescriptorSet(DescriptorManager::GetDescriptorSet(handles[i]));
+        }
     }
 
 }

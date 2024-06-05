@@ -6,11 +6,13 @@ std::vector<VkDescriptorSetLayout> DescriptorManager::layouts = {};
 std::vector<DescriptorBatch> DescriptorManager::batches = {};
 
 uint32_t DescriptorManager::CreateLayouts(VkDescriptorSetLayoutCreateInfo layoutInfo){
+    int i = layouts.size();
     layouts.resize(layouts.size()+1);
-    int i = layouts.size()-1;
     if(vkCreateDescriptorSetLayout(Device::GetDevice(), &layoutInfo, nullptr, &layouts[i]) != VK_SUCCESS){
         throw std::runtime_error("Failed to create descriptor set layout");
     }
+
+    std::cerr << layouts[i] << std::endl;
 
     return i;
 }

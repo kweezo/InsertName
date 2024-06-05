@@ -17,6 +17,7 @@
 #include "engine/renderer/core/UniformBuffer.hpp"
 #include "engine/renderer/core/Texture.hpp"
 #include "engine/renderer/ext/model/Model.hpp"
+#include "engine/renderer/ext/model/ModelInstance.hpp"
 
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
@@ -195,11 +196,15 @@ int main(){
         throw std::runtime_error("Failed to create semaphores");
     }
 
+
     TextureHandle texture = Texture::CreateTexture(dir + "res/textures/test.jpeg", 1, shader->GetDescriptorSet());
     Texture::EnableTextures();
 
     ModelHandle model = Model::CreateModel(dir + "res/models/backpack/Survival_BackPack_2.fbx",
-     shader, {}, {});
+     Shader::GetShader("basicMesh"), {}, {});
+
+    ModelInstanceHandle modelInstance = ModelInstance::Create(model, {{},{},{}}, true); 
+    ModelInstance::Update();
 
     while(!glfwWindowShouldClose(Window::GetGLFWwindow())){
         glfwPollEvents();
