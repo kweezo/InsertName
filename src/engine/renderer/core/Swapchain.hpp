@@ -12,6 +12,7 @@
 #include "Image.hpp"
 
 #define PREFERRED_IMAGE_COUNT (uint32_t)3
+#define MAX_FRAMES_IN_FLIGHT 2
 
 namespace renderer{
 

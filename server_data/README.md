@@ -8,4 +8,4 @@ dbport=(int)your_port
 messegeBatchSize=(int)count_of_messeges_sent_at_once
 messageBufferSize=(int)size_of_max_lenght_of_message
 ```
-File will be auto generated if not exists
+File will be auto generated if it does not exist

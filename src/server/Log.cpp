@@ -9,17 +9,17 @@ int Log::maxLogBufferSize;
 std::vector<LogEntry> Log::logsBuffer;
 
 void Log::init() {
+
+    logLevel = Config::GetInstance().logLevel;
+    maxLogBufferSize = Config::GetInstance().maxLogBufferSize;
+
+#ifndef NO_DB
     std::string conn_str = "dbname=" + Config::GetInstance().dbname +
                           " user=" + Config::GetInstance().dbuser +
                           " password=" + Config::GetInstance().dbpassword +
                           " hostaddr=" + Config::GetInstance().dbhostaddr +
                           " port=" + Config::GetInstance().dbport;
     c = std::make_unique<pqxx::connection>(conn_str); 
-
-    logLevel = Config::GetInstance().logLevel;
-    maxLogBufferSize = Config::GetInstance().maxLogBufferSize;
-
-#ifndef NO_DB
     if (!c->is_open()) {
         throw std::runtime_error("Database connection is not open");
     }
