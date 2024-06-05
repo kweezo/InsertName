@@ -239,6 +239,10 @@ VkFramebuffer GraphicsPipeline::GetFramebuffer(uint32_t index){
     return framebuffers[index];
 }
 
+VkRenderPass GraphicsPipeline::GetRenderPass(){
+    return renderPass;
+}
+
 GraphicsPipeline::GraphicsPipeline(const GraphicsPipeline& other){
     pipeline = other.pipeline;
     pipelineLayout = other.pipelineLayout;
