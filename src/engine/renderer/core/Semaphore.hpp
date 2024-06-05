@@ -29,6 +29,6 @@ private:
 typedef struct RenderSemaphores{
     Semaphore renderFinishedSemaphore;
     Semaphore imageAvailableSemaphore;
-};
+} RenderSemaphores;
 
 }

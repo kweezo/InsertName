@@ -22,11 +22,13 @@
 
 namespace renderer{
 
+class StaticModelInstance;
+
 typedef struct StaticModelInstanceData{
-    std::vector<StaticModelInstance*> instanceList;
     ModelHandle model;
     ShaderHandle shader;
     std::vector<CommandBuffer> commandBuffer;
+    std::vector<StaticModelInstance*> instanceList;
     DataBuffer instanceBuffer;
     GraphicsPipeline pipeline;
 } StaticModelInstanceData;

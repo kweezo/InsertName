@@ -7,6 +7,7 @@ std::unordered_map<ModelHandle, StaticModelInstanceData> StaticModelInstance::st
 std::unordered_map<ShaderHandle, GraphicsPipeline> StaticModelInstance::pipelines = {};
 BufferDescriptions StaticModelInstance::bufferDescriptions = {};
 std::vector<CommandBuffer> StaticModelInstance::staticInstancesCommandBuffers = {};
+std::vector<RenderSemaphores> StaticModelInstance::staticInstancesSemaphores = {};
 
 
 
