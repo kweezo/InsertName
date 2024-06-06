@@ -95,23 +95,18 @@ void ShaderImpl::EnableNewShaders(){
         return;
     }
 
-    std::vector<VkDescriptorSetLayoutCreateInfo> descriptorSetLayoutInfos;
+    std::vector<VkDescriptorSetLayoutCreateInfo> descriptorSetLayoutInfos(shaderBindings.size());
 
-    VkDescriptorType descriptorTypes{};
 
-    ShaderBindingInfo& firstBindingInfo = shaderBindings[0];
-
-    for(uint32_t i = 1; i < shaderBindings.size(); i++){
-        firstBindingInfo.bindings.insert(firstBindingInfo.bindings.end(), shaderBindings[i].bindings.begin(), shaderBindings[i].bindings.end());
+    for(uint32_t i = 0; i < shaderBindings.size(); i++){
+        descriptorSetLayoutInfos[i].sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
+        descriptorSetLayoutInfos[i].bindingCount = shaderBindings[i].bindings.size();
+        descriptorSetLayoutInfos[i].pBindings = shaderBindings[i].bindings.data();
+        descriptorSetLayoutInfos[i].flags = VK_DESCRIPTOR_SET_LAYOUT_CREATE_PER_STAGE_BIT_NV;
     }
 
-    VkDescriptorSetLayoutCreateInfo descriptorSetLayoutInfo = {};
-    descriptorSetLayoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
-    descriptorSetLayoutInfo.bindingCount = firstBindingInfo.bindings.size();
-    descriptorSetLayoutInfo.pBindings = firstBindingInfo.bindings.data();
-    descriptorSetLayoutInfo.flags = VK_DESCRIPTOR_SET_LAYOUT_CREATE_PER_STAGE_BIT_NV;
 
-    uint32_t layoutIndex = DescriptorManager::CreateLayouts(descriptorSetLayoutInfo);
+    std::vector<uint32_t> layoutIndexes = DescriptorManager::CreateLayouts(descriptorSetLayoutInfos);
     
     std::unordered_map<VkDescriptorType, uint32_t> bindingCounts;
 
@@ -130,12 +125,10 @@ void ShaderImpl::EnableNewShaders(){
         batchInfos.push_back({count, descriptorType});
     }
 
-    for(uint32_t y = 0; y < shaderBindings.size(); y++){
-        std::vector<DescriptorHandle> handles = DescriptorManager::CreateDescriptors(batchInfos, shaderBindings[y].bindings.size(), layoutIndex);
+    std::vector<DescriptorHandle> handles = DescriptorManager::CreateDescriptors(batchInfos, layoutIndexes);
 
-        for(uint32_t i = 0; i < handles.size(); i++){
-            shaderBindings[i].handle->SetDescriptorSet(DescriptorManager::GetDescriptorSet(handles[i]));
-        }
+    for(uint32_t i = 0; i < handles.size(); i++){
+        shaderBindings[i].handle->SetDescriptorSet(DescriptorManager::GetDescriptorSet(handles[i]));
     }
 
 }

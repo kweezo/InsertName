@@ -5,20 +5,22 @@ namespace renderer{
 std::vector<VkDescriptorSetLayout> DescriptorManager::layouts = {};
 std::vector<DescriptorBatch> DescriptorManager::batches = {};
 
-uint32_t DescriptorManager::CreateLayouts(VkDescriptorSetLayoutCreateInfo layoutInfo){
-    int i = layouts.size();
-    layouts.resize(layouts.size()+1);
-    if(vkCreateDescriptorSetLayout(Device::GetDevice(), &layoutInfo, nullptr, &layouts[i]) != VK_SUCCESS){
-        throw std::runtime_error("Failed to create descriptor set layout");
+std::vector<uint32_t> DescriptorManager::CreateLayouts(std::vector<VkDescriptorSetLayoutCreateInfo>& layoutInfos){
+    size_t oldLayoutsSize = layouts.size();
+    layouts.resize(layoutInfos.size() + layouts.size());
+    std::vector<uint32_t> layoutIndexes;
+    for(uint32_t i = oldLayoutsSize; i < layouts.size(); i++){
+        if(vkCreateDescriptorSetLayout(Device::GetDevice(), &layoutInfos[i-oldLayoutsSize], nullptr, &layouts[i]) != VK_SUCCESS){
+            throw std::runtime_error("Failed to create descriptor set layout");
+        }
+        layoutIndexes.push_back(i);
     }
 
-    std::cerr << layouts[i] << std::endl;
-
-    return i;
+    return layoutIndexes;
 }
 
-std::vector<DescriptorHandle> DescriptorManager::CreateDescriptors(std::vector<DescriptorBatchInfo> batchInfos, uint32_t setCount,
-uint32_t layoutIndex){
+std::vector<DescriptorHandle> DescriptorManager::CreateDescriptors(std::vector<DescriptorBatchInfo> batchInfos,
+    std::vector<uint32_t> layoutIndex){
     uint32_t descriptorCount = 0;
 
     std::vector<VkDescriptorPoolSize> poolSizes;
@@ -44,13 +46,18 @@ uint32_t layoutIndex){
 
     uint32_t i = 0;
 
-    batch.sets.resize(setCount);
-    std::vector<DescriptorHandle> handles(setCount);
+    std::vector<VkDescriptorSetLayout> indexLayouts;
+    for(uint32_t index : layoutIndex){
+        indexLayouts.push_back(layouts[index]);
+    }
+
+    batch.sets.resize(descriptorCount);
+    std::vector<DescriptorHandle> handles(descriptorCount);
     VkDescriptorSetAllocateInfo allocInfo{};
     allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
     allocInfo.descriptorPool = batch.pool;
-    allocInfo.descriptorSetCount = setCount;
-    allocInfo.pSetLayouts = &layouts[layoutIndex];
+    allocInfo.descriptorSetCount = descriptorCount;
+    allocInfo.pSetLayouts = indexLayouts.data();
 
     handles[i].batchIndex = batches.size()-1;
     handles[i].index = i;
