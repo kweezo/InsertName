@@ -35,19 +35,21 @@ public:
     static ModelInstanceHandle Create(ModelHandle model, Transform transform, bool isStatic);
     static void Free(ModelInstanceHandle handle);
     static void DrawStatic(uint32_t imageIndex);
-
+    static void Cleanup();
 };
 
 
 class ModelInstanceImpl : public StaticModelInstance{
 public:
     ModelInstanceImpl(ModelHandle model, Transform transform, bool isStatic);
-    bool GetShouldDraw() override;
-    void SetShouldDraw(bool shouldDraw);
-
-    glm::mat4 GetModelMatrix() override;
 
     static void Update();
+
+    bool GetShouldDraw() override;
+    void SetShouldDraw(bool shouldDraw);
+    glm::mat4 GetModelMatrix() override;
+
+    static void Cleanup();
 
 private:
     bool shouldDraw;

@@ -7,11 +7,14 @@
 #include "../window/Window.hpp"
 #include "Swapchain.hpp"
 #include "CommandPool.hpp"
+#include "GraphicsPipeline.hpp"
 #include "DataBuffer.hpp"
 #include "DescriptorManager.hpp"
 #include "Image.hpp"
 #include "Shader.hpp"
 #include "engine/renderer/ext/camera/Camera.hpp"
+#include "engine/renderer/ext/model/ModelInstance.hpp"
+
 
 namespace renderer{
 

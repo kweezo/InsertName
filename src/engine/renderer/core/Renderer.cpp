@@ -17,6 +17,7 @@ void Renderer::HardInit(){
 
 void Renderer::SoftInit(){
     Swapchain::CreateSwapchain();
+    GraphicsPipeline::Init();
     Shader::Initialize();
 }
 
@@ -26,6 +27,7 @@ void Renderer::RenderFrame(){
 }
 
 void Renderer::DestroyRenderer(){
+    ModelInstance::Cleanup();
     Camera::Cleanup();
     Shader::Cleanup();
     Swapchain::DestroySwapchain();
@@ -34,6 +36,7 @@ void Renderer::DestroyRenderer(){
     ImageImpl::Cleanup();
     CommandPool::DestroyCommandPools();
     vkDestroySurfaceKHR(Instance::GetInstance(), Window::GetVulkanSurface(), nullptr);
+    GraphicsPipeline::Cleanup();
     Device::DestroyDevice();
     Instance::DestroyInstance();
 }

@@ -242,7 +242,7 @@ ShaderImpl::~ShaderImpl(){
     if(useCount[0] <= 1){
         vkDestroyShaderModule(Device::GetDevice(), vertexShaderModule, nullptr);
         vkDestroyShaderModule(Device::GetDevice(), fragmentShaderModule, nullptr);
-        delete[] useCount;
+        delete useCount;
     }
     else{
         useCount[0]--;

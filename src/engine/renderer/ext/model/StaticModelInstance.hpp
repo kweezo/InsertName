@@ -30,7 +30,6 @@ typedef struct StaticModelInstanceData{
     std::vector<CommandBuffer> commandBuffer;
     std::vector<StaticModelInstance*> instanceList;
     DataBuffer instanceBuffer;
-    GraphicsPipeline pipeline;
 } StaticModelInstanceData;
 
 
@@ -46,10 +45,10 @@ protected:
 
     static void RecordStaticCommandBuffer(StaticModelInstanceData& instances, uint32_t imageIndex);
 
-    static std::unordered_map<ShaderHandle, GraphicsPipeline> pipelines;
+    static std::unordered_map<ShaderHandle, GraphicsPipeline> staticModelPipelines;
 
 
-    static std::unordered_map<ModelHandle, StaticModelInstanceData> staticModelMatrices;
+    static std::unordered_map<ModelHandle, StaticModelInstanceData> staticModelInstanceMap;
     static BufferDescriptions bufferDescriptions;
 
     static std::vector<CommandBuffer> staticInstancesCommandBuffers;

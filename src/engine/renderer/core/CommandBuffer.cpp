@@ -92,7 +92,7 @@ CommandBuffer::~CommandBuffer(){
         }else{
                 vkFreeCommandBuffers(Device::GetDevice(), CommandPool::GetTransferCommandPool(), 1, &commandBuffer);
         }
-        delete[] useCount;
+        delete useCount;
     }
     else{
         useCount[0]--;

@@ -16,6 +16,10 @@ namespace renderer{
 
 class GraphicsPipeline{
 public:
+
+static void Init();
+static void Cleanup();
+
     GraphicsPipeline();
     GraphicsPipeline(ShaderImpl& shader, BufferDescriptions& bufferDescriptions);
     
@@ -33,9 +37,9 @@ public:
 private:
     VkPipeline pipeline;
     VkPipelineLayout pipelineLayout;
-    VkRenderPass renderPass;
+    static VkRenderPass renderPass;
 
-    std::vector <VkFramebuffer> framebuffers;
+    static std::vector <VkFramebuffer> framebuffers;
 
     uint32_t *useCount;
 };

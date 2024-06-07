@@ -9,7 +9,10 @@ bool DataBuffer::createdStagingBuffers = false;
 CommandBuffer DataBuffer::commandBuffer = CommandBuffer();
 Fence DataBuffer::finishedCopyingFence = Fence();
 
-DataBuffer::DataBuffer(){}
+DataBuffer::DataBuffer(){
+    useCount = new uint32_t;
+    *useCount = 1;
+}
 
 DataBuffer::DataBuffer(BufferDescriptions bufferDescriptions, size_t size,
  void* data, bool transferToLocalDevMem, uint32_t flags){

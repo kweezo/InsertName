@@ -3,8 +3,8 @@
 
 namespace renderer{
 
-std::unordered_map<ModelHandle, StaticModelInstanceData> StaticModelInstance::staticModelMatrices = {};
-std::unordered_map<ShaderHandle, GraphicsPipeline> StaticModelInstance::pipelines = {};
+std::unordered_map<ModelHandle, StaticModelInstanceData> StaticModelInstance::staticModelInstanceMap = {};
+std::unordered_map<ShaderHandle, GraphicsPipeline> StaticModelInstance::staticModelPipelines = {};
 BufferDescriptions StaticModelInstance::bufferDescriptions = {};
 std::vector<CommandBuffer> StaticModelInstance::staticInstancesCommandBuffers = {};
 std::vector<RenderSemaphores> StaticModelInstance::staticInstancesSemaphores = {};
@@ -25,7 +25,7 @@ void StaticModelInstance::UpdateStaticInstances(){
 
     std::vector<std::thread> threads;
 
-    for(auto& [buff, instances] : staticModelMatrices){
+    for(auto& [buff, instances] : staticModelInstanceMap){
         for(uint32_t i = 0; MAX_FRAMES_IN_FLIGHT; i++){
             threads.push_back(std::thread(&RecordStaticCommandBuffer, std::ref(instances), i));
             threads.back().detach();
@@ -43,12 +43,12 @@ void StaticModelInstance::UpdateStaticInstances(){
     for(uint32_t i = 0; i < Swapchain::GetImageCount(); i++){
         std::unordered_map<ShaderHandle, std::vector<VkCommandBuffer>> secondaryBuffers;
         
-        for(auto& [buff, instances] : staticModelMatrices){
+        for(auto& [buff, instances] : staticModelInstanceMap){
             secondaryBuffers[instances.shader].push_back(instances.commandBuffer[i].GetCommandBuffer());
         }
 
         staticInstancesCommandBuffers[i].BeginCommandBuffer(nullptr);
-        for(auto& [shader, pipeline] : pipelines){
+        for(auto& [shader, pipeline] : staticModelPipelines){
             pipeline.BeginRenderPassAndBindPipeline(i, staticInstancesCommandBuffers[i].GetCommandBuffer());
 
             vkCmdExecuteCommands(staticInstancesCommandBuffers[i].GetCommandBuffer(), secondaryBuffers[shader].size(), secondaryBuffers[shader].data());
@@ -82,8 +82,8 @@ void StaticModelInstance::RecordStaticCommandBuffer(StaticModelInstanceData& ins
     instanceDescriptions.bindingDescriptions.insert(instanceDescriptions.bindingDescriptions.end(), bufferDescriptions.bindingDescriptions.begin()
     + static_cast<std::vector<double>::difference_type>(1), bufferDescriptions.bindingDescriptions.end());
 
-    if(pipelines.find(instances.shader) == pipelines.end()){
-        pipelines[instances.shader] = GraphicsPipeline(*instances.shader, instanceDescriptions);
+    if(staticModelPipelines.find(instances.shader) == staticModelPipelines.end()){
+        staticModelPipelines[instances.shader] = GraphicsPipeline(*instances.shader, instanceDescriptions);
     }
 
     instances.instanceBuffer = DataBuffer(bufferDescriptions, instanceModels.size() * sizeof(glm::mat4), instanceModels.data(), true,
@@ -97,8 +97,8 @@ void StaticModelInstance::RecordStaticCommandBuffer(StaticModelInstanceData& ins
 
     VkCommandBufferInheritanceInfo inheritanceInfo{};
     inheritanceInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_INFO;
-    inheritanceInfo.renderPass = pipelines[instances.shader].GetRenderPass();
-    inheritanceInfo.framebuffer = pipelines[instances.shader].GetFramebuffer(imageIndex);
+    inheritanceInfo.renderPass = staticModelPipelines[instances.shader].GetRenderPass();
+    inheritanceInfo.framebuffer = staticModelPipelines[instances.shader].GetFramebuffer(imageIndex);
 
     instances.commandBuffer[imageIndex].BeginCommandBuffer(&inheritanceInfo);
         

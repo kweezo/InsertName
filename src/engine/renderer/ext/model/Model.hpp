@@ -47,6 +47,7 @@ public:
     std::function<void(void)> GetExtraDrawCommands();
     BufferDescriptions GetExtraDescriptions();
 
+
 private: //copied from learnopengl.com *mostly* shamelessly
     void ProcessNode(aiNode* node, const aiScene* scene);
 
