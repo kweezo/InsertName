@@ -19,6 +19,8 @@ public:
     static void processLine(const std::string& line);
     static void printLog(const std::string& msg, int colorPair = 0);
 
+    static bool isRunning;
+
 private:
     static std::vector<std::string> commands;
     static WINDOW* logWindow;
@@ -39,6 +41,5 @@ private:
     static void processKey(int key, const std::string& prompt);
     static void cmdReport(const std::string& msg, int colorPair = 1);
 
-    static void cmdStop();
-
+    static void cmdStop(double waitTime);
 };

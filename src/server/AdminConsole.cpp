@@ -1,10 +1,15 @@
 #include "AdminConsole.hpp"
 
 #include "Config.hpp"
+#include "Server.hpp"
+#include "Log.hpp"
+
 #include <algorithm>
 #include <cstring>
+#include <thread>
 
 
+bool AdminConsole::isRunning = true;
 std::vector<std::string> AdminConsole::commands;
 WINDOW* AdminConsole::logWindow = nullptr;
 WINDOW* AdminConsole::separatorWindow = nullptr;
@@ -154,17 +159,32 @@ void AdminConsole::printLog(const std::string& msg, int colorPair) {
 }
 
 void AdminConsole::processLine(const std::string& line) {
-    if (line.empty()) {
+    if (line.empty() || !isRunning) {
         return;
     }
     if (line == "stop") {
-        cmdStop();
+        cmdStop(0.1);
     } else {
         cmdReport("Unknown command: " + line, 4);
     }
 }
 
-void AdminConsole::cmdStop() {
-    endwin(); // End PDCurses session
-    exit(0);
+void AdminConsole::cmdStop(double waitTime) {
+    cmdReport("Stopping server in " + std::to_string(waitTime) + " minutes...", 2);
+    Server::isShuttingDown = true;
+
+    std::thread([waitTime]() {
+        int waitTimeInSeconds = static_cast<int>(waitTime * 60);
+        std::this_thread::sleep_for(std::chrono::seconds(waitTimeInSeconds));
+
+        cmdReport("Stopping server...", 2);
+        Log::print(1, "Server stopped by admin command");
+        Server::shutdown = true;
+
+        Server::stop();
+        Log::destroy();
+        isRunning = false;
+
+        cmdReport("Server stopped. Press ENTER to exit", 1);
+    }).detach();
 }

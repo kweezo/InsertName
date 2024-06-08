@@ -24,30 +24,33 @@
 
 class Server {
 public:
-    Server(int port, const std::string& dir);
-    ~Server();
-    int initNetwork();
-    int acceptClient();
-    void handleClients();
+    static void init(int port, const std::string& dir);
+    static void stop();
+    static int initNetwork();
+    static int acceptClient();
+    static void handleClients();
+
+    static bool isShuttingDown;
+    static bool shutdown;
 
 private:
-    std::unique_ptr<pqxx::connection> c;
-    std::unordered_map<int, std::pair<int, SSL*>> UIDs;
-    std::mutex mapMutex;
-    std::unordered_map<int, std::mutex> clientMutexes;
+    static std::unique_ptr<pqxx::connection> c;
+    static std::unordered_map<int, std::pair<int, SSL*>> UIDs;
+    static std::mutex mapMutex;
+    static std::unordered_map<int, std::mutex> clientMutexes;
 
-    ClientHandler clientHandler;
+    static ClientHandler clientHandler;
     
-    std::string dir;
-    int port;
+    static std::string dir;
+    static int port;
 
-    SSL_CTX* ctx;
+    static SSL_CTX* ctx;
 
     #ifdef _WIN32
-        SOCKET serverSocket;
-        SOCKET clientSocket;
+        static SOCKET serverSocket;
+        static SOCKET clientSocket;
     #else
-        int serverSocket;
-        int clientSocket;
+        static int serverSocket;
+        static int clientSocket;
     #endif
 };

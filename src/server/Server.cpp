@@ -4,7 +4,30 @@
 #include "Log.hpp"
 
 
-Server::Server(int port, const std::string& dir) : port(port), dir(dir), ctx(nullptr) {
+bool Server::isShuttingDown = false;
+bool Server::shutdown = false;
+std::unique_ptr<pqxx::connection> Server::c;
+std::unordered_map<int, std::pair<int, SSL*>> Server::UIDs;
+std::mutex Server::mapMutex;
+std::unordered_map<int, std::mutex> Server::clientMutexes;
+ClientHandler Server::clientHandler;
+std::string Server::dir;
+int Server::port;
+SSL_CTX* Server::ctx;
+
+#ifdef _WIN32
+    SOCKET Server::serverSocket;
+    SOCKET Server::clientSocket;
+#else
+    int Server::serverSocket;
+    int Server::clientSocket;
+#endif
+
+void Server::init(int port, const std::string& dir) {
+    Server::port = port;
+    Server::dir = dir;
+    Server::ctx = nullptr;
+
     #ifndef NO_DB
         // Vzpostavitev povezave z bazo podatkov
         std::string conn_str = "dbname=" + Config::GetInstance().dbname +
@@ -53,9 +76,11 @@ Server::Server(int port, const std::string& dir) : port(port), dir(dir), ctx(nul
     if (serverSocket == -1) {
         throw std::runtime_error("Failed to create socket");
     }
+
+    initNetwork();
 }
 
-Server::~Server() {
+void Server::stop() {
     SSL_CTX_free(ctx);
     #ifdef _WIN32
         closesocket(serverSocket);
@@ -146,11 +171,13 @@ void Server::handleClients() {
     fd_set readfds;
     int max_sd, sd;
 
-    while (true) {
+    while (!shutdown) {
         FD_ZERO(&readfds);
 
-        // add server socket to set
-        FD_SET(serverSocket, &readfds);
+        // add server socket to set only if we are still accepting new clients
+        if (!Server::isShuttingDown) {
+            FD_SET(serverSocket, &readfds);
+        }
         max_sd = serverSocket;
 
         // add child sockets to set
@@ -176,7 +203,7 @@ void Server::handleClients() {
         }
 
         // If something happened on the server socket, then its an incoming connection
-        if (FD_ISSET(serverSocket, &readfds)) {
+        if (!Server::isShuttingDown && FD_ISSET(serverSocket, &readfds)) {
             int clientSocket = acceptClient();
             if (clientSocket < 0) {
                 Log::print(3, "Failed to accept client connection");
@@ -202,7 +229,7 @@ void Server::handleClients() {
 
         // Else its some IO operation on some other socket
         for (auto& client : UIDs) {
-            int sd = client.first;
+            sd = client.first;
         
             // Lock the client mutex before checking the socket
             std::lock_guard<std::mutex> lock(clientMutexes[sd]);
