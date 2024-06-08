@@ -33,6 +33,7 @@ private:
 
     static void loadVariables();
     static void initWindows();
+    static void initColors();
     static void addCommands();
     static void processKey(int key, const std::string& prompt);
 

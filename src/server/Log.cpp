@@ -20,6 +20,7 @@ void Log::init() {
                           " hostaddr=" + Config::GetInstance().dbhostaddr +
                           " port=" + Config::GetInstance().dbport;
     c = std::make_unique<pqxx::connection>(conn_str); 
+    
     if (!c->is_open()) {
         throw std::runtime_error("Database connection is not open");
     }
@@ -41,15 +42,8 @@ void Log::print(int alertLevel, const std::string& msg) {
     // Get current time as Unix timestamp
     std::time_t now = std::time(nullptr);
 
-    if (alertLevel > 2-logLevel) {
-        int colorPair;
-        if (alertLevel == 0) {
-            colorPair = 1; // White on black
-        } else if (alertLevel == 1) {
-            colorPair = 2; // Yellow on black
-        } else if (alertLevel == 2) {
-            colorPair = 3; // Red on black
-        }
+    if (alertLevel > 3-logLevel) {
+        int colorPair = alertLevel+1;
     
         // Format the timestamp
         std::tm* tm = std::localtime(&now);

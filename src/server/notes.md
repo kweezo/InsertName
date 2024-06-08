@@ -7,13 +7,13 @@
   - l (client sucessfully logined)
   - w (failed to log in client - wrong password)
   - f (failed to login client - error, username probably does not exist)
-~~- m (send message):
-  - s (message sended sucussfully)
-  - c (failed to send message)
-- g (get messages):
-  - g (messages get)
-- n (get new messages):
-  - n (new messages get)~~
+  //- m (send message):
+  //- s (message sended sucussfully)
+  //- c (failed to send message)
+//- g (get messages):
+//  - g (messages get)
+//- n (get new messages):
+//  - n (new messages get)
 - c (close connection):
   - c (closing network connection)
 - s (send struct):

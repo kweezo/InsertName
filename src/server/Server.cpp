@@ -18,7 +18,7 @@ Server::Server(int port, const std::string& dir) : port(port), dir(dir), ctx(nul
         pqxx::work w(*c);
 
         std::string sql = "CREATE TABLE IF NOT EXISTS Users ("
-                            "UserId SERIAL PRIMARY KEY,"
+                            "UID SERIAL PRIMARY KEY,"
                             "Username TEXT NOT NULL,"
                             "PasswordHash TEXT NOT NULL,"
                             "Salt TEXT NOT NULL,"
@@ -78,7 +78,7 @@ int Server::initNetwork() {
     if (listen(serverSocket, 3) == -1) {
         throw std::runtime_error("Failed to listen on socket");
     }
-    Log::print(0, "Server is listening on port " + std::to_string(ntohs(serverAddress.sin_port)) + "...");
+    Log::print(1, "Server is listening on port " + std::to_string(ntohs(serverAddress.sin_port)) + "...");
 
     return 0;
 }
@@ -94,7 +94,7 @@ int Server::acceptClient() {
     #endif
 
     if (clientSocket == -1) {
-        Log::print(2, "Failed to accept client connection");
+        Log::print(3, "Failed to accept client connection");
     }
 
     ctx = SSL_CTX_new(TLS_server_method());
@@ -105,19 +105,19 @@ int Server::acceptClient() {
 
     // Load the server's private key and certificate
     if (SSL_CTX_use_PrivateKey_file(ctx, (dir + "network/server.key").c_str(), SSL_FILETYPE_PEM) <= 0) {
-        Log::print(2, "Failed to load server private key");
+        Log::print(3, "Failed to load server private key");
         return -1;
     }
 
     if (SSL_CTX_use_certificate_file(ctx, (dir + "network/server.crt").c_str(), SSL_FILETYPE_PEM) <= 0) {
-        Log::print(2, "Failed to load server certificate");
+        Log::print(3, "Failed to load server certificate");
         return -1;
     }
 
     // Create new SSL connection
     SSL* ssl = SSL_new(ctx);
     if (ssl == nullptr) {
-        Log::print(2, "Failed to create new SSL connection");
+        Log::print(3, "Failed to create new SSL connection");
         return -1;
     }
 
@@ -128,15 +128,15 @@ int Server::acceptClient() {
     int ret = SSL_accept(ssl);
     if (ret != 1) {
         int errorCode = SSL_get_error(ssl, ret);
-        Log::print(2, "Failed to perform SSL/TLS handshake, error code: " + std::to_string(errorCode));
+        Log::print(3, "Failed to perform SSL/TLS handshake, error code: " + std::to_string(errorCode));
         return -1;
     }
 
     std::lock_guard<std::mutex> lock(mapMutex);
     #ifndef NO_DB
-        clientIds[clientSocket] = std::make_pair(0, ssl);
+        UIDs[clientSocket] = std::make_pair(0, ssl);
     #else
-        clientIds[clientSocket] = std::make_pair(clientSocket, ssl);
+        UIDs[clientSocket] = std::make_pair(clientSocket, ssl);
     #endif
     
     return clientSocket;
@@ -154,7 +154,7 @@ void Server::handleClients() {
         max_sd = serverSocket;
 
         // add child sockets to set
-        for (auto& client : clientIds) {
+        for (auto& client : UIDs) {
             // socket descriptor
             sd = client.first;
 
@@ -171,7 +171,7 @@ void Server::handleClients() {
         int activity = select(max_sd + 1, &readfds, NULL, NULL, NULL);
 
         if ((activity < 0) && (errno != EINTR)) {
-            Log::print(2, "Select error occurred on server socket");
+            Log::print(3, "Select error occurred on server socket");
             continue;
         }
 
@@ -179,21 +179,21 @@ void Server::handleClients() {
         if (FD_ISSET(serverSocket, &readfds)) {
             int clientSocket = acceptClient();
             if (clientSocket < 0) {
-                Log::print(2, "Failed to accept client connection");
+                Log::print(3, "Failed to accept client connection");
                 continue;
             }
             // Set the client socket to non-blocking mode
             #ifdef _WIN32
                 unsigned long mode = 1;
                 if (ioctlsocket(clientSocket, FIONBIO, &mode) != 0) {
-                    Log::print(2, "Failed to set client socket to non-blocking mode");
+                    Log::print(3, "Failed to set client socket to non-blocking mode");
                     closesocket(clientSocket);
                     continue;
                 }
             #else
                 int flags = fcntl(clientSocket, F_GETFL, 0);
                 if (flags < 0 || fcntl(clientSocket, F_SETFL, flags | O_NONBLOCK) < 0) {
-                    Log::print(2, "Failed to set client socket to non-blocking mode");
+                    Log::print(3, "Failed to set client socket to non-blocking mode");
                     close(clientSocket);
                     continue;
                 }
@@ -201,7 +201,7 @@ void Server::handleClients() {
         }
 
         // Else its some IO operation on some other socket
-        for (auto& client : clientIds) {
+        for (auto& client : UIDs) {
             int sd = client.first;
         
             // Lock the client mutex before checking the socket
@@ -209,7 +209,7 @@ void Server::handleClients() {
         
             if (FD_ISSET(sd, &readfds)) {
                 std::unique_ptr<ClientHandler> handler = std::make_unique<ClientHandler>();
-                handler->handleConnection(*c, sd, clientIds, mapMutex, readfds);
+                handler->handleConnection(*c, sd, UIDs, mapMutex, readfds);
             }
         }
     }

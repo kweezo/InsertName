@@ -23,11 +23,9 @@ public:
     static void destroy();
 
     static void print(int alertLevel, const std::string& msg);
-
-
-private:
     static void sendLogsToDatabase();
 
+private:
     static std::unique_ptr<pqxx::connection> c;
     static int logLevel;
     static int maxLogBufferSize;

@@ -4,13 +4,13 @@
 #include "Log.hpp"
 
 
-void ClientHandler::handleConnection(pqxx::connection& c, int clientSocket, std::unordered_map<int, std::pair<int, SSL*>>& clientIds, std::mutex& mapMutex, fd_set& readfds) {
-    int clientId = getClientId(clientSocket, clientIds, mapMutex);
+void ClientHandler::handleConnection(pqxx::connection& c, int clientSocket, std::unordered_map<int, std::pair<int, SSL*>>& UIDs, std::mutex& mapMutex, fd_set& readfds) {
+    int UID = getUID(clientSocket, UIDs, mapMutex);
 
     std::unique_lock<std::mutex> lock(mapMutex);
 
-    auto it = clientIds.find(clientSocket);
-    if (it == clientIds.end()) {
+    auto it = UIDs.find(clientSocket);
+    if (it == UIDs.end()) {
         // Handle error: no such clientSocket in the map
         return;
     }
@@ -31,8 +31,8 @@ void ClientHandler::handleConnection(pqxx::connection& c, int clientSocket, std:
                 continue;
             } else {
                 // An actual error occurred
-                Log::print(1, "Error in SSL_read(). Error code: " + std::to_string(errorCode) + ". Quitting");
-                cleanupConnection(clientSocket, clientIds, ssl, mapMutex, readfds);
+                Log::print(3, "Error in SSL_read(). Error code: " + std::to_string(errorCode) + ". Quitting");
+                cleanupConnection(clientSocket, UIDs, ssl, mapMutex, readfds);
                 return;
             }
         }
@@ -51,14 +51,14 @@ void ClientHandler::handleConnection(pqxx::connection& c, int clientSocket, std:
                 continue;
             } else {
                 // An actual error occurred
-                Log::print(2, "Error in SSL_read(). Error code: " + std::to_string(errorCode) + ". Quitting");
-                cleanupConnection(clientSocket, clientIds, ssl, mapMutex, readfds);
+                Log::print(3, "Error in SSL_read(). Error code: " + std::to_string(errorCode) + ". Quitting");
+                cleanupConnection(clientSocket, UIDs, ssl, mapMutex, readfds);
                 return;
             }
         }
     } while (bytesReceived <= 0);
 
-    std::string response = handleMsg(buffer, bytesReceived, clientSocket, clientIds, mapMutex, c);
+    std::string response = handleMsg(buffer, bytesReceived, clientSocket, UIDs, mapMutex, c);
 
     std::string binaryString(response.begin(), response.end());
 
@@ -77,8 +77,8 @@ void ClientHandler::handleConnection(pqxx::connection& c, int clientSocket, std:
         int selectResult = select(clientSocket + 1, NULL, &writefds, NULL, &timeout);
         if (selectResult < 0) {
             // An error occurred
-            Log::print(2, "select error occurred on server socket");
-            cleanupConnection(clientSocket, clientIds, ssl, mapMutex, readfds);
+            Log::print(3, "select error occurred on server socket");
+            cleanupConnection(clientSocket, UIDs, ssl, mapMutex, readfds);
             return;
         } else if (selectResult == 0) {
             // Writing would block, try again later
@@ -93,22 +93,22 @@ void ClientHandler::handleConnection(pqxx::connection& c, int clientSocket, std:
                 continue;
             } else {
                 // An actual error occurred
-                Log::print(2, "Error in SSL_write(). Error code: " + std::to_string(errorCode) + ". Quitting");
-                cleanupConnection(clientSocket, clientIds, ssl, mapMutex, readfds);
+                Log::print(3, "Error in SSL_write(). Error code: " + std::to_string(errorCode) + ". Quitting");
+                cleanupConnection(clientSocket, UIDs, ssl, mapMutex, readfds);
                 return;
             }
         }
     } while (bytesSent <= 0);
 
     if (response == "c" || response == "E") {
-        Log::print((response == "E") ? 1 : 0, "Closing connection with userId " + std::to_string(clientId) + ((response == "E") ? (", clientSocket: " + std::to_string(clientSocket)) : ""));
-        cleanupConnection(clientSocket, clientIds, ssl, mapMutex, readfds);
+        if (response == "E") Log::print(2, "Closing connection with client becuse error occured, UID: " + std::to_string(UID));
+        cleanupConnection(clientSocket, UIDs, ssl, mapMutex, readfds);
         return;
     }
 }
 
-std::string ClientHandler::handleMsg(const char* receivedData, int dataSize, int clientSocket, std::unordered_map<int, std::pair<int, SSL*>>& clientIds, std::mutex& mapMutex, pqxx::connection& c) {
-    int clientId = getClientId(clientSocket, clientIds, mapMutex);
+std::string ClientHandler::handleMsg(const char* receivedData, int dataSize, int clientSocket, std::unordered_map<int, std::pair<int, SSL*>>& UIDs, std::mutex& mapMutex, pqxx::connection& c) {
+    int UID = getUID(clientSocket, UIDs, mapMutex);
     std::string response="E";
 
     // Extract the identifier from the received data
@@ -119,12 +119,12 @@ std::string ClientHandler::handleMsg(const char* receivedData, int dataSize, int
     int dataLength = dataSize - 1;
 
     #ifndef NO_DB
-        if (clientId <= 0) {
-            auto it = clientIds.find(clientSocket);
-            if (it != clientIds.end()) {
+        if (UID <= 0) {
+            auto it = UIDs.find(clientSocket);
+            if (it != UIDs.end()) {
                 --it->second.first;
             }
-            clientId--;
+            UID--;
             if ((identifier != 'r' && identifier != 'l')) {
                 return "c";
             }
@@ -133,7 +133,7 @@ std::string ClientHandler::handleMsg(const char* receivedData, int dataSize, int
 
     if (receivedData[0] == 's') {
         if (dataLength != sizeof(glm::vec3) * 16) {
-            Log::print(1, "Invalid data size for identifier 's'. Expected " + std::to_string(sizeof(glm::vec3) * 16) + " bytes, got " + std::to_string(dataLength) + " bytes. User ID: " + std::to_string(clientId) + ", clientSocket: " + std::to_string(clientSocket));
+            Log::print(2, "Invalid data size for identifier 's'. Expected " + std::to_string(sizeof(glm::vec3) * 16) + " bytes, got " + std::to_string(dataLength) + " bytes. UID: " + std::to_string(UID));
             return "E";
         }
 
@@ -152,12 +152,12 @@ std::string ClientHandler::handleMsg(const char* receivedData, int dataSize, int
         switch (receivedData[0]) {
             case 'r': {
                 std::string username = getNextArg(msg);
-                response = registerUser(username, msg, clientSocket, clientIds, mapMutex, c);
+                response = registerUser(username, msg, clientSocket, UIDs, mapMutex, c);
                 break;
             }
             case 'l': {
                 std::string username = getNextArg(msg);
-                response = loginUser(username, msg, clientSocket, clientIds, mapMutex, c);
+                response = loginUser(username, msg, clientSocket, UIDs, mapMutex, c);
                 break;
             }
 /*            case 'm': {
@@ -195,7 +195,7 @@ std::string ClientHandler::handleMsg(const char* receivedData, int dataSize, int
         }
     }
     #ifndef NO_DB
-        if (clientId < -Config::GetInstance().loginAttempts && response != "r" && response != "l") {
+        if (UID < -Config::GetInstance().loginAttempts && response != "r" && response != "l") {
             response = "c";
         }
     #endif
@@ -203,9 +203,7 @@ std::string ClientHandler::handleMsg(const char* receivedData, int dataSize, int
     return response;
 }
 
-char ClientHandler::registerUser(const std::string& username, const std::string& password, int clientSocket, std::unordered_map<int, std::pair<int, SSL*>>& clientIds, std::mutex& mapMutex, pqxx::connection& c) {
-    Log::print(0, "Registering user: " + username);
-
+char ClientHandler::registerUser(const std::string& username, const std::string& password, int clientSocket, std::unordered_map<int, std::pair<int, SSL*>>& UIDs, std::mutex& mapMutex, pqxx::connection& c) {
     try {
         #ifndef NO_DB
             pqxx::work W(c);
@@ -227,45 +225,48 @@ char ClientHandler::registerUser(const std::string& username, const std::string&
             
             std::string creationDate(buffer);
 
-            std::string sql = "INSERT INTO Users (UserId, Username, PasswordHash, Salt, CreationDate) VALUES (DEFAULT, $1, $2, $3, $4) RETURNING UserId;";
+            std::string sql = "INSERT INTO Users (UID, Username, PasswordHash, Salt, CreationDate) VALUES (DEFAULT, $1, $2, $3, $4) RETURNING UID;";
             pqxx::result R = W.exec_params(sql, username, passwordHash, salt, creationDate);
             W.commit();
-            int userId = R[0][0].as<int>();
+            int UID = R[0][0].as<int>();
         #else
-            int userId = clientSocket;
+            int UID = clientSocket;
         #endif
 
         std::lock_guard<std::mutex> lock(mapMutex);
-        SSL* ssl = clientIds[clientSocket].second;
-        clientIds[clientSocket] = std::make_pair(userId, ssl);
+        SSL* ssl = UIDs[clientSocket].second;
+        UIDs[clientSocket] = std::make_pair(UID, ssl);
+
+        Log::print(0, "Logging in user with UID: " + std::to_string(UID));
+
     } catch (const std::exception &e) {
-        Log::print(0, "Failed to register user: " + std::string(e.what()));
+        Log::print(1, "Failed to register user: " + std::string(e.what()));
         return 'e';
     }
 
     return 'r';
 }
 
-char ClientHandler::loginUser(const std::string& username, const std::string& password, int clientSocket, std::unordered_map<int, std::pair<int, SSL*>>& clientIds, std::mutex& mapMutex, pqxx::connection& c) {
-    Log::print(0, "Logging in user: " + username);
+char ClientHandler::loginUser(const std::string& username, const std::string& password, int clientSocket, std::unordered_map<int, std::pair<int, SSL*>>& UIDs, std::mutex& mapMutex, pqxx::connection& c) {
 
     try {
         #ifndef NO_DB
             pqxx::work W(c);
 
-            std::string sql = "SELECT UserId, PasswordHash, Salt FROM Users WHERE Username = $1;";
+            std::string sql = "SELECT UID, PasswordHash, Salt FROM Users WHERE Username = $1;";
             pqxx::result R = W.exec_params(sql, username);
 
             if (!R.empty()) {
-                int userId = R[0][0].as<int>();
+                int UID = R[0][0].as<int>();
                 std::string storedPasswordHash = R[0][1].as<std::string>();
                 std::string salt = R[0][2].as<std::string>();
                 std::string passwordHash = generateHash(password, salt);
 
                 if (storedPasswordHash == passwordHash) {
                     std::lock_guard<std::mutex> lock(mapMutex);
-                    SSL* ssl = clientIds[clientSocket].second;
-                    clientIds[clientSocket] = std::make_pair(userId, ssl);
+                    SSL* ssl = UIDs[clientSocket].second;
+                    UIDs[clientSocket] = std::make_pair(UID, ssl);
+                    Log::print(0, "Logging in user with UID: " + std::to_string(getUID(clientSocket, UIDs, mapMutex)));
                     return 'l';
                 } else {
                     return 'w';
@@ -273,16 +274,21 @@ char ClientHandler::loginUser(const std::string& username, const std::string& pa
             } else {
                 return 'w';
             }
+
         #else
             std::lock_guard<std::mutex> lock(mapMutex);
-            SSL* ssl = clientIds[clientSocket].second;
-            clientIds[clientSocket] = std::make_pair(clientSocket, ssl);
+            SSL* ssl = UIDs[clientSocket].second;
+            UIDs[clientSocket] = std::make_pair(clientSocket, ssl);
             return 'l';
+            Log::print(0, "Logging in user with UID: " + std::to_string(getUID(clientSocket, UIDs, mapMutex)));
         #endif
+
+
     } catch (const std::exception &e) {
-        Log::print(0, "Failed to login user: " + std::string(e.what()));
+        Log::print(1, "Failed to login user: " + std::string(e.what()));
         return 'f';
     }
+    return 'f';
 }
 /*
 char ClientHandler::sendMessage(const std::string& receiverUsername, const std::string& message) {
@@ -374,12 +380,14 @@ std::vector<std::pair<std::string, std::string>> ClientHandler::getNewMessages(s
     return messages;
 }
 */
-void ClientHandler::cleanupConnection(int clientSocket, std::unordered_map<int, std::pair<int, SSL*>>& clientIds, SSL* ssl, std::mutex& mapMutex, fd_set& readfds) {
+void ClientHandler::cleanupConnection(int clientSocket, std::unordered_map<int, std::pair<int, SSL*>>& UIDs, SSL* ssl, std::mutex& mapMutex, fd_set& readfds) {
+    Log::print(0, "Client disconnected with UID: " + std::to_string(getUID(clientSocket, UIDs, mapMutex)));
+
     // Lock the mutex before accessing the shared map
     std::lock_guard<std::mutex> lock(mapMutex);
 
     // Remove the client from the map
-    clientIds.erase(clientSocket);
+    UIDs.erase(clientSocket);
 
     // Remove the client's socket descriptor from the readfds set
     FD_CLR(clientSocket, &readfds);
@@ -431,11 +439,11 @@ std::string ClientHandler::generateHash(const std::string& password, const std::
     return ss.str();
 }
 
-int ClientHandler::getClientId(int clientSocket, std::unordered_map<int, std::pair<int, SSL*>>& clientIds, std::mutex& mapMutex) {
+int ClientHandler::getUID(int clientSocket, std::unordered_map<int, std::pair<int, SSL*>>& UIDs, std::mutex& mapMutex) {
     std::lock_guard<std::mutex> lock(mapMutex);
-    auto it = clientIds.find(clientSocket);
-    if (it != clientIds.end()) {
-        return it->second.first; // Return the client's ID
+    auto it = UIDs.find(clientSocket);
+    if (it != UIDs.end()) {
+        return it->second.first; // Return the users's ID
     } else {
         return 0;
     }

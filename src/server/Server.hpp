@@ -32,7 +32,7 @@ public:
 
 private:
     std::unique_ptr<pqxx::connection> c;
-    std::unordered_map<int, std::pair<int, SSL*>> clientIds;
+    std::unordered_map<int, std::pair<int, SSL*>> UIDs;
     std::mutex mapMutex;
     std::unordered_map<int, std::mutex> clientMutexes;
 

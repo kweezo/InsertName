@@ -20,6 +20,7 @@ void AdminConsole::init() {
     initscr(); // Initialize ncurses
     keypad(stdscr, TRUE);
     noecho();
+    initColors();
     addCommands();
     initWindows();
 }
@@ -27,6 +28,14 @@ void AdminConsole::init() {
 void AdminConsole::loadVariables() {
     commandWindowHeight = Config::GetInstance().commandWindowHeight;
     prompt = Config::GetInstance().commandPrefix;
+}
+
+void AdminConsole::initColors() {
+    start_color();
+    init_pair(1, COLOR_WHITE, COLOR_BLACK);
+    init_pair(2, COLOR_BLUE, COLOR_BLACK);
+    init_pair(3, COLOR_YELLOW, COLOR_BLACK);
+    init_pair(4, COLOR_RED, COLOR_BLACK);
 }
 
 void AdminConsole::initWindows() {
