@@ -7,8 +7,9 @@
 
 std::vector<std::string> AdminConsole::commands;
 WINDOW* AdminConsole::logWindow = nullptr;
-WINDOW* AdminConsole::commandWindow = nullptr;
 WINDOW* AdminConsole::separatorWindow = nullptr;
+WINDOW* AdminConsole::commandWindow = nullptr;
+WINDOW* AdminConsole::commandFeedbackWindow = nullptr;
 std::deque<std::string> AdminConsole::commandHistory;
 int AdminConsole::currentCommand = -1;
 std::string AdminConsole::prompt;
@@ -39,12 +40,18 @@ void AdminConsole::initColors() {
 }
 
 void AdminConsole::initWindows() {
-    logWindow = derwin(stdscr, LINES-commandWindowHeight-1, COLS, 0, 0);
-    separatorWindow = derwin(stdscr, 1, COLS, LINES-commandWindowHeight-1, 0);
-    commandWindow = derwin(stdscr, commandWindowHeight, COLS, LINES-commandWindowHeight, 0);
+    logWindow = derwin(stdscr, LINES-commandWindowHeight-1, COLS, 0, 0); // Create a new window. Parameters: parent window, number of lines, number of columns, y position, x position
+    scrollok(logWindow, TRUE); // Enable scrolling for the log window
 
-    mvwhline(separatorWindow, 0, 0, ACS_HLINE, COLS);
-    wrefresh(separatorWindow);
+    separatorWindow = derwin(stdscr, 1, COLS, LINES-commandWindowHeight-1, 0);
+
+    commandFeedbackWindow = derwin(stdscr, commandWindowHeight-1, COLS, LINES-commandWindowHeight, 0);
+    scrollok(commandFeedbackWindow, TRUE);
+
+    commandWindow = derwin(stdscr, 1, COLS, LINES-1, 0);
+    mvwhline(separatorWindow, 0, 0, ACS_HLINE, COLS); // Draw a horizontal line
+    wrefresh(separatorWindow); // Refresh the separator window
+
 }
 
 void AdminConsole::addCommands() {
@@ -52,9 +59,9 @@ void AdminConsole::addCommands() {
 }
 
 std::string AdminConsole::readLine() {
-    move(LINES-commandWindowHeight, 0);
-    clrtoeol();
-    printw(prompt.c_str());
+    move(LINES-1, 0); // Move the cursor to the command line
+    clrtoeol(); // Clear the command line
+    printw(prompt.c_str()); // Print the command prefix
     wrefresh(commandWindow);
     int ch;
     int pos = 0;
@@ -75,11 +82,11 @@ std::string AdminConsole::readLine() {
                 line[pos] = '\0';
                 currentCommand = -1;
             }
-            move(LINES-commandWindowHeight, 0);
+            move(LINES-1, 0);
             clrtoeol();
             printw(prompt.c_str());
             printw(line);
-            move(LINES-commandWindowHeight, pos + prompt.size());  // Move the cursor to the correct position
+            move(LINES-1, pos + prompt.size());  // Move the cursor to the correct position
         }
         if (pos == 0 && (ch == '\n' || ch == '\r')) {
             return "";  // Return an empty string if the line is empty
@@ -116,18 +123,27 @@ void AdminConsole::processKey(int key, const std::string& prompt) {
     }
     // Update the console
     int pos = strlen(line);
-    move(LINES-commandWindowHeight, 0);
+    move(LINES-1, 0);
     clrtoeol();
     printw(prompt.c_str());
     printw(line);
-    move(LINES-commandWindowHeight, pos + prompt.size());  // Move the cursor to the correct position
+    move(LINES-1, pos + prompt.size());  // Move the cursor to the correct position
+}
+
+void AdminConsole::cmdReport(const std::string& msg, int colorPair) { // Same functionality as printLog, just different window
+    wattron(commandFeedbackWindow, COLOR_PAIR(colorPair));
+    wprintw(commandFeedbackWindow, "\n%s", msg.c_str());
+    wattroff(commandFeedbackWindow, COLOR_PAIR(colorPair));
+    wrefresh(commandFeedbackWindow);
+    wmove(commandWindow, 0, strlen(line) + prompt.size());
+    wrefresh(commandWindow);
 }
 
 void AdminConsole::printLog(const std::string& msg, int colorPair) {
     // Set the color pair for the log window
     wattron(logWindow, COLOR_PAIR(colorPair));
     // Print the message in the log window
-    wprintw(logWindow, "%s\n", msg.c_str());
+    wprintw(logWindow, "\n%s", msg.c_str());
     // Turn off the color pair
     wattroff(logWindow, COLOR_PAIR(colorPair));
     wrefresh(logWindow);
@@ -144,7 +160,7 @@ void AdminConsole::processLine(const std::string& line) {
     if (line == "stop") {
         cmdStop();
     } else {
-        printw("Unknown command: %s\n", line.c_str());
+        cmdReport("Unknown command: " + line, 4);
     }
 }
 

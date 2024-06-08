@@ -31,7 +31,7 @@ void ClientHandler::handleConnection(pqxx::connection& c, int clientSocket, std:
                 continue;
             } else {
                 // An actual error occurred
-                Log::print(3, "Error in SSL_read(). Error code: " + std::to_string(errorCode) + ". Quitting");
+                Log::print(2, "Error in SSL_read(). Error code: " + std::to_string(errorCode) + ". Quitting");
                 cleanupConnection(clientSocket, UIDs, ssl, mapMutex, readfds);
                 return;
             }
@@ -51,7 +51,7 @@ void ClientHandler::handleConnection(pqxx::connection& c, int clientSocket, std:
                 continue;
             } else {
                 // An actual error occurred
-                Log::print(3, "Error in SSL_read(). Error code: " + std::to_string(errorCode) + ". Quitting");
+                Log::print(2, "Error in SSL_read(). Error code: " + std::to_string(errorCode) + ". Quitting");
                 cleanupConnection(clientSocket, UIDs, ssl, mapMutex, readfds);
                 return;
             }

@@ -22,8 +22,9 @@ public:
 private:
     static std::vector<std::string> commands;
     static WINDOW* logWindow;
-    static WINDOW* commandWindow;
     static WINDOW* separatorWindow;
+    static WINDOW* commandWindow;
+    static WINDOW* commandFeedbackWindow;
 
     static std::deque<std::string> commandHistory;
     static int currentCommand;
@@ -36,6 +37,7 @@ private:
     static void initColors();
     static void addCommands();
     static void processKey(int key, const std::string& prompt);
+    static void cmdReport(const std::string& msg, int colorPair = 1);
 
     static void cmdStop();
 
