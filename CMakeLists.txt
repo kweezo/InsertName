@@ -8,28 +8,28 @@ if(WIN32)
     include_directories("lib\\win")
     include_directories("lib\\win\\g-truc-glm-0af55cc")
     include_directories("lib\\win\\PDCurses-3.9")
-    include_directories("C:\\Program Files (x86)\\libpqxx\\include")
-    include_directories("C:\\Strawberry\\c\\include")
-    include_directories("C:\\Program Files (x86)\\Assimp\\include")
-    include_directories("C:\\Program Files (x86)\\jsoncpp\\include")
+    include_directories("lib\\win\\libpqxx-master\\build\\libpqxx\\include")
+    include_directories("lib\\win\\c\\include") # openssl
+    include_directories("lib\\win\\assimp-master\\build\\Assimp\\include")
+    include_directories("lib\\win\\jsoncpp-master\\build\\jsoncpp\\include")
 
     link_directories("lib\\win\\GLFW\\lib-mingw-w64")
     link_directories("lib\\win\\VulkanSDK\\1.3.275.0\\Lib")
     link_directories("lib\\win\\PDCurses-3.9\\wincon")
-    link_directories("C:\\Program Files (x86)\\libpqxx\\lib")
-    link_directories("C:\\Program Files (x86)\\Assimp\\lib")
-    link_directories("C:\\Program Files (x86)\\jsoncpp\\lib")
+    link_directories("lib\\win\\libpqxx-master\\build\\libpqxx\\lib")
+    link_directories("lib\\win\\assimp-master\\build\\Assimp\\lib")
+    link_directories("lib\\win\\jsoncpp-master\\build\\jsoncpp\\lib")
     find_library(SSL_LIBRARY
         NAMES libssl.a
-        PATHS C:\\Strawberry\\c\\lib
+        PATHS lib\\win\\c\\lib
     )
     find_library(CRYPTO_LIBRARY
         NAMES libcrypto.a
-        PATHS C:\\Strawberry\\c\\lib
+        PATHS lib\\win\\c\\lib
     )
     find_library(PQ_LIBRARY
-        NAMES libpq.lib
-        PATHS "C:\\Program Files\\PostgreSQL\\16\\lib"
+        NAMES libpq.a
+        PATHS lib\\win\\c\\lib
     )
 endif()
 
@@ -128,4 +128,3 @@ if(BUILD_CLIENT)
         target_link_libraries(client PUBLIC jsoncpp)
     endif()
 endif()
-

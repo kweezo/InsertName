@@ -5,11 +5,10 @@ Makefile
 .vscode
 notes
 shaders/bin/*
-server_data/network
+server_data/network/*
 server_data/config.cfg
 lib/win/*
 lib/lnx/*
 bin/*
 client_data/settings.cfg
 lib/*
-build/*
