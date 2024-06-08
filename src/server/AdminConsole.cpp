@@ -70,7 +70,7 @@ std::string AdminConsole::readLine() {
                     line[pos] = '\0';
                     currentCommand = -1;
                 }
-            } else if (ch >= 32 && ch <= 126) {
+            } else if (ch >= 32 && ch <= 126 && pos < COLS - prompt.size() - 1) {
                 line[pos++] = ch;
                 line[pos] = '\0';
                 currentCommand = -1;
@@ -101,12 +101,14 @@ void AdminConsole::processKey(int key, const std::string& prompt) {
     if (key == KEY_UP) {
         if (!commandHistory.empty() && currentCommand < (int)commandHistory.size() - 1) {
             currentCommand++;
-            strcpy(line, commandHistory[commandHistory.size() - 1 - currentCommand].c_str());
+            strncpy(line, commandHistory[commandHistory.size() - 1 - currentCommand].c_str(), sizeof(line) - 1);
+            line[sizeof(line) - 1] = '\0'; // Add null terminator
         }
     } else if (key == KEY_DOWN) {
         if (currentCommand > 0) {
             currentCommand--;
-            strcpy(line, commandHistory[commandHistory.size() - 1 - currentCommand].c_str());
+            strncpy(line, commandHistory[commandHistory.size() - 1 - currentCommand].c_str(), sizeof(line) - 1);
+            line[sizeof(line) - 1] = '\0'; // Add null terminator
         } else if (currentCommand == 0) {
             currentCommand = -1;
             line[0] = '\0';
