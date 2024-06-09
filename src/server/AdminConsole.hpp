@@ -38,8 +38,11 @@ private:
     static void initWindows();
     static void initColors();
     static void addCommands();
+    
     static void processKey(int key, const std::string& prompt);
     static void cmdReport(const std::string& msg, int colorPair = 1);
 
     static void cmdStop(double waitTime);
+
+    static bool isDouble(const std::string& s, double& d);
 };

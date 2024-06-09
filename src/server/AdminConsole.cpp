@@ -72,9 +72,50 @@ std::string AdminConsole::readLine() {
     int pos = 0;
     
     while ((ch = getch()) != '\n' && ch != '\r') {
-        if (ch == KEY_UP || ch == KEY_DOWN) {
+        if (ch == '\t') {
+            std::string currentInput(line);
+            std::vector<std::string> matches;
+
+            // Find all commands that start with the current input
+            for (const auto& cmd : commands) {
+                if (cmd.find(currentInput) == 0) {
+                    matches.push_back(cmd);
+                }
+            }
+
+            if (!matches.empty()) {
+                // If there is only one match, complete the command
+                if (matches.size() == 1) {
+                    strncpy(line, matches[0].c_str(), sizeof(line) - 1);
+                    pos = strlen(line);
+                } else {
+                    // Find the common prefix of all matches
+                    std::string commonPrefix = matches[0];
+                    for (const auto& match : matches) {
+                        for (size_t i = 0; i < commonPrefix.size(); i++) {
+                            if (i == match.size() || match[i] != commonPrefix[i]) {
+                                commonPrefix = commonPrefix.substr(0, i);
+                                break;
+                            }
+                        }
+                    }
+                    
+                    // Copy the common prefix to the input line
+                    strncpy(line, commonPrefix.c_str(), sizeof(line) - 1);
+                    pos = strlen(line);
+                }
+            }
+
+            move(LINES-1, 0);
+            clrtoeol();
+            printw(prompt.c_str());
+            printw(line);
+            move(LINES-1, pos + prompt.size());
+
+        } else if (ch == KEY_UP || ch == KEY_DOWN) {
             processKey(ch, prompt);
             pos = strlen(line);
+
         } else {
             if (ch == 8 || ch == 127) {
                 if (pos > 0) {
@@ -82,11 +123,13 @@ std::string AdminConsole::readLine() {
                     line[pos] = '\0';
                     currentCommand = -1;
                 }
+
             } else if (ch >= 32 && ch <= 126 && pos < COLS - prompt.size() - 1) {
                 line[pos++] = ch;
                 line[pos] = '\0';
                 currentCommand = -1;
             }
+
             move(LINES-1, 0);
             clrtoeol();
             printw(prompt.c_str());
@@ -162,10 +205,57 @@ void AdminConsole::processLine(const std::string& line) {
     if (line.empty() || !isRunning) {
         return;
     }
-    if (line == "stop") {
-        cmdStop(0.1);
-    } else {
-        cmdReport("Unknown command: " + line, 4);
+
+    std::vector<std::string> commands;
+    std::string temp;
+    bool inQuotes = false;
+
+    for (char ch : line) {
+        if (ch == '"' && inQuotes) {
+            // End of quotes
+            inQuotes = false;
+        } else if (ch == '"' && !inQuotes) {
+            // Start of quotes
+            inQuotes = true;
+        } else if (ch == ' ' && !inQuotes) {
+            // Space outside of quotes, add argument to the list
+            if (!temp.empty()) {
+                commands.push_back(temp);
+                temp.clear();
+            }
+        } else {
+            // Add character to the current argument
+            temp += ch;
+        }
+    }
+
+    // Add the last argument to the list, if it exists
+    if (!temp.empty()) {
+        commands.push_back(temp);
+    }
+
+    if (!commands.empty()) {
+        int cmdSize = commands.size();
+
+        if (commands[0] == "stop") {
+            double value;
+            if (cmdSize == 2) {
+                if (isDouble(commands[1], value)) {
+                    cmdStop(value);
+                } else {
+                    cmdReport("Invalid argument for stop command. Argument should be type double.", 3);
+                }
+            } else {
+                if (cmdSize == 1) {
+                    cmdReport("Stop command requires a time argument (double)", 3);
+                } else if (cmdSize > 2) {
+                    cmdReport("Too much arguments for stop command. It takes only a time argument (double)", 3);
+                }
+            }
+
+        } else {
+            cmdReport("Unknown command: " + line, 4);
+        }
     }
 }
 
@@ -187,4 +277,10 @@ void AdminConsole::cmdStop(double waitTime) {
 
         cmdReport("Server stopped. Press ENTER to exit", 1);
     }).detach();
+}
+
+bool AdminConsole::isDouble(const std::string& s, double& d) {
+    std::istringstream iss(s);
+    iss >> d;
+    return iss.eof() && !iss.fail();
 }
