@@ -9,8 +9,10 @@
 
 #include <string>
 #include <vector>
+#include <array> 
 #include <deque>
 
+#define COMMAND_COUNT 2
 
 class AdminConsole {
 public:
@@ -22,7 +24,9 @@ public:
     static bool isRunning;
 
 private:
-    static std::vector<std::string> commands;
+    static std::array<std::string, COMMAND_COUNT> commands;
+    static std::array<std::vector<std::string>, COMMAND_COUNT> secParam;
+
     static WINDOW* logWindow;
     static WINDOW* separatorWindow;
     static WINDOW* commandWindow;
