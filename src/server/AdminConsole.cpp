@@ -10,7 +10,8 @@
 
 
 bool AdminConsole::isRunning = true;
-std::vector<std::string> AdminConsole::commands;
+std::array<std::string, COMMAND_COUNT> AdminConsole::commands;
+std::array<std::vector<std::string>, COMMAND_COUNT> AdminConsole::secParam;
 WINDOW* AdminConsole::logWindow = nullptr;
 WINDOW* AdminConsole::separatorWindow = nullptr;
 WINDOW* AdminConsole::commandWindow = nullptr;
@@ -60,7 +61,11 @@ void AdminConsole::initWindows() {
 }
 
 void AdminConsole::addCommands() {
-    commands.push_back("stop");
+    commands[0]="stop";
+    commands[1]="config";
+
+    secParam[0] = {};
+    secParam[1] = {"dbname", "dbuser", "dbpassword", "dbhostaddr", "dbport", "serverPort", "loginAttempts", "logLevel", "maxLogBufferSize", "commandPrefix", "commandWindowHeight"};
 }
 
 std::string AdminConsole::readLine() {
@@ -75,18 +80,44 @@ std::string AdminConsole::readLine() {
         if (ch == '\t') {
             std::string currentInput(line);
             std::vector<std::string> matches;
+            size_t spacePos = currentInput.find(' ');
+            int commandIndex = -1;
 
-            // Find all commands that start with the current input
-            for (const auto& cmd : commands) {
-                if (cmd.find(currentInput) == 0) {
-                    matches.push_back(cmd);
+            if (spacePos != std::string::npos) {
+                std::string baseCommand = currentInput.substr(0, spacePos);
+                std::string additionalParam = currentInput.substr(spacePos + 1);
+
+                // Find the index of the base command
+                for (size_t i = 0; i < commands.size(); ++i) {
+                    if (commands[i] == baseCommand) {
+                        commandIndex = i;
+                        break;
+                    }
+                }
+
+                if (commandIndex != -1) {
+                    for (const auto& param : secParam[commandIndex]) {
+                        if (param.find(additionalParam) == 0) {
+                            matches.push_back(param);
+                        }
+                    }
+                } else {
+                    continue;
+                }
+
+            } else {
+                // Find all commands that start with the current input
+                for (const auto& cmd : commands) {
+                    if (cmd.find(currentInput) == 0) {
+                        matches.push_back(cmd);
+                    }
                 }
             }
 
             if (!matches.empty()) {
                 // If there is only one match, complete the command
                 if (matches.size() == 1) {
-                    strncpy(line, matches[0].c_str(), sizeof(line) - 1);
+                    strncpy(line, (((spacePos != std::string::npos && commandIndex != -1) ? commands[commandIndex] + ' ' : "") + matches[0] + ' ').c_str(), sizeof(line) - 1);
                     pos = strlen(line);
                 } else {
                     // Find the common prefix of all matches
@@ -101,7 +132,7 @@ std::string AdminConsole::readLine() {
                     }
                     
                     // Copy the common prefix to the input line
-                    strncpy(line, commonPrefix.c_str(), sizeof(line) - 1);
+                    strncpy(line, (((spacePos != std::string::npos && commandIndex != -1) ? commands[commandIndex] + ' ' : "") + commonPrefix).c_str(), sizeof(line) - 1);
                     pos = strlen(line);
                 }
             }
