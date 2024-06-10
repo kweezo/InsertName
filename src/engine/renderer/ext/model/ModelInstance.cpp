@@ -20,6 +20,7 @@ void ModelInstance::Free(ModelInstanceHandle handle){
 
 void ModelInstanceImpl::Update(){
 //v2, v3
+//TODO: clean this shit up somehow
 
     bufferDescriptions.bindingDescriptions.push_back({0, sizeof(glm::vec3), VK_VERTEX_INPUT_RATE_VERTEX});
     bufferDescriptions.attributeDescriptions.push_back({0, 0, VK_FORMAT_R32G32B32_SFLOAT, 0});
@@ -69,6 +70,9 @@ void ModelInstanceImpl::Cleanup(){
     }
     for(auto& [modelHandle, staticModelInstanceDat] : staticModelInstanceMap){
         staticModelInstanceDat.instanceBuffer.~DataBuffer();
+    }
+    for(auto& [shader, pipeline] : staticModelPipelines){
+        pipeline.~GraphicsPipeline();
     }
 }
 

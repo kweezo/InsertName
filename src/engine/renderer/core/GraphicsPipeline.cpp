@@ -270,7 +270,7 @@ GraphicsPipeline::GraphicsPipeline(const GraphicsPipeline& other){
     renderPass = other.renderPass;
     useCount = other.useCount;
     framebuffers = other.framebuffers;
-    *useCount++;
+    *useCount += 1;
 }
 
 GraphicsPipeline GraphicsPipeline::operator=(const GraphicsPipeline& other){
@@ -283,7 +283,7 @@ GraphicsPipeline GraphicsPipeline::operator=(const GraphicsPipeline& other){
     renderPass = other.renderPass;
     useCount = other.useCount;
     framebuffers = other.framebuffers;
-    *useCount++;
+    *useCount += 1;
     return *this;
 }
 
@@ -293,9 +293,10 @@ GraphicsPipeline::~GraphicsPipeline(){
             vkDestroyPipelineLayout(Device::GetDevice(), pipelineLayout, nullptr);
             vkDestroyPipeline(Device::GetDevice(), pipeline, nullptr);
         }
+        delete useCount;
     }
     else{
-        *useCount--;
+        *useCount -= 1;
     }
 }
 

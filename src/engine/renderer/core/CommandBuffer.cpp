@@ -3,7 +3,7 @@ namespace renderer{
 
 CommandBuffer::CommandBuffer(): commandBuffer(VK_NULL_HANDLE) {
     useCount = new uint32_t;
-    useCount[0] = 1;
+    *useCount = 1;
     flags = 0;
 }
 
@@ -20,7 +20,7 @@ CommandBuffer::CommandBuffer(VkCommandBufferLevel level, uint32_t flags){
     }
 
     useCount = new uint32_t;
-    useCount[0] = 1;
+    *useCount = 1;
 
     this->flags = flags;
     this->level = level;
@@ -70,7 +70,7 @@ CommandBuffer::CommandBuffer(const CommandBuffer& other){
     commandBuffer = other.commandBuffer;
     useCount = other.useCount;
     flags = other.flags;
-    useCount[0]++;
+    *useCount += 1;
 }
 
 CommandBuffer CommandBuffer::operator=(const CommandBuffer& other) {
@@ -81,12 +81,12 @@ CommandBuffer CommandBuffer::operator=(const CommandBuffer& other) {
     commandBuffer = other.commandBuffer;
     useCount = other.useCount;
     flags = other.flags;
-    useCount[0]++;
+    *useCount += 1;
     return *this;
 }
 
 CommandBuffer::~CommandBuffer(){
-    if(useCount[0] <= 1){
+    if(*useCount <= 1){
         if((flags & COMMAND_BUFFER_GRAPHICS_FLAG) == COMMAND_BUFFER_GRAPHICS_FLAG){
             vkFreeCommandBuffers(Device::GetDevice(), CommandPool::GetGraphicsCommandPool(), 1, &commandBuffer);
         }else{
@@ -95,7 +95,7 @@ CommandBuffer::~CommandBuffer(){
         delete useCount;
     }
     else{
-        useCount[0]--;
+        *useCount -= 1;
     }
 }
 

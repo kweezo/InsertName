@@ -342,7 +342,7 @@ DataBuffer::DataBuffer(const DataBuffer& other){
     useCount = other.useCount;
     transferToLocalDevMem = other.transferToLocalDevMem;
     stagingBufferKey = other.stagingBufferKey;
-    *useCount++;
+    *useCount += 1;
 }
 
 DataBuffer DataBuffer::operator=(const DataBuffer& other){
@@ -357,13 +357,13 @@ DataBuffer DataBuffer::operator=(const DataBuffer& other){
     useCount = other.useCount;
     transferToLocalDevMem = other.transferToLocalDevMem;
     stagingBufferKey = other.stagingBufferKey;
-    *useCount++;
+    *useCount += 1;
 
     return *this;
 }
 
 DataBuffer::~DataBuffer(){
-    *useCount--;
+    *useCount -= 1;
     if(*useCount == 0){
         vkDestroyBuffer(Device::GetDevice(), buff, nullptr);
         vkFreeMemory(Device::GetDevice(), mem, nullptr);
