@@ -5,12 +5,12 @@ namespace renderer{
 VkRenderPass GraphicsPipeline::renderPass = {};
 std::vector <VkFramebuffer> GraphicsPipeline::framebuffers = {};
 
-GraphicsPipeline::GraphicsPipeline(){
+GraphicsPipeline::GraphicsPipeline(): pipeline(VK_NULL_HANDLE){
     useCount = new uint32_t;
     *useCount = 1;
 }
 
-
+//TODO: CLEAN THIS UP
 void GraphicsPipeline::Init(){
     VkSubpassDescription subpass{};
 
@@ -207,11 +207,8 @@ GraphicsPipeline::GraphicsPipeline(ShaderImpl& shader, BufferDescriptions& buffD
         throw std::runtime_error("Failed to create graphics pipeline");
     }
 
-
-
-
     useCount = new uint32_t;
-    useCount[0] = 1;
+    *useCount = 1;
 }
 
 void GraphicsPipeline::BeginRenderPassAndBindPipeline(uint32_t imageIndex, VkCommandBuffer commandBuffer){
@@ -273,7 +270,7 @@ GraphicsPipeline::GraphicsPipeline(const GraphicsPipeline& other){
     renderPass = other.renderPass;
     useCount = other.useCount;
     framebuffers = other.framebuffers;
-    useCount[0]++;
+    *useCount++;
 }
 
 GraphicsPipeline GraphicsPipeline::operator=(const GraphicsPipeline& other){
@@ -286,18 +283,19 @@ GraphicsPipeline GraphicsPipeline::operator=(const GraphicsPipeline& other){
     renderPass = other.renderPass;
     useCount = other.useCount;
     framebuffers = other.framebuffers;
-    useCount[0]++;
+    *useCount++;
     return *this;
 }
 
 GraphicsPipeline::~GraphicsPipeline(){
-    if(useCount[0] == 1){
-        vkDestroyPipeline(Device::GetDevice(), pipeline, nullptr);
-        vkDestroyPipelineLayout(Device::GetDevice(), pipelineLayout, nullptr);
-        delete useCount;
+    if(*useCount == 1){
+        if(pipeline != VK_NULL_HANDLE){
+            vkDestroyPipelineLayout(Device::GetDevice(), pipelineLayout, nullptr);
+            vkDestroyPipeline(Device::GetDevice(), pipeline, nullptr);
+        }
     }
     else{
-        useCount[0]--;
+        *useCount--;
     }
 }
 

@@ -9,13 +9,13 @@ bool DataBuffer::createdStagingBuffers = false;
 CommandBuffer DataBuffer::commandBuffer = CommandBuffer();
 Fence DataBuffer::finishedCopyingFence = Fence();
 
-DataBuffer::DataBuffer(){
+DataBuffer::DataBuffer(): stagingBufferKey(0){
     useCount = new uint32_t;
     *useCount = 1;
 }
 
 DataBuffer::DataBuffer(BufferDescriptions bufferDescriptions, size_t size,
- void* data, bool transferToLocalDevMem, uint32_t flags){
+ void* data, bool transferToLocalDevMem, uint32_t flags): stagingBufferKey(0){
 
     if(!createdStagingBuffers){
         CreateStagingBuffers();
@@ -72,7 +72,7 @@ DataBuffer::DataBuffer(BufferDescriptions bufferDescriptions, size_t size,
     descriptions = bufferDescriptions;
 
     useCount = new uint32_t;
-    useCount[0] = 1;
+    *useCount = 1;
 
     this->size = size;
     this->transferToLocalDevMem = transferToLocalDevMem;
@@ -342,7 +342,7 @@ DataBuffer::DataBuffer(const DataBuffer& other){
     useCount = other.useCount;
     transferToLocalDevMem = other.transferToLocalDevMem;
     stagingBufferKey = other.stagingBufferKey;
-    useCount[0]++;
+    *useCount++;
 }
 
 DataBuffer DataBuffer::operator=(const DataBuffer& other){
@@ -357,21 +357,21 @@ DataBuffer DataBuffer::operator=(const DataBuffer& other){
     useCount = other.useCount;
     transferToLocalDevMem = other.transferToLocalDevMem;
     stagingBufferKey = other.stagingBufferKey;
-    useCount[0]++;
+    *useCount++;
 
     return *this;
 }
 
 DataBuffer::~DataBuffer(){
-    useCount[0]--;
-    if(useCount[0] == 0){
+    *useCount--;
+    if(*useCount == 0){
         vkDestroyBuffer(Device::GetDevice(), buff, nullptr);
         vkFreeMemory(Device::GetDevice(), mem, nullptr);
         if(stagingBuffers.find(stagingBufferKey) != stagingBuffers.end()){
             StagingBufferCopyCMDInfo& stagingBuffer = stagingBuffers[stagingBufferKey];
             if(!stagingBuffer.free){
-                vkDestroyBuffer(Device::GetDevice(), stagingBuffer.buffer, nullptr);
                 vkFreeMemory(Device::GetDevice(), stagingBuffer.bufferMemory, nullptr);
+                vkDestroyBuffer(Device::GetDevice(), stagingBuffer.buffer, nullptr);
                 stagingBuffers[stagingBufferKey].free = true;
             }
         }

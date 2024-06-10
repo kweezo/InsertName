@@ -17,8 +17,8 @@ namespace renderer{
 class GraphicsPipeline{
 public:
 
-static void Init();
-static void Cleanup();
+    static void Init();
+    static void Cleanup();
 
     GraphicsPipeline();
     GraphicsPipeline(ShaderImpl& shader, BufferDescriptions& bufferDescriptions);
