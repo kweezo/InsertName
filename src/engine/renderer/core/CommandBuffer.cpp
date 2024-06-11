@@ -86,13 +86,18 @@ CommandBuffer CommandBuffer::operator=(const CommandBuffer& other) {
 }
 
 CommandBuffer::~CommandBuffer(){
-    if(*useCount <= 1){
-        if((flags & COMMAND_BUFFER_GRAPHICS_FLAG) == COMMAND_BUFFER_GRAPHICS_FLAG){
-            vkFreeCommandBuffers(Device::GetDevice(), CommandPool::GetGraphicsCommandPool(), 1, &commandBuffer);
-        }else{
+    if(useCount == nullptr){
+        return;
+    }
+
+    if(*useCount == 1){
+            if((flags & COMMAND_BUFFER_GRAPHICS_FLAG) == COMMAND_BUFFER_GRAPHICS_FLAG){
+                vkFreeCommandBuffers(Device::GetDevice(), CommandPool::GetGraphicsCommandPool(), 1, &commandBuffer);
+            }else{
                 vkFreeCommandBuffers(Device::GetDevice(), CommandPool::GetTransferCommandPool(), 1, &commandBuffer);
-        }
+            }
         delete useCount;
+        useCount = nullptr;
     }
     else{
         *useCount -= 1;

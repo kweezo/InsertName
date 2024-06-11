@@ -10,8 +10,11 @@ GraphicsPipeline::GraphicsPipeline(): pipeline(VK_NULL_HANDLE){
     *useCount = 1;
 }
 
-//TODO: CLEAN THIS UP
 void GraphicsPipeline::Init(){
+    CreateRenderPass();
+    CreateFramebuffers();
+}
+void GraphicsPipeline::CreateRenderPass(){
     VkSubpassDescription subpass{};
 
     VkAttachmentReference colorAttachmentRef{};
@@ -72,7 +75,8 @@ void GraphicsPipeline::Init(){
     if(vkCreateRenderPass(Device::GetDevice(), &renderPassInfo, nullptr, &renderPass) != VK_SUCCESS){
         throw std::runtime_error("Failed to create render pass");
     }
-
+}
+void GraphicsPipeline::CreateFramebuffers(){
     std::vector<VkImageView> swapchainImageViews = Swapchain::GetSwapchainImageViews();
 
     framebuffers.resize(swapchainImageViews.size());
@@ -102,7 +106,6 @@ void GraphicsPipeline::Init(){
             throw std::runtime_error("Failed to create framebuffer");
         }
     }
-
 }
 
 void GraphicsPipeline::Cleanup(){

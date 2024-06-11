@@ -2,9 +2,9 @@
 
 namespace renderer{
 
-Fence::Fence(){
+Fence::Fence(): fence(VK_NULL_HANDLE){
     useCount = new uint32_t;
-    useCount[0] = 1;
+    *useCount = 1;
 }
 
 Fence::Fence(bool signaled){
@@ -17,7 +17,7 @@ Fence::Fence(bool signaled){
     }
 
     useCount = new uint32_t;
-    useCount[0] = 1;
+    *useCount = 1;
 }
 
 VkFence Fence::GetFence(){
@@ -27,7 +27,7 @@ VkFence Fence::GetFence(){
 Fence::Fence(const Fence& other){
     fence = other.fence;
     useCount = other.useCount;
-    useCount[0]++;
+    *useCount += 1;
 }
 
 Fence& Fence::operator=(const Fence& other){
@@ -37,16 +37,24 @@ Fence& Fence::operator=(const Fence& other){
 
     fence = other.fence;
     useCount = other.useCount;
-    useCount[0]++;
+    *useCount += 1;
+
     return *this;
 }
 
 Fence::~Fence(){
-    if(useCount[0] <= 1){
-        vkDestroyFence(Device::GetDevice(), fence, nullptr);
+    if(useCount == nullptr){
+        return;
+    }
+
+    if(*useCount == 1){
+        if(fence != VK_NULL_HANDLE){
+            vkDestroyFence(Device::GetDevice(), fence, nullptr);
+        }
         delete useCount;
+        useCount = nullptr;
     }else{
-        useCount[0]--;
+        *useCount -= 1;
     }
 }
 

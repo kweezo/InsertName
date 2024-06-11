@@ -35,6 +35,9 @@ public:
     VkRenderPass GetRenderPass();
     VkFramebuffer GetFramebuffer(uint32_t index);
 private:
+    static void CreateRenderPass();
+    static void CreateFramebuffers();
+
     VkPipeline pipeline;
     VkPipelineLayout pipelineLayout;
     static VkRenderPass renderPass;

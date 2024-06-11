@@ -35,7 +35,7 @@ typedef struct StaticModelInstanceData{
 
 class StaticModelInstance{
 public:
-    static void UpdateStaticInstances();
+    static void Update();
     static void DrawStatic(uint32_t imageIndex);
 
 protected:
@@ -49,7 +49,7 @@ protected:
 
 
     static std::unordered_map<ModelHandle, StaticModelInstanceData> staticModelInstanceMap;
-    static BufferDescriptions bufferDescriptions;
+    const static BufferDescriptions baseStaticInstanceDescriptions;
 
     static std::vector<CommandBuffer> staticInstancesCommandBuffers;
     static std::vector<RenderSemaphores> staticInstancesSemaphores;

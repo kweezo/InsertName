@@ -363,8 +363,11 @@ DataBuffer DataBuffer::operator=(const DataBuffer& other){
 }
 
 DataBuffer::~DataBuffer(){
-    *useCount -= 1;
-    if(*useCount == 0){
+    if(useCount == nullptr){
+        return;
+    }
+
+    if(*useCount == 1){
         vkDestroyBuffer(Device::GetDevice(), buff, nullptr);
         vkFreeMemory(Device::GetDevice(), mem, nullptr);
         if(stagingBuffers.find(stagingBufferKey) != stagingBuffers.end()){
@@ -376,6 +379,10 @@ DataBuffer::~DataBuffer(){
             }
         }
         delete useCount;
+        useCount = nullptr;
+    }
+    else{
+        *useCount -= 1;
     }
 }
 

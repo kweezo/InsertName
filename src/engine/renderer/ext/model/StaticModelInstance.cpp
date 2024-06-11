@@ -5,13 +5,29 @@ namespace renderer{
 
 std::unordered_map<ModelHandle, StaticModelInstanceData> StaticModelInstance::staticModelInstanceMap = {};
 std::unordered_map<ShaderHandle, GraphicsPipeline> StaticModelInstance::staticModelPipelines = {};
-BufferDescriptions StaticModelInstance::bufferDescriptions = {};
 std::vector<CommandBuffer> StaticModelInstance::staticInstancesCommandBuffers = {};
 std::vector<RenderSemaphores> StaticModelInstance::staticInstancesSemaphores = {};
 
 
+const BufferDescriptions StaticModelInstance::baseStaticInstanceDescriptions = {{
+    {0, 0, VK_FORMAT_R32G32B32_SFLOAT, 0},
+    {1, 1, VK_FORMAT_R32G32B32A32_SFLOAT, 0},
+    {2, 1, VK_FORMAT_R32G32B32A32_SFLOAT, sizeof(glm::vec4)},
+    {3, 1, VK_FORMAT_R32G32B32A32_SFLOAT, 2 * sizeof(glm::vec4)},
+    {4, 1, VK_FORMAT_R32G32B32A32_SFLOAT, 3 * sizeof(glm::vec4)},
+    {5, 2, VK_FORMAT_R32G32_SFLOAT, 0},
+    {6, 3, VK_FORMAT_R32G32B32_SFLOAT, 0},
+},
+{
+    {0, sizeof(glm::vec3), VK_VERTEX_INPUT_RATE_VERTEX},
+    {1, sizeof(glm::mat4), VK_VERTEX_INPUT_RATE_INSTANCE},
+    {2, sizeof(glm::vec2), VK_VERTEX_INPUT_RATE_VERTEX},
+    {3, sizeof(glm::vec3), VK_VERTEX_INPUT_RATE_VERTEX},
+}
+};
 
-void StaticModelInstance::UpdateStaticInstances(){
+
+void StaticModelInstance::Update(){
         if (staticInstancesCommandBuffers.empty()){
             staticInstancesCommandBuffers.resize(MAX_FRAMES_IN_FLIGHT);
             staticInstancesSemaphores.resize(MAX_FRAMES_IN_FLIGHT);
@@ -76,17 +92,17 @@ void StaticModelInstance::RecordStaticCommandBuffer(StaticModelInstanceData& ins
     }
 
     
-    BufferDescriptions instanceDescriptions;
-    instanceDescriptions.attributeDescriptions.insert(instanceDescriptions.attributeDescriptions.end(), bufferDescriptions.attributeDescriptions.begin()
-    + static_cast<std::vector<double>::difference_type>(1), bufferDescriptions.attributeDescriptions.end());
-    instanceDescriptions.bindingDescriptions.insert(instanceDescriptions.bindingDescriptions.end(), bufferDescriptions.bindingDescriptions.begin()
-    + static_cast<std::vector<double>::difference_type>(1), bufferDescriptions.bindingDescriptions.end());
+    BufferDescriptions allDescriptions;
+    allDescriptions.attributeDescriptions.insert(allDescriptions.attributeDescriptions.end(), baseStaticInstanceDescriptions.attributeDescriptions.begin()
+    + static_cast<std::vector<double>::difference_type>(1), baseStaticInstanceDescriptions.attributeDescriptions.end());
+    allDescriptions.bindingDescriptions.insert(allDescriptions.bindingDescriptions.end(), baseStaticInstanceDescriptions.bindingDescriptions.begin()
+    + static_cast<std::vector<double>::difference_type>(1), baseStaticInstanceDescriptions.bindingDescriptions.end());
 
     if(staticModelPipelines.find(instances.shader) == staticModelPipelines.end()){
-        staticModelPipelines[instances.shader] = GraphicsPipeline(*instances.shader, instanceDescriptions);
+        staticModelPipelines[instances.shader] = GraphicsPipeline(*instances.shader, allDescriptions);
     }
 
-    instances.instanceBuffer = DataBuffer(bufferDescriptions, instanceModels.size() * sizeof(glm::mat4), instanceModels.data(), true,
+    instances.instanceBuffer = DataBuffer(baseStaticInstanceDescriptions, instanceModels.size() * sizeof(glm::mat4), instanceModels.data(), true,
      DATA_BUFFER_VERTEX_BIT);
 
     if(instances.commandBuffer.empty()){

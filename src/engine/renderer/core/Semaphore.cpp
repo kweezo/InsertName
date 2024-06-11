@@ -4,7 +4,7 @@ namespace renderer{
 
 Semaphore::Semaphore(){
     VkSemaphoreCreateInfo fenceInfo = {};
-    fenceInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
+    fenceInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
 
     if(vkCreateSemaphore(Device::GetDevice(), &fenceInfo, nullptr, &fence) != VK_SUCCESS){
         throw std::runtime_error("Failed to create fence");
