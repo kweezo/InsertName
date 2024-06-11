@@ -40,6 +40,10 @@ void CommandBuffer::BeginCommandBuffer(VkCommandBufferInheritanceInfo* inheritan
 //it is a minor inconvenience but one that will probably be mentioned in my suicide note lol
 //so done with this typa bullshit
 
+    if(commandBuffer == VK_NULL_HANDLE){
+        throw std::runtime_error("Tried to begin the recording of an uninitialized command buffer, aborting (commandBuffer = VK_NULL_HANDLE)");
+    }
+
     vkResetCommandBuffer(commandBuffer, 0);
 
     VkCommandBufferBeginInfo beginInfo = {};

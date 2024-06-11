@@ -32,6 +32,7 @@ ModelInstanceImpl::ModelInstanceImpl(ModelHandle model, Transform transform, boo
 
     if(isStatic){
         staticModelInstanceMap[model].instanceList.push_back(this);
+        staticModelInstanceMap[model].model = model;
     }
 
     shouldDraw = true;

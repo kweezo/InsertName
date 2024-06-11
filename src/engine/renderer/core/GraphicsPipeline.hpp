@@ -21,7 +21,7 @@ public:
     static void Cleanup();
 
     GraphicsPipeline();
-    GraphicsPipeline(ShaderImpl& shader, BufferDescriptions& bufferDescriptions);
+    GraphicsPipeline(ShaderHandle shader, BufferDescriptions& bufferDescriptions);
     
     ~GraphicsPipeline();
 

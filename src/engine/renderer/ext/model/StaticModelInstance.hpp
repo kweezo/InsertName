@@ -26,10 +26,10 @@ class StaticModelInstance;
 
 typedef struct StaticModelInstanceData{
     ModelHandle model;
-    ShaderHandle shader;
+    DataBuffer instanceBuffer;
+
     std::vector<CommandBuffer> commandBuffer;
     std::vector<StaticModelInstance*> instanceList;
-    DataBuffer instanceBuffer;
 } StaticModelInstanceData;
 
 

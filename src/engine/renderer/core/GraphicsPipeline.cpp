@@ -115,7 +115,7 @@ void GraphicsPipeline::Cleanup(){
     }
 }
 
-GraphicsPipeline::GraphicsPipeline(ShaderImpl& shader, BufferDescriptions& buffDescription){
+GraphicsPipeline::GraphicsPipeline(ShaderHandle shader, BufferDescriptions& buffDescription){
     std::vector<VkDynamicState> dynamicStates = {VK_DYNAMIC_STATE_VIEWPORT, VK_DYNAMIC_STATE_SCISSOR};
 
     //its a clusterfuck that HAS to exist, may god have mercy on us all
@@ -192,7 +192,7 @@ GraphicsPipeline::GraphicsPipeline(ShaderImpl& shader, BufferDescriptions& buffD
     VkGraphicsPipelineCreateInfo pipelineInfo{};
     pipelineInfo.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
     pipelineInfo.stageCount = 2;
-    pipelineInfo.pStages = shader.GetShaderStageCreateInfo().data();
+    pipelineInfo.pStages = shader->GetShaderStageCreateInfo().data();
     pipelineInfo.pVertexInputState = &vertexInputInfo;
     pipelineInfo.pInputAssemblyState = &inputAssembly;
     pipelineInfo.pViewportState = &viewportState;

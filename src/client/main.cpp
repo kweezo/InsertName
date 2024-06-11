@@ -170,7 +170,7 @@ int main(){
     UniformBufferHandle uniformBuffer = UniformBuffer::Create(reinterpret_cast<void*>(&modelDat), sizeof(modelDat), 0,
     shader->GetDescriptorSet()); 
 
-    GraphicsPipeline pipeline = GraphicsPipeline(*shader, buffDescription);
+    GraphicsPipeline pipeline = GraphicsPipeline(shader, buffDescription);
 
     CommandBuffer buffer = CommandBuffer(VK_COMMAND_BUFFER_LEVEL_PRIMARY, COMMAND_BUFFER_GRAPHICS_FLAG);
 
@@ -279,7 +279,7 @@ int main(){
 
         Renderer::RenderFrame();
 
-        imageIndex = (imageIndex + 1) % Swapchain::GetImageCount(); 
+        imageIndex = (imageIndex + 1) % std::min((uint32_t)MAX_FRAMES_IN_FLIGHT, Swapchain::GetImageCount());
     }
 
 

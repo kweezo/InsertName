@@ -42,7 +42,7 @@ void StaticModelInstance::Update(){
     std::vector<std::thread> threads;
 
     for(auto& [buff, instances] : staticModelInstanceMap){
-        for(uint32_t i = 0; MAX_FRAMES_IN_FLIGHT; i++){
+        for(uint32_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++){
             threads.push_back(std::thread(&RecordStaticCommandBuffer, std::ref(instances), i));
             threads.back().detach();
         }
@@ -54,13 +54,20 @@ void StaticModelInstance::Update(){
             threads.erase(threads.begin() + i);
             i--;
         }
-    }
+    } 
+   
 
-    for(uint32_t i = 0; i < Swapchain::GetImageCount(); i++){
+    for(uint32_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++){
         std::unordered_map<ShaderHandle, std::vector<VkCommandBuffer>> secondaryBuffers;
         
         for(auto& [buff, instances] : staticModelInstanceMap){
-            secondaryBuffers[instances.shader].push_back(instances.commandBuffer[i].GetCommandBuffer());
+            if(instances.commandBuffer.empty()){
+                instances.commandBuffer.resize(MAX_FRAMES_IN_FLIGHT);
+                for(uint32_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++){
+                    instances.commandBuffer[i] = CommandBuffer(VK_COMMAND_BUFFER_LEVEL_SECONDARY, COMMAND_BUFFER_GRAPHICS_FLAG);
+                }
+            }
+            secondaryBuffers[instances.model->GetShader()].push_back(instances.commandBuffer[i].GetCommandBuffer());
         }
 
         staticInstancesCommandBuffers[i].BeginCommandBuffer(nullptr);
@@ -85,36 +92,34 @@ void StaticModelInstance::RecordStaticCommandBuffer(StaticModelInstanceData& ins
 
     std::vector<glm::mat4> instanceModels(drawCount);
 
+    uint32_t i = 0;
     for(StaticModelInstance* instance : instances.instanceList){
         if(instance->GetShouldDraw()){
-            instanceModels.push_back(instance->GetModelMatrix());
+            instanceModels[i] = instance->GetModelMatrix();
+            i++;
         }
     }
 
     
     BufferDescriptions allDescriptions;
-    allDescriptions.attributeDescriptions.insert(allDescriptions.attributeDescriptions.end(), baseStaticInstanceDescriptions.attributeDescriptions.begin()
-    + static_cast<std::vector<double>::difference_type>(1), baseStaticInstanceDescriptions.attributeDescriptions.end());
-    allDescriptions.bindingDescriptions.insert(allDescriptions.bindingDescriptions.end(), baseStaticInstanceDescriptions.bindingDescriptions.begin()
-    + static_cast<std::vector<double>::difference_type>(1), baseStaticInstanceDescriptions.bindingDescriptions.end());
+    allDescriptions.attributeDescriptions.insert(allDescriptions.attributeDescriptions.end(), baseStaticInstanceDescriptions.attributeDescriptions.begin(),
+     baseStaticInstanceDescriptions.attributeDescriptions.end());
+    allDescriptions.bindingDescriptions.insert(allDescriptions.bindingDescriptions.end(), baseStaticInstanceDescriptions.bindingDescriptions.begin(),
+     baseStaticInstanceDescriptions.bindingDescriptions.end());
 
-    if(staticModelPipelines.find(instances.shader) == staticModelPipelines.end()){
-        staticModelPipelines[instances.shader] = GraphicsPipeline(*instances.shader, allDescriptions);
+    if(staticModelPipelines.find(instances.model->GetShader()) == staticModelPipelines.end()){
+        staticModelPipelines[instances.model->GetShader()] = GraphicsPipeline(instances.model->GetShader(), allDescriptions);
     }
 
     instances.instanceBuffer = DataBuffer(baseStaticInstanceDescriptions, instanceModels.size() * sizeof(glm::mat4), instanceModels.data(), true,
      DATA_BUFFER_VERTEX_BIT);
 
-    if(instances.commandBuffer.empty()){
-        for(uint32_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++){
-            instances.commandBuffer[i] = CommandBuffer(VK_COMMAND_BUFFER_LEVEL_SECONDARY, COMMAND_BUFFER_GRAPHICS_FLAG);
-        }
-    }
+
 
     VkCommandBufferInheritanceInfo inheritanceInfo{};
     inheritanceInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_INFO;
-    inheritanceInfo.renderPass = staticModelPipelines[instances.shader].GetRenderPass();
-    inheritanceInfo.framebuffer = staticModelPipelines[instances.shader].GetFramebuffer(imageIndex);
+    inheritanceInfo.renderPass = staticModelPipelines[instances.model->GetShader()].GetRenderPass();
+    inheritanceInfo.framebuffer = staticModelPipelines[instances.model->GetShader()].GetFramebuffer(imageIndex);
 
     instances.commandBuffer[imageIndex].BeginCommandBuffer(&inheritanceInfo);
         
