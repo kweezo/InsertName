@@ -40,6 +40,9 @@ ModelInstanceImpl::ModelInstanceImpl(ModelHandle model, Transform transform, boo
 
 void ModelInstanceImpl::Cleanup(){
     staticModelPipelines.clear();
+    for(auto& [modelHandle, instanceDat] : staticModelInstanceMap){
+        instanceDat.instanceBuffer.~DataBuffer();
+    }
     staticModelInstanceMap.clear();
 }
 

@@ -54,8 +54,6 @@ public:
 private:
     bool shouldDraw;
     glm::mat4 model; 
-
-
 };
 
 }

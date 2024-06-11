@@ -85,7 +85,7 @@ void StaticModelInstance::Update(){
 
 
 void StaticModelInstance::RecordStaticCommandBuffer(StaticModelInstanceData& instances, uint32_t imageIndex){
-    uint32_t drawCount;
+    uint32_t drawCount = 0;
     for(StaticModelInstance* instance : instances.instanceList){
         drawCount += instance->GetShouldDraw();
     }
