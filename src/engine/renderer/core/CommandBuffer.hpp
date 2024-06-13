@@ -4,6 +4,7 @@
 
 #include <stdexcept>
 #include <memory>
+#include <thread>
 
 #include <vulkan/vulkan.h>
 

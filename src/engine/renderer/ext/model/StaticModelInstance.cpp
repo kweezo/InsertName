@@ -73,7 +73,7 @@ void StaticModelInstance::Update(){
         staticInstancesCommandBuffers[i].BeginCommandBuffer(nullptr);
         for(auto& [shader, pipeline] : staticModelPipelines){
             pipeline.BeginRenderPassAndBindPipeline(i, staticInstancesCommandBuffers[i].GetCommandBuffer());
-
+//VK_COMMAND_BUFFER_USAGE_RENDER_PASS_CONTINUE_BIT for secondary and VK_SUBPASS_CONTENTS_SECONDARY_COMMAND_BUFFERS for primary!!!
             vkCmdExecuteCommands(staticInstancesCommandBuffers[i].GetCommandBuffer(), secondaryBuffers[shader].size(), secondaryBuffers[shader].data());
 
             pipeline.EndRenderPass(staticInstancesCommandBuffers[i].GetCommandBuffer());
@@ -111,8 +111,8 @@ void StaticModelInstance::RecordStaticCommandBuffer(StaticModelInstanceData& ins
         staticModelPipelines[instances.model->GetShader()] = GraphicsPipeline(instances.model->GetShader(), allDescriptions);
     }
 
-    instances.instanceBuffer = DataBuffer(baseStaticInstanceDescriptions, instanceModels.size() * sizeof(glm::mat4), instanceModels.data(), true,
-     DATA_BUFFER_VERTEX_BIT);
+ //   instances.instanceBuffer = DataBuffer(baseStaticInstanceDescriptions, instanceModels.size() * sizeof(glm::mat4), instanceModels.data(), true,
+ //    DATA_BUFFER_VERTEX_BIT);
 
 
 
