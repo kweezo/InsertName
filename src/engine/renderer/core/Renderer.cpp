@@ -10,7 +10,6 @@ void Renderer::HardInit(){
     Instance::CreateInstance();
     Device::CreateDevice();
     Window::CreateVulkanSurface();
-    CommandPool::CreateCommandPools();
     ImageImpl::Initialize();
     Camera::Init();
 }
@@ -34,7 +33,6 @@ void Renderer::DestroyRenderer(){
     DescriptorManager::Cleanup();
     DataBuffer::Cleanup();
     ImageImpl::Cleanup();
-    CommandPool::DestroyCommandPools();
     vkDestroySurfaceKHR(Instance::GetInstance(), Window::GetVulkanSurface(), nullptr);
     GraphicsPipeline::Cleanup();
     Device::DestroyDevice();
