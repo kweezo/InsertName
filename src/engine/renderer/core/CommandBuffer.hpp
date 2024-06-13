@@ -19,7 +19,7 @@ namespace renderer{
 class CommandBuffer{
 public:
     //You can ONLY pass the pipeline as nullptr if its a transfer command buffer
-    CommandBuffer(VkCommandBufferLevel level, uint32_t flags);
+    CommandBuffer(VkCommandBufferLevel level, uint32_t flags, uint32_t poolID);
     CommandBuffer();
     ~CommandBuffer();
 
@@ -36,6 +36,7 @@ private:
 
     VkCommandBufferLevel level;
     uint32_t flags;
+    uint32_t poolID;
 
     uint32_t* useCount;
 

@@ -3,10 +3,10 @@
 
 namespace renderer{
 
-std::unordered_map<std::thread::id, CommandPoolSet> CommandPool::commandPools = {};
+std::unordered_map<uint32_t, CommandPoolSet> CommandPool::commandPools = {};
 
-void CommandPool::CreateCommandPools(std::thread::id threadID){
-    CommandPoolSet& set = commandPools[threadID];
+void CommandPool::CreateCommandPools(uint32_t poolID){
+    CommandPoolSet& set = commandPools[poolID];
 
     VkCommandPoolCreateInfo poolInfo = {};
     poolInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
@@ -28,31 +28,31 @@ void CommandPool::CreateCommandPools(std::thread::id threadID){
     }
 }
 
-VkCommandPool CommandPool::GetGraphicsCommandPool(std::thread::id threadID){
-    if(commandPools.find(threadID) == commandPools.end()){
-        CreateCommandPools(threadID);
+VkCommandPool CommandPool::GetGraphicsCommandPool(uint32_t poolID){
+    if(commandPools.find(poolID) == commandPools.end()){
+        CreateCommandPools(poolID);
     }
-    CommandPoolSet& set = commandPools[threadID];
+    CommandPoolSet& set = commandPools[poolID];
     set.commandBufferCount++;
     return set.graphicsCommandPool;
 }
 
-VkCommandPool CommandPool::GetTransferCommandPool(std::thread::id threadID){
-    if(commandPools.find(threadID) == commandPools.end()){
-        CreateCommandPools(threadID);
+VkCommandPool CommandPool::GetTransferCommandPool(uint32_t poolID){
+    if(commandPools.find(poolID) == commandPools.end()){
+        CreateCommandPools(poolID);
     }
-    CommandPoolSet& set = commandPools[threadID];
+    CommandPoolSet& set = commandPools[poolID];
     set.commandBufferCount++;
     return set.transferCommandPool;
 }
 
-void CommandPool::NotifyCommandBufferDestruction(std::thread::id threadID){
-    CommandPoolSet& set = commandPools[threadID];
+void CommandPool::NotifyCommandBufferDestruction(uint32_t poolID){
+    CommandPoolSet& set = commandPools[poolID];
     set.commandBufferCount--;
     if(!set.commandBufferCount){
         vkDestroyCommandPool(Device::GetDevice(), set.graphicsCommandPool, nullptr);
         vkDestroyCommandPool(Device::GetDevice(), set.transferCommandPool, nullptr);
-        commandPools.erase(threadID);
+        commandPools.erase(poolID);
     }
 }
 

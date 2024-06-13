@@ -8,6 +8,9 @@
 
 #include "Device.hpp"
 
+#define COMMAND_POOL_TYPE_GRAPHICS 0
+#define COMMAND_POOL_TYPE_TRANSFER 1
+
 namespace renderer{
 
 typedef struct CommandPoolSet{
@@ -18,15 +21,15 @@ typedef struct CommandPoolSet{
 
 class CommandPool{
 public:
-    static void CreateCommandPools(std::thread::id threadID);
+    static void CreateCommandPools(uint32_t poolID);
 
-    static VkCommandPool GetGraphicsCommandPool(std::thread::id threadID);
-    static VkCommandPool GetTransferCommandPool(std::thread::id threadID);
+    static VkCommandPool GetGraphicsCommandPool(uint32_t poolID);
+    static VkCommandPool GetTransferCommandPool(uint32_t poolID);
 
-    static void NotifyCommandBufferDestruction(std::thread::id threadID);
+    static void NotifyCommandBufferDestruction(uint32_t poolID);
 
 private:
-    static std::unordered_map<std::thread::id, CommandPoolSet> commandPools;
+    static std::unordered_map<uint32_t, CommandPoolSet> commandPools;
 };
 
 }
