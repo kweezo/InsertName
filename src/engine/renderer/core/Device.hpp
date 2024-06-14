@@ -36,6 +36,8 @@ public:
 
     static bool DeviceMemoryFree();
     static void SetDeviceMemoryFull();
+
+    static bool IsInitialized();
 private:
     static VkPhysicalDeviceFeatures GetAvailableDeviceFeatures();
 
@@ -51,6 +53,7 @@ private:
     static VkPhysicalDeviceProperties physicalDeviceProperties;
 
     static bool deviceMemoryFree;
+    static bool initialized;
 
     static QueueFamilyInfo queueFamilyInfo;
 

@@ -47,8 +47,7 @@ void CommandBuffer::BeginCommandBuffer(VkCommandBufferInheritanceInfo *inheritan
     // it is a minor inconvenience but one that will probably be mentioned in my suicide note lol
     // so done with this typa bullshit
 
-    if (commandBuffer == VK_NULL_HANDLE)
-    {
+    if (commandBuffer == VK_NULL_HANDLE){
         throw std::runtime_error("Tried to begin the recording of an uninitialized command buffer, aborting (commandBuffer = VK_NULL_HANDLE)");
     }
 
@@ -114,13 +113,11 @@ CommandBuffer::~CommandBuffer()
     {
         if ((flags & COMMAND_BUFFER_GRAPHICS_FLAG) == COMMAND_BUFFER_GRAPHICS_FLAG)
         {
-            CommandPool::NotifyCommandBufferDestruction(poolID);
-    //        vkFreeCommandBuffers(Device::GetDevice(), CommandPool::GetGraphicsCommandPool(std::this_thread::get_id()), 1, &commandBuffer);
+            CommandPool::FreeCommandBuffer(commandBuffer, poolID, COMMAND_POOL_TYPE_GRAPHICS);
         }
         else
         {
-            CommandPool::NotifyCommandBufferDestruction(poolID);
-            vkFreeCommandBuffers(Device::GetDevice(), CommandPool::GetTransferCommandPool(poolID), 1, &commandBuffer);
+            CommandPool::FreeCommandBuffer(commandBuffer, poolID, COMMAND_POOL_TYPE_TRANSFER);
         }
         delete useCount;
         useCount = nullptr;

@@ -20,7 +20,7 @@ DataBuffer::DataBuffer(BufferDescriptions bufferDescriptions, size_t size,
     if(!createdStagingBuffers){
         CreateStagingBuffers();
 
-        commandBuffer = CommandBuffer(VK_COMMAND_BUFFER_LEVEL_PRIMARY, COMMAND_BUFFER_TRANSFER_FLAG);
+        commandBuffer = CommandBuffer(VK_COMMAND_BUFFER_LEVEL_PRIMARY, COMMAND_BUFFER_TRANSFER_FLAG, 0); //TODO multithreading
 
         finishedCopyingFence = Fence(false);
     }
@@ -126,7 +126,7 @@ StagingBufferCopyCMDInfo DataBuffer::GetStagingBuffer(size_t size){
         if(!foundFreeBuff){
             StagingBufferCopyCMDInfo tmpStagingBuffer;
             tmpStagingBuffer.free = false;
-            tmpStagingBuffer.commandBuffer = CommandBuffer(VK_COMMAND_BUFFER_LEVEL_SECONDARY, COMMAND_BUFFER_TRANSFER_FLAG);
+            tmpStagingBuffer.commandBuffer = CommandBuffer(VK_COMMAND_BUFFER_LEVEL_SECONDARY, COMMAND_BUFFER_TRANSFER_FLAG, 0);
         
             CreateBuffer(tmpStagingBuffer.buffer, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, size);
             AllocateMemory(tmpStagingBuffer.bufferMemory, tmpStagingBuffer.buffer, size,
@@ -145,7 +145,7 @@ void DataBuffer::CreateStagingBuffers(){
         StagingBufferCopyCMDInfo stagingBuffer;
         stagingBuffer.free = true;
         stagingBuffer.commandBuffer = CommandBuffer(VK_COMMAND_BUFFER_LEVEL_SECONDARY,//one time usage
-         COMMAND_BUFFER_TRANSFER_FLAG);
+         COMMAND_BUFFER_TRANSFER_FLAG, 0);
         
         stagingBuffers[stagingBuffer.commandBuffer.GetCommandBuffer()] = stagingBuffer;
     }

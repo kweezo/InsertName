@@ -23,10 +23,9 @@ class CommandPool{
 public:
     static void CreateCommandPools(uint32_t poolID);
 
-    static VkCommandPool GetGraphicsCommandPool(uint32_t poolID);
+    static void FreeCommandBuffer(VkCommandBuffer commandBuffer, uint32_t poolID, uint32_t commandPoolType);
     static VkCommandPool GetTransferCommandPool(uint32_t poolID);
-
-    static void NotifyCommandBufferDestruction(uint32_t poolID);
+    static VkCommandPool GetGraphicsCommandPool(uint32_t poolID);
 
 private:
     static std::unordered_map<uint32_t, CommandPoolSet> commandPools;

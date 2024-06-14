@@ -3,11 +3,16 @@
 namespace renderer{
 
 Fence::Fence(): fence(VK_NULL_HANDLE){
+
     useCount = new uint32_t;
     *useCount = 1;
 }
 
 Fence::Fence(bool signaled){
+    if(!Device::IsInitialized()){
+        return;
+    }
+
     VkFenceCreateInfo fenceInfo = {};
     fenceInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
     fenceInfo.flags = signaled ? VK_FENCE_CREATE_SIGNALED_BIT : 0;

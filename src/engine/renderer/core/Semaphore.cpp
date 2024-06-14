@@ -3,6 +3,10 @@
 namespace renderer{
 
 Semaphore::Semaphore(){
+    if(!Device::IsInitialized()){
+        return;
+    }
+
     VkSemaphoreCreateInfo fenceInfo = {};
     fenceInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
 

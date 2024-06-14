@@ -40,12 +40,14 @@ uint32_t Device::graphicsQueueFamilyIndex = 0;
 uint32_t Device::transferQueueFamilyIndex = 0;
 bool Device::deviceMemoryFree = false;
 VkPhysicalDeviceProperties Device::physicalDeviceProperties = {};
+bool Device::initialized = false;
 
 void Device::CreateDevice(){
     PickPhysicalDevice();
     CreateQueueCreateInfos();
     CreateLogicalDevice();
     GetQueues();
+    initialized = true;
 }
 
 void Device::PickPhysicalDevice(){
@@ -213,8 +215,13 @@ QueueFamilyInfo Device::GetQueueFamilyInfo(){
 VkPhysicalDevice Device::GetPhysicalDevice(){
     return physicalDevice;
 }
+
 VkDevice Device::GetDevice(){
     return device;
+}
+
+bool Device::IsInitialized(){
+    return initialized;
 }
 
 void Device::DestroyDevice(){

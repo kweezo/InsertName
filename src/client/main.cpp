@@ -172,7 +172,7 @@ int main(){
 
     GraphicsPipeline pipeline = GraphicsPipeline(shader, buffDescription);
 
-    CommandBuffer buffer = CommandBuffer(VK_COMMAND_BUFFER_LEVEL_PRIMARY, COMMAND_BUFFER_GRAPHICS_FLAG);
+    CommandBuffer buffer = CommandBuffer(VK_COMMAND_BUFFER_LEVEL_PRIMARY, COMMAND_BUFFER_GRAPHICS_FLAG, 0); //TODO, idk
 
     uint32_t imageIndex = 0;
 

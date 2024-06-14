@@ -25,11 +25,14 @@ namespace renderer{
 class StaticModelInstance;
 
 typedef struct StaticModelInstanceData{
-    ModelHandle model;
-    DataBuffer instanceBuffer;
+    ModelHandle model = {};
+    DataBuffer instanceBuffer = {};
+    bool initialized = false;
 
-    std::vector<CommandBuffer> commandBuffer;
-    std::vector<StaticModelInstance*> instanceList;
+    std::array<bool, MAX_FRAMES_IN_FLIGHT> threadLock = {};
+
+    std::array<CommandBuffer, MAX_FRAMES_IN_FLIGHT> commandBuffer = {};
+    std::vector<StaticModelInstance*> instanceList = {};
 } StaticModelInstanceData;
 
 
@@ -39,21 +42,27 @@ public:
     static void DrawStatic(uint32_t imageIndex);
 
 protected:
-
     virtual bool GetShouldDraw() = 0;
     virtual glm::mat4 GetModelMatrix() = 0;
 
-    static void RecordStaticCommandBuffer(StaticModelInstanceData& instances, uint32_t imageIndex);
+    static std::unordered_map<ModelHandle, StaticModelInstanceData> staticModelInstanceMap;
 
+    static void StaticInstanceCleanup();
+private:
+    static void RecordStaticCommandBuffer(StaticModelInstanceData& instances, uint32_t imageIndex, uint32_t instancesIndex, std::vector<StaticModelInstanceData*>
+    modelInstanceMapPtrs);
     static std::unordered_map<ShaderHandle, GraphicsPipeline> staticModelPipelines;
 
+    static void InitializeMainRenderingObjects();
+    static std::array<std::unordered_map<ShaderHandle, std::vector<VkCommandBuffer>>, MAX_FRAMES_IN_FLIGHT> InitializeInstanceData();
+    static void HandleThreads();
 
-    static std::unordered_map<ModelHandle, StaticModelInstanceData> staticModelInstanceMap;
     const static BufferDescriptions baseStaticInstanceDescriptions;
 
-    static std::vector<CommandBuffer> staticInstancesCommandBuffers;
-    static std::vector<RenderSemaphores> staticInstancesSemaphores;
+    static std::array<CommandBuffer, MAX_FRAMES_IN_FLIGHT> staticInstancesCommandBuffers;
+    static std::array<RenderSemaphores, MAX_FRAMES_IN_FLIGHT> staticInstancesSemaphores;
 
+    static bool mainRenderingObjectsInitialized;
 };
 
 }

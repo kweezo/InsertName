@@ -263,9 +263,9 @@ void ImageImpl::UpdateCommandBuffers(){
 void ImageImpl::CreateCommandBuffers(){
     for(int i = 0; i < MAX_FREE_COMMAND_BUFFER_COUNT; i++){
         stagingBuffers.push_back({CommandBuffer(VK_COMMAND_BUFFER_LEVEL_SECONDARY,
-        COMMAND_BUFFER_ONE_TIME_SUBMIT_FLAG | COMMAND_BUFFER_GRAPHICS_FLAG/*cuz of stencil formats and shit*/), true});
+        COMMAND_BUFFER_ONE_TIME_SUBMIT_FLAG | COMMAND_BUFFER_GRAPHICS_FLAG/*cuz of stencil formats and shit*/, 0), true});
     }
-    primaryCommandBuffer = CommandBuffer(VK_COMMAND_BUFFER_LEVEL_PRIMARY, COMMAND_BUFFER_GRAPHICS_FLAG);
+    primaryCommandBuffer = CommandBuffer(VK_COMMAND_BUFFER_LEVEL_PRIMARY, COMMAND_BUFFER_GRAPHICS_FLAG, 0);
 }
 
 VkImage ImageImpl::GetImage(){
@@ -283,7 +283,7 @@ CommandBuffer ImageImpl::GetFreeCommandBuffer(ImageHandle image){
     }
 
     stagingBuffers.push_back({CommandBuffer(VK_COMMAND_BUFFER_LEVEL_SECONDARY,
-     COMMAND_BUFFER_ONE_TIME_SUBMIT_FLAG | COMMAND_BUFFER_TRANSFER_FLAG), false});
+     COMMAND_BUFFER_ONE_TIME_SUBMIT_FLAG | COMMAND_BUFFER_TRANSFER_FLAG, 0), false}); //TODO implement multithreading¸
 
     return stagingBuffers.back().commandBuffer;
 }

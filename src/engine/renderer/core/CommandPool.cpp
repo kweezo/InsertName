@@ -11,7 +11,7 @@ void CommandPool::CreateCommandPools(uint32_t poolID){
     VkCommandPoolCreateInfo poolInfo = {};
     poolInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
     poolInfo.queueFamilyIndex = Device::GetQueueFamilyInfo().graphicsQueueCreateInfo.queueFamilyIndex;
-    poolInfo.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;;
+    poolInfo.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
 
     if(vkCreateCommandPool(Device::GetDevice(), &poolInfo, nullptr, &set.graphicsCommandPool) != VK_SUCCESS){
         throw std::runtime_error("Failed to create the graphics command pool!");
@@ -46,14 +46,17 @@ VkCommandPool CommandPool::GetTransferCommandPool(uint32_t poolID){
     return set.transferCommandPool;
 }
 
-void CommandPool::NotifyCommandBufferDestruction(uint32_t poolID){
+void CommandPool::FreeCommandBuffer(VkCommandBuffer commandBuffer, uint32_t poolID, uint32_t commandPoolType){
     CommandPoolSet& set = commandPools[poolID];
+    VkCommandPool cmdBufferPool =  (commandPoolType == COMMAND_POOL_TYPE_GRAPHICS) ? set.graphicsCommandPool : set.transferCommandPool;
+    vkFreeCommandBuffers(Device::GetDevice(), cmdBufferPool, 1, &commandBuffer);
     set.commandBufferCount--;
     if(!set.commandBufferCount){
         vkDestroyCommandPool(Device::GetDevice(), set.graphicsCommandPool, nullptr);
         vkDestroyCommandPool(Device::GetDevice(), set.transferCommandPool, nullptr);
         commandPools.erase(poolID);
     }
+
 }
 
 
