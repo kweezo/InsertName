@@ -16,7 +16,7 @@ namespace renderer{
 typedef struct CommandPoolSet{
     VkCommandPool transferCommandPool;
     VkCommandPool graphicsCommandPool;
-    uint32_t commandBufferCount = 1;
+    uint32_t commandBufferCount = 0;
 }CommandPoolSet;
 
 class CommandPool{

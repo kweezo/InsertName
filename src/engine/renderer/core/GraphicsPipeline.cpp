@@ -291,12 +291,17 @@ GraphicsPipeline GraphicsPipeline::operator=(const GraphicsPipeline& other){
 }
 
 GraphicsPipeline::~GraphicsPipeline(){
+    if(useCount == nullptr){
+        return;
+    }
+
     if(*useCount == 1){
         if(pipeline != VK_NULL_HANDLE){
             vkDestroyPipelineLayout(Device::GetDevice(), pipelineLayout, nullptr);
             vkDestroyPipeline(Device::GetDevice(), pipeline, nullptr);
         }
         delete useCount;
+        useCount = nullptr;
     }
     else{
         *useCount -= 1;

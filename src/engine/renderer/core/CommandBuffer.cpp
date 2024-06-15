@@ -61,69 +61,59 @@ void CommandBuffer::BeginCommandBuffer(VkCommandBufferInheritanceInfo *inheritan
                           ? VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT
                           : 0;
 
-    if (vkBeginCommandBuffer(commandBuffer, &beginInfo) != VK_SUCCESS)
-    {
+    if (vkBeginCommandBuffer(commandBuffer, &beginInfo) != VK_SUCCESS){
         throw std::runtime_error("Failed to begin recording command buffer");
     }
 }
 
 void CommandBuffer::EndCommandBuffer()
 {
-    if (vkEndCommandBuffer(commandBuffer) != VK_SUCCESS)
-    {
+    if (vkEndCommandBuffer(commandBuffer) != VK_SUCCESS){
         throw std::runtime_error("Failed to record command buffer");
     }
 }
 
-VkCommandBuffer CommandBuffer::GetCommandBuffer()
-{
+VkCommandBuffer CommandBuffer::GetCommandBuffer(){
     return commandBuffer;
 }
 
-CommandBuffer::CommandBuffer(const CommandBuffer &other)
-{
+CommandBuffer::CommandBuffer(const CommandBuffer &other){
     commandBuffer = other.commandBuffer;
     useCount = other.useCount;
     flags = other.flags;
+    poolID = other.poolID;
     *useCount += 1;
 }
 
-CommandBuffer CommandBuffer::operator=(const CommandBuffer &other)
-{
-    if (this == &other)
-    {
+CommandBuffer CommandBuffer::operator=(const CommandBuffer &other){
+    if (this == &other){
         return *this;
     }
 
     commandBuffer = other.commandBuffer;
     useCount = other.useCount;
     flags = other.flags;
+    poolID = other.poolID;
     *useCount += 1;
     return *this;
 }
 
-CommandBuffer::~CommandBuffer()
-{
-    if (useCount == nullptr)
-    {
+CommandBuffer::~CommandBuffer(){
+    if (useCount == nullptr){
         return;
     }
 
-    if (*useCount == 1)
-    {
-        if ((flags & COMMAND_BUFFER_GRAPHICS_FLAG) == COMMAND_BUFFER_GRAPHICS_FLAG)
-        {
+    if (*useCount == 1){
+        if ((flags & COMMAND_BUFFER_GRAPHICS_FLAG) == COMMAND_BUFFER_GRAPHICS_FLAG){
             CommandPool::FreeCommandBuffer(commandBuffer, poolID, COMMAND_POOL_TYPE_GRAPHICS);
         }
-        else
-        {
+        else{
             CommandPool::FreeCommandBuffer(commandBuffer, poolID, COMMAND_POOL_TYPE_TRANSFER);
         }
         delete useCount;
         useCount = nullptr;
     }
-    else
-    {
+    else{
         *useCount -= 1;
     }
 }

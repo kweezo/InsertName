@@ -48,8 +48,8 @@ VkCommandPool CommandPool::GetTransferCommandPool(uint32_t poolID){
 
 void CommandPool::FreeCommandBuffer(VkCommandBuffer commandBuffer, uint32_t poolID, uint32_t commandPoolType){
     CommandPoolSet& set = commandPools[poolID];
-    VkCommandPool cmdBufferPool =  (commandPoolType == COMMAND_POOL_TYPE_GRAPHICS) ? set.graphicsCommandPool : set.transferCommandPool;
-    vkFreeCommandBuffers(Device::GetDevice(), cmdBufferPool, 1, &commandBuffer);
+    VkCommandPool commandPool = (commandPoolType == COMMAND_POOL_TYPE_GRAPHICS) ? set.graphicsCommandPool : set.transferCommandPool;
+    vkFreeCommandBuffers(Device::GetDevice(), commandPool, 1, &commandBuffer);
     set.commandBufferCount--;
     if(!set.commandBufferCount){
         vkDestroyCommandPool(Device::GetDevice(), set.graphicsCommandPool, nullptr);

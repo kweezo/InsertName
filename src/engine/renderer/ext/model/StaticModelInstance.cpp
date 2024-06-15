@@ -43,7 +43,9 @@ StaticModelInstance::InitializeInstanceData(){
         
         uint32_t y = 0;
         for(auto& [buff, instances] : staticModelInstanceMap){
-//command buffer empty check??????
+            if(instances.initialized){
+                continue;
+            }
             uint32_t threadCount = std::thread::hardware_concurrency();
             for(uint32_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++){
                 instances.commandBuffer[i] = CommandBuffer(VK_COMMAND_BUFFER_LEVEL_SECONDARY, COMMAND_BUFFER_GRAPHICS_FLAG, (i % threadCount) * (y + 1) + 1);
@@ -56,6 +58,8 @@ StaticModelInstance::InitializeInstanceData(){
             }
             secondaryBuffers[y][instances.model->GetShader()].push_back(instances.commandBuffer[i].GetCommandBuffer());
             y++;
+
+            instances.initialized = true;
         }
     }
     return secondaryBuffers;
@@ -176,10 +180,17 @@ void StaticModelInstance::DrawStatic(uint32_t imageIndex){
 }
 
 void StaticModelInstance::StaticInstanceCleanup(){
-    staticModelPipelines.clear();
-    for(auto& [modelHandle, instanceDat] : staticModelInstanceMap){
-        instanceDat.instanceBuffer.~DataBuffer();
+    for(CommandBuffer& commandBuffer : staticInstancesCommandBuffers){
+        commandBuffer.~CommandBuffer();
     }
+
+    for(RenderSemaphores& semaphores : staticInstancesSemaphores){
+        semaphores.imageAvailableSemaphore.~Semaphore();
+        semaphores.renderFinishedSemaphore.~Semaphore();
+    }
+
+
+    staticModelPipelines.clear();
     staticModelInstanceMap.clear();
 }
 
