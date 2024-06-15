@@ -150,8 +150,8 @@ void StaticModelInstance::RecordStaticCommandBuffer(StaticModelInstanceData& ins
         staticModelPipelines[instances.model->GetShader()] = GraphicsPipeline(instances.model->GetShader(), allDescriptions);
     }
 
- //   instances.instanceBuffer = DataBuffer(baseStaticInstanceDescriptions, instanceModels.size() * sizeof(glm::mat4), instanceModels.data(), true,
- //    DATA_BUFFER_VERTEX_BIT);
+    instances.instanceBuffer = DataBuffer(baseStaticInstanceDescriptions, instanceModels.size() * sizeof(glm::mat4), instanceModels.data(), true,
+     DATA_BUFFER_VERTEX_BIT);
 
 
 
@@ -189,6 +189,9 @@ void StaticModelInstance::StaticInstanceCleanup(){
         semaphores.renderFinishedSemaphore.~Semaphore();
     }
 
+    for(auto& [modelHandle, instanceDat] : staticModelInstanceMap){
+        instanceDat.instanceBuffer.~DataBuffer();
+    }
 
     staticModelPipelines.clear();
     staticModelInstanceMap.clear();

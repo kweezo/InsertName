@@ -77,6 +77,7 @@ DataBuffer::DataBuffer(BufferDescriptions bufferDescriptions, size_t size,
     this->size = size;
     this->transferToLocalDevMem = transferToLocalDevMem;
 
+    std::cerr << "CREATION " << buff << std::endl;
 }
 void DataBuffer::LoadDataIntoImage(VkImage image, size_t size, void* data, VkExtent3D extent,
 VkImageSubresourceLayers subresourceLayers, VkImageLayout format){
@@ -370,9 +371,12 @@ DataBuffer::~DataBuffer(){
     if(*useCount == 1){
         vkDestroyBuffer(Device::GetDevice(), buff, nullptr);
         vkFreeMemory(Device::GetDevice(), mem, nullptr);
+        std::cerr << "DELETION 1 " << buff << std::endl;
         if(stagingBuffers.find(stagingBufferKey) != stagingBuffers.end()){
             StagingBufferCopyCMDInfo& stagingBuffer = stagingBuffers[stagingBufferKey];
+            std::cerr << "DELETION 2 " << buff << std::endl;
             if(!stagingBuffer.free){
+                std::cerr << "DELETION 3 " << buff << std::endl;
                 vkFreeMemory(Device::GetDevice(), stagingBuffer.bufferMemory, nullptr);
                 vkDestroyBuffer(Device::GetDevice(), stagingBuffer.buffer, nullptr);
                 stagingBuffers[stagingBufferKey].free = true;

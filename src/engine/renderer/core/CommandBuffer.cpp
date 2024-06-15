@@ -13,11 +13,19 @@ CommandBuffer::CommandBuffer(VkCommandBufferLevel level, uint32_t flags, uint32_
 {
     VkCommandBufferAllocateInfo allocInfo = {};
     allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
-    allocInfo.commandPool = ((flags & COMMAND_BUFFER_GRAPHICS_FLAG) == COMMAND_BUFFER_GRAPHICS_FLAG)
-                                ? CommandPool::GetGraphicsCommandPool(poolID)
-                                : CommandPool::GetTransferCommandPool(poolID);
     allocInfo.level = level;
     allocInfo.commandBufferCount = 1;
+
+    if(flags & COMMAND_BUFFER_GRAPHICS_FLAG == COMMAND_BUFFER_GRAPHICS_FLAG){
+        allocInfo.commandPool = CommandPool::GetGraphicsCommandPool(poolID);
+        if(level == VK_COMMAND_BUFFER_LEVEL_PRIMARY){
+            flags |= VK_SUBPASS_CONTENTS_SECONDARY_COMMAND_BUFFERS;
+        }else{
+            flags |= VK_COMMAND_BUFFER_USAGE_RENDER_PASS_CONTINUE_BIT;
+        }
+    }else{
+        allocInfo.commandPool = CommandPool::GetTransferCommandPool(poolID);
+    }
 
     if (vkAllocateCommandBuffers(Device::GetDevice(), &allocInfo, &commandBuffer) != VK_SUCCESS)
     {
