@@ -62,8 +62,7 @@ void AdminConsole::initWindows() {
 }
 
 void AdminConsole::addCommands() {
-    commands[0]="stop";
-    commands[1]="config";
+    commands = {"stop", "config"};
 
     secParam[0] = {};
     secParam[1] = {"dbname", "dbuser", "dbpassword", "dbhostaddr", "dbport", "serverPort", "loginAttempts", "logLevel", "maxLogBufferSize", "commandPrefix", "commandWindowHeight"};
@@ -266,94 +265,91 @@ void AdminConsole::processLine(const std::string& line) {
         commands.push_back(temp);
     }
 
-    if (!commands.empty()) {
-        int cmdSize = commands.size();
+    if (commands.empty())  return;
 
-        if (commands[0] == "stop") {
-            double value;
-            if (cmdSize == 2) {
-                if (isDouble(commands[1], value)) {
-                    cmdStop(value);
-                } else {
-                    cmdReport("Invalid argument for 'stop' command. Argument should be type double.", 4);
-                }
+    int cmdSize = commands.size();
+
+    if (commands[0] == "stop") {
+        double value;
+        if (cmdSize == 2) {
+            if (isDouble(commands[1], value)) {
+                stop(value);
             } else {
-                if (cmdSize == 1) {
-                    cmdReport("'stop' command requires a time argument.", 4);
-                } else {
-                    cmdReport("Too much arguments for 'stop' command.", 4);
-                }
+                cmdReport("Invalid argument for 'stop' command. Argument should be type double.", 4);
             }
-
-        } else if (commands[0] == "config") {
-            if (cmdSize == 1) {
-                cmdReport("'config' command requires a parameters", 4);
-            } else {
-                auto it = std::find(secParam[1].begin(), secParam[1].end(), commands[1]);
-                int index;
-                if (it != secParam[1].end()) {
-                    index = std::distance(secParam[1].begin(), it);
-                } else {
-                    index = -1;
-                }
-
-                if (cmdSize == 2) {
-                    if (index == -1) {
-                        cmdReport("Unknown config parameter: " + commands[1], 4);
-                    } else {
-                        cmdReport("Setting '" + commands[1] + "' is set to: '" + *static_cast<std::string*>(Config::configPointers[index]) + '\'', 2);
-                    }
-
-                } else  if (cmdSize == 3) {
-                    if (index == -1) {
-                        cmdReport("Unknown config parameter: " + commands[1], 4);
-                    } else {
-                        if (index <= 2 || index == 9) {
-                            std::string* stringPointer = static_cast<std::string*>(Config::configPointers[index]);
-                            *stringPointer = commands[2];
-                        } else if (index == 3) {
-                            if (isValidIPv4(commands[2])) {
-                                std::string* stringPointer = static_cast<std::string*>(Config::configPointers[index]);
-                                *stringPointer = commands[2];
-                            } else {
-                                cmdReport("Invalid IPv4 address", 4);
-                            }
-                        } else {
-                            int value;
-                            if (isInt(commands[2], value)) {
-                                if (index == 4 && (value < 1 || value > 65535)) {
-                                    cmdReport("Database port must be greater than 0 and smaller than 65536", 4);
-                                } else if (index == 5 && (value < 1 || value > 65535)) {
-                                    cmdReport("Server port must be greater than  and smaller than 65536", 4);
-                                } else if (index == 6 && value < 1) {
-                                    cmdReport("Login attempts must be greater than 0", 4);
-                                } else if (index == 7 && (value < 0 || value > 4)) {
-                                    cmdReport("Log level must be between 0 and 4", 4);
-                                } else if (index == 8 && value < 1) {
-                                    cmdReport("Max log buffer size must be greater than 0", 4);
-                                } else if (index == 10 && value < 1) {
-                                    cmdReport("Command window height must be greater than 0", 4);
-                                } else {
-                                    int* intPointer = static_cast<int*>(Config::configPointers[index]);
-                                    *intPointer = static_cast<int>(value);
-                                }
-                            } else {
-                                cmdReport("Invalid argument for config command. Argument should be type int", 4);
-                            }
-                        }
-                    }
-                } else {
-                    cmdReport("Too much arguments for config command", 4);
-                }
-            }
-
+        } else if (cmdSize == 1) {
+            cmdReport("'stop' command requires a time argument.", 4);
         } else {
-            cmdReport("Unknown command: " + line, 4);
+            cmdReport("Too much arguments for 'stop' command.", 4);
         }
+        
+
+    } else if (commands[0] == "config") {
+        if (cmdSize == 1) {
+            cmdReport("'config' command requires parameters", 4);
+            return;
+        }
+
+        if(cmdSize > 3){
+            cmdReport("Too many arguments for config command", 4);
+            return;
+        }
+        
+        auto it = std::find(secParam[1].begin(), secParam[1].end(), commands[1]);
+        if (it == secParam[1].end()) {
+            cmdReport("Unknown config parameter: " + commands[1], 4);
+            return;
+        }
+        int index = std::distance(secParam[1].begin(), it);
+
+        if (cmdSize == 2) {
+            cmdReport("Setting '" + commands[1] + "' is set to: '" + *static_cast<std::string*>(Config::configPointers[index]) + '\'', 2);
+
+        } else  if (cmdSize == 3) {
+            if (index <= 2 || index == 9) {
+                std::string* stringPointer = static_cast<std::string*>(Config::configPointers[index]);
+                *stringPointer = commands[2];
+            } else if (index == 3) {
+                if (isValidIPv4(commands[2])) {
+                    std::string* stringPointer = static_cast<std::string*>(Config::configPointers[index]);
+                    *stringPointer = commands[2];
+                } else {
+                    cmdReport("Invalid IPv4 address", 4);
+                }
+            } else {
+                int value;
+                if (!isInt(commands[2], value)) {
+                    cmdReport("Invalid argument for config command. Argument should be type int", 4);
+                    return;
+                }
+
+                if (index == 4 && (value < 1 || value > 65535)) {
+                    cmdReport("Database port must be greater than 0 and smaller than 65536", 4);
+                } else if (index == 5 && (value < 1 || value > 65535)) {
+                    cmdReport("Server port must be greater than  and smaller than 65536", 4);
+                } else if (index == 6 && value < 1) {
+                    cmdReport("Login attempts must be greater than 0", 4);
+                } else if (index == 7 && (value < 0 || value > 4)) {
+                    cmdReport("Log level must be between 0 and 4", 4);
+                } else if (index == 8 && value < 1) {
+                    cmdReport("Max log buffer size must be greater than 0", 4);
+                } else if (index == 10 && value < 1) {
+                    cmdReport("Command window height must be greater than 0", 4);
+                } else {
+                    int* intPointer = static_cast<int*>(Config::configPointers[index]);
+                    *intPointer = static_cast<int>(value);
+                }
+                
+                
+            }
+        }
+    } else {
+        cmdReport("Unknown command: " + line, 4);
     }
+    
 }
 
-void AdminConsole::cmdStop(double waitTime) {
+void AdminConsole::stop(double waitTime) {
     cmdReport("Stopping server in " + std::to_string(waitTime) + " minutes...", 2);
     Server::isShuttingDown = true;
 
