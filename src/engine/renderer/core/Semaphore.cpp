@@ -15,7 +15,7 @@ Semaphore::Semaphore(){
     }
 
     useCount = new uint32_t;
-    useCount[0] = 1;
+    *useCount = 1;
 }
 
 VkSemaphore Semaphore::GetSemaphore(){
@@ -25,7 +25,7 @@ VkSemaphore Semaphore::GetSemaphore(){
 Semaphore::Semaphore(const Semaphore& other){
     fence = other.fence;
     useCount = other.useCount;
-    useCount[0]++;
+    *useCount += 1;
 }
 
 Semaphore& Semaphore::operator=(const Semaphore& other){
@@ -35,16 +35,21 @@ Semaphore& Semaphore::operator=(const Semaphore& other){
 
     fence = other.fence;
     useCount = other.useCount;
-    useCount[0]++;
+    *useCount += 1;
     return *this;
 }
 
 Semaphore::~Semaphore(){
-    if(useCount[0] <= 1){
+    if(useCount == nullptr){
+        return;
+    }
+
+    if(*useCount <= 1){
         vkDestroySemaphore(Device::GetDevice(), fence, nullptr);
         delete useCount;
+        useCount = nullptr;
     }else{
-        useCount[0]--;
+        *useCount -= 1;
     }
 }
 

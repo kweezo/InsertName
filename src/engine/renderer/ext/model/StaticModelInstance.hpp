@@ -24,13 +24,17 @@ namespace renderer{
 
 class StaticModelInstance;
 
+
 typedef struct StaticModelInstanceData{
     ModelHandle model = {};
     DataBuffer instanceBuffer = {};
+
     bool initialized = false;
+    bool dataBufferInitialized = false;
 
-    std::array<bool, MAX_FRAMES_IN_FLIGHT> threadLock = {};
+    uint32_t drawCount = 0;
 
+    std::array<bool, MAX_FRAMES_IN_FLIGHT> threadLock;    
     std::array<CommandBuffer, MAX_FRAMES_IN_FLIGHT> commandBuffer = {};
     std::vector<StaticModelInstance*> instanceList = {};
 } StaticModelInstanceData;
@@ -49,8 +53,9 @@ protected:
 
     static void StaticInstanceCleanup();
 private:
-    static void RecordStaticCommandBuffer(StaticModelInstanceData& instances, uint32_t imageIndex, uint32_t instancesIndex, std::vector<StaticModelInstanceData*>
-    modelInstanceMapPtrs);
+    static void RecordStaticCommandBuffer(StaticModelInstanceData& instances, uint32_t imageIndex, uint32_t threadsIndex, uint32_t threadIndexInThreads);
+    static void UploadDataToInstanceBuffer(StaticModelInstanceData& instances);
+
     static std::unordered_map<ShaderHandle, GraphicsPipeline> staticModelPipelines;
 
     static void InitializeMainRenderingObjects();
@@ -61,6 +66,10 @@ private:
 
     static std::array<CommandBuffer, MAX_FRAMES_IN_FLIGHT> staticInstancesCommandBuffers;
     static std::array<RenderSemaphores, MAX_FRAMES_IN_FLIGHT> staticInstancesSemaphores;
+
+    static std::vector<std::thread> threads;
+    static std::vector<std::vector<bool*>> threadQueues;
+    static uint32_t nextThreadInWaitlist;
 
     static bool mainRenderingObjectsInitialized;
 };
