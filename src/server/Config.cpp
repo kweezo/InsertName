@@ -1,12 +1,38 @@
 #include "Config.hpp"
 
-Config& Config::GetInstance() {
-    static Config instance;
-    return instance;
+std::string Config::dbname;
+std::string Config::dbuser;
+std::string Config::dbpassword;
+std::string Config::dbhostaddr;
+std::string Config::dbport;
+int Config::serverPort;
+int Config::loginAttempts;
+int Config::logLevel;
+int Config::maxLogBufferSize;
+std::string Config::commandPrefix;
+int Config::commandWindowHeight;
+std::string Config::filename;
+std::array<void*, 11> Config::configPointers;
+
+
+void Config::InitializePointers() {
+    configPointers = {
+            reinterpret_cast<void*>(&dbname),
+            reinterpret_cast<void*>(&dbuser),
+            reinterpret_cast<void*>(&dbpassword),
+            reinterpret_cast<void*>(&dbhostaddr),
+            reinterpret_cast<void*>(&dbport),
+            reinterpret_cast<void*>(&serverPort),
+            reinterpret_cast<void*>(&loginAttempts),
+            reinterpret_cast<void*>(&logLevel),
+            reinterpret_cast<void*>(&maxLogBufferSize),
+            reinterpret_cast<void*>(&commandPrefix),
+            reinterpret_cast<void*>(&commandWindowHeight)
+        };
 }
 
 void Config::LoadConfig(const std::string& filename) {
-    this->filename = filename;
+    Config::filename = filename;
     std::unordered_map<std::string, std::string> settings;
 
     // Read the existing settings

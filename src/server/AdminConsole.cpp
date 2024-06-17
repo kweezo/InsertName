@@ -7,6 +7,7 @@
 #include <algorithm>
 #include <cstring>
 #include <thread>
+#include <regex>
 
 
 bool AdminConsole::isRunning = true;
@@ -33,8 +34,8 @@ void AdminConsole::init() {
 }
 
 void AdminConsole::loadVariables() {
-    commandWindowHeight = Config::GetInstance().commandWindowHeight;
-    prompt = Config::GetInstance().commandPrefix;
+    commandWindowHeight = Config::commandWindowHeight;
+    prompt = Config::commandPrefix;
 }
 
 void AdminConsole::initColors() {
@@ -242,10 +243,10 @@ void AdminConsole::processLine(const std::string& line) {
     bool inQuotes = false;
 
     for (char ch : line) {
-        if (ch == '"' && inQuotes) {
+        if (ch == '\'' && inQuotes) {
             // End of quotes
             inQuotes = false;
-        } else if (ch == '"' && !inQuotes) {
+        } else if (ch == '\'' && !inQuotes) {
             // Start of quotes
             inQuotes = true;
         } else if (ch == ' ' && !inQuotes) {
@@ -274,13 +275,75 @@ void AdminConsole::processLine(const std::string& line) {
                 if (isDouble(commands[1], value)) {
                     cmdStop(value);
                 } else {
-                    cmdReport("Invalid argument for stop command. Argument should be type double.", 3);
+                    cmdReport("Invalid argument for 'stop' command. Argument should be type double.", 4);
                 }
             } else {
                 if (cmdSize == 1) {
-                    cmdReport("Stop command requires a time argument (double)", 3);
-                } else if (cmdSize > 2) {
-                    cmdReport("Too much arguments for stop command. It takes only a time argument (double)", 3);
+                    cmdReport("'stop' command requires a time argument.", 4);
+                } else {
+                    cmdReport("Too much arguments for 'stop' command.", 4);
+                }
+            }
+
+        } else if (commands[0] == "config") {
+            if (cmdSize == 1) {
+                cmdReport("'config' command requires a parameters", 4);
+            } else {
+                auto it = std::find(secParam[1].begin(), secParam[1].end(), commands[1]);
+                int index;
+                if (it != secParam[1].end()) {
+                    index = std::distance(secParam[1].begin(), it);
+                } else {
+                    index = -1;
+                }
+
+                if (cmdSize == 2) {
+                    if (index == -1) {
+                        cmdReport("Unknown config parameter: " + commands[1], 4);
+                    } else {
+                        cmdReport("Setting '" + commands[1] + "' is set to: '" + *static_cast<std::string*>(Config::configPointers[index]) + '\'', 2);
+                    }
+
+                } else  if (cmdSize == 3) {
+                    if (index == -1) {
+                        cmdReport("Unknown config parameter: " + commands[1], 4);
+                    } else {
+                        if (index <= 2 || index == 9) {
+                            std::string* stringPointer = static_cast<std::string*>(Config::configPointers[index]);
+                            *stringPointer = commands[2];
+                        } else if (index == 3) {
+                            if (isValidIPv4(commands[2])) {
+                                std::string* stringPointer = static_cast<std::string*>(Config::configPointers[index]);
+                                *stringPointer = commands[2];
+                            } else {
+                                cmdReport("Invalid IPv4 address", 4);
+                            }
+                        } else {
+                            int value;
+                            if (isInt(commands[2], value)) {
+                                if (index == 4 && (value < 1 || value > 65535)) {
+                                    cmdReport("Database port must be greater than 0 and smaller than 65536", 4);
+                                } else if (index == 5 && (value < 1 || value > 65535)) {
+                                    cmdReport("Server port must be greater than  and smaller than 65536", 4);
+                                } else if (index == 6 && value < 1) {
+                                    cmdReport("Login attempts must be greater than 0", 4);
+                                } else if (index == 7 && (value < 0 || value > 4)) {
+                                    cmdReport("Log level must be between 0 and 4", 4);
+                                } else if (index == 8 && value < 1) {
+                                    cmdReport("Max log buffer size must be greater than 0", 4);
+                                } else if (index == 10 && value < 1) {
+                                    cmdReport("Command window height must be greater than 0", 4);
+                                } else {
+                                    int* intPointer = static_cast<int*>(Config::configPointers[index]);
+                                    *intPointer = static_cast<int>(value);
+                                }
+                            } else {
+                                cmdReport("Invalid argument for config command. Argument should be type int", 4);
+                            }
+                        }
+                    }
+                } else {
+                    cmdReport("Too much arguments for config command", 4);
                 }
             }
 
@@ -302,6 +365,7 @@ void AdminConsole::cmdStop(double waitTime) {
         Log::print(1, "Server stopped by admin command");
         Server::shutdown = true;
 
+        Config::SaveConfig();
         Server::stop();
         Log::destroy();
         isRunning = false;
@@ -314,4 +378,18 @@ bool AdminConsole::isDouble(const std::string& s, double& d) {
     std::istringstream iss(s);
     iss >> d;
     return iss.eof() && !iss.fail();
+}
+
+bool AdminConsole::isInt(const std::string& s, int& i) {
+    std::istringstream iss(s);
+    iss >> i;
+    return iss.eof() && !iss.fail();
+}
+
+bool AdminConsole::isValidIPv4(const std::string& ip) {
+    std::regex ipRegex("^((25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\\.){3}(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$");
+    if (std::regex_match(ip, ipRegex)) {
+        return true;
+    }
+    return false;
 }

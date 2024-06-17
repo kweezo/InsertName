@@ -49,4 +49,6 @@ private:
     static void cmdStop(double waitTime);
 
     static bool isDouble(const std::string& s, double& d);
+    static bool isInt(const std::string& s, int& i);
+    static bool isValidIPv4(const std::string& ip);
 };

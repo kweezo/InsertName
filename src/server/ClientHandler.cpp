@@ -195,7 +195,7 @@ std::string ClientHandler::handleMsg(const char* receivedData, int dataSize, int
         }
     }
     #ifndef NO_DB
-        if (UID < -Config::GetInstance().loginAttempts && response != "r" && response != "l") {
+        if (UID < -Config::loginAttempts && response != "r" && response != "l") {
             response = "c";
         }
     #endif
@@ -322,7 +322,7 @@ std::vector<std::pair<std::string, std::string>> ClientHandler::getMessages(std:
 
         // Pridobite sporočila in datume
         std::string sql = "SELECT ID, Message, Timestamp FROM Messages WHERE ReceiverUsername = $1 AND SenderUsername = $2 AND ID > $3 ORDER BY Timestamp DESC LIMIT $4 OFFSET $5;";
-        pqxx::result R = W.exec_params(sql, this->username, senderUsername, lastReadMessageId, Config::GetInstance().messageBatchSize, offset);
+        pqxx::result R = W.exec_params(sql, this->username, senderUsername, lastReadMessageId, Config::messageBatchSize, offset);
         
         // Ker so sporočila urejena v obratnem vrstnem redu (najnovejše je prvo), jih obrnemo, da bodo v pravilnem vrstnem redu.
         std::vector<pqxx::row> rows(R.begin(), R.end());
@@ -357,7 +357,7 @@ std::vector<std::pair<std::string, std::string>> ClientHandler::getNewMessages(s
 
         // Pridobite nova sporočila
         sql = "SELECT ID, Message, Timestamp FROM Messages WHERE ReceiverUsername = $1 AND SenderUsername = $2 AND ID > $3 ORDER BY Timestamp DESC LIMIT $4;";
-        R = W.exec_params(sql, this->username, senderUsername, lastReadMessageId, Config::GetInstance().messageBatchSize);
+        R = W.exec_params(sql, this->username, senderUsername, lastReadMessageId, Config::messageBatchSize);
 
         // Ker so sporočila urejena v obratnem vrstnem redu (najnovejše je prvo), jih obrnemo, da bodo v pravilnem vrstnem redu.
         std::vector<pqxx::row> rows(R.begin(), R.end());

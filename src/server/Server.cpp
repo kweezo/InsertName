@@ -30,11 +30,11 @@ void Server::init(int port, const std::string& dir) {
 
     #ifndef NO_DB
         // Vzpostavitev povezave z bazo podatkov
-        std::string conn_str = "dbname=" + Config::GetInstance().dbname +
-                              " user=" + Config::GetInstance().dbuser +
-                              " password=" + Config::GetInstance().dbpassword +
-                              " hostaddr=" + Config::GetInstance().dbhostaddr +
-                              " port=" + Config::GetInstance().dbport;
+        std::string conn_str = "dbname=" + Config::dbname +
+                              " user=" + Config::dbuser +
+                              " password=" + Config::dbpassword +
+                              " hostaddr=" + Config::dbhostaddr +
+                              " port=" + Config::dbport;
         c = std::make_unique<pqxx::connection>(conn_str);
 
         // Ustvarjanje tabel v bazi podatkov

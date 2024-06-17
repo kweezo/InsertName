@@ -9,7 +9,8 @@
 int main() {
     std::string dir = "./server_data/";
 
-    Config::GetInstance().LoadConfig(dir + "config.cfg");
+    Config::LoadConfig(dir + "config.cfg");
+    Config::InitializePointers();
     Log::init();
     AdminConsole::init();
     
@@ -25,7 +26,7 @@ int main() {
         }
     });
 
-    Server::init(Config::GetInstance().serverPort, dir);
+    Server::init(Config::serverPort, dir);
 
     Server::handleClients();
 
