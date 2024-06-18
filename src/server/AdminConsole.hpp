@@ -46,7 +46,9 @@ private:
     static void processKey(int key, const std::string& prompt);
     static void cmdReport(const std::string& msg, int colorPair = 1);
 
-    static void cmdStop(double waitTime);
+    static void stop(double waitTime);
 
     static bool isDouble(const std::string& s, double& d);
+    static bool isInt(const std::string& s, int& i);
+    static bool isValidIPv4(const std::string& ip);
 };

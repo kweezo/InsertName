@@ -10,15 +10,15 @@ std::vector<LogEntry> Log::logsBuffer;
 
 void Log::init() {
 
-    logLevel = Config::GetInstance().logLevel;
-    maxLogBufferSize = Config::GetInstance().maxLogBufferSize;
+    logLevel = Config::logLevel;
+    maxLogBufferSize = Config::maxLogBufferSize;
 
 #ifndef NO_DB
-    std::string conn_str = "dbname=" + Config::GetInstance().dbname +
-                          " user=" + Config::GetInstance().dbuser +
-                          " password=" + Config::GetInstance().dbpassword +
-                          " hostaddr=" + Config::GetInstance().dbhostaddr +
-                          " port=" + Config::GetInstance().dbport;
+    std::string conn_str = "dbname=" + Config::dbname +
+                          " user=" + Config::dbuser +
+                          " password=" + Config::dbpassword +
+                          " hostaddr=" + Config::dbhostaddr +
+                          " port=" + Config::dbport;
     c = std::make_unique<pqxx::connection>(conn_str); 
     
     if (!c->is_open()) {
