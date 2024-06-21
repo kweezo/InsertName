@@ -35,7 +35,7 @@ void AdminConsole::init() {
 
 void AdminConsole::loadVariables() {
     commandWindowHeight = Config::commandWindowHeight;
-    prompt = Config::commandPrefix;
+    prompt = Config::commandPrompt;
 }
 
 void AdminConsole::initColors() {
@@ -65,7 +65,7 @@ void AdminConsole::addCommands() {
     commands = {"stop", "config"};
 
     secParam[0] = {};
-    secParam[1] = {"dbname", "dbuser", "dbpassword", "dbhostaddr", "dbport", "serverPort", "loginAttempts", "logLevel", "maxLogBufferSize", "commandPrefix", "commandWindowHeight"};
+    secParam[1] = {"dbname", "dbuser", "dbpassword", "dbhostaddr", "dbport", "serverport", "loginattempts", "loglevel", "maxlogbuffersize", "commandprompt", "commandwindowheight"};
 }
 
 std::string AdminConsole::readLine() {
@@ -272,7 +272,7 @@ void AdminConsole::processLine(const std::string& line) {
     if (commands[0] == "stop") {
         double value;
         if (cmdSize == 2) {
-            if (isDouble(commands[1], value)) {
+            if (Config::IsDouble(commands[1], value)) {
                 stop(value);
             } else {
                 cmdReport("Invalid argument for 'stop' command. Argument should be type double.", 4);
@@ -314,7 +314,7 @@ void AdminConsole::processLine(const std::string& line) {
             return;
         }
         if (index == 3) {
-            if (isValidIPv4(commands[2])) {
+            if (Config::IsValidIPv4(commands[2])) {
                 std::string* stringPointer = static_cast<std::string*>(Config::configPointers[index]);
                 *stringPointer = commands[2];
                 return;
@@ -323,7 +323,7 @@ void AdminConsole::processLine(const std::string& line) {
             return;
         }
         int value;
-        if (!isInt(commands[2], value)) {
+        if (!Config::IsInt(commands[2], value)) {
             cmdReport("Invalid argument for config command. Argument should be type int", 4);
             return;
         }
@@ -368,24 +368,4 @@ void AdminConsole::stop(double waitTime) {
 
         cmdReport("Server stopped. Press ENTER to exit", 1);
     }).detach();
-}
-
-bool AdminConsole::isDouble(const std::string& s, double& d) {
-    std::istringstream iss(s);
-    iss >> d;
-    return iss.eof() && !iss.fail();
-}
-
-bool AdminConsole::isInt(const std::string& s, int& i) {
-    std::istringstream iss(s);
-    iss >> i;
-    return iss.eof() && !iss.fail();
-}
-
-bool AdminConsole::isValidIPv4(const std::string& ip) {
-    std::regex ipRegex("^((25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\\.){3}(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$");
-    if (std::regex_match(ip, ipRegex)) {
-        return true;
-    }
-    return false;
 }

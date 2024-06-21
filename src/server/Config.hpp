@@ -20,7 +20,7 @@ public:
     static int loginAttempts;
     static int logLevel;
     static int maxLogBufferSize;
-    static std::string commandPrefix;
+    static std::string commandPrompt;
     static int commandWindowHeight;
 
     static std::string filename;
@@ -29,4 +29,11 @@ public:
 
     static std::array<void*, 11> configPointers;
     static void InitializePointers();
+    
+    static bool IsDouble(const std::string& s, double& d);
+    static bool IsInt(const std::string& s, int& i);
+    static bool IsValidIPv4(const std::string& ip);
+
+private:
+    static bool CheckSettingsFormat(std::unordered_map<std::string, std::string>& settings);
 };

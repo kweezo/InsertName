@@ -1,5 +1,8 @@
 #include "Config.hpp"
 
+#include <iostream>
+#include <regex>
+
 std::string Config::dbname;
 std::string Config::dbuser;
 std::string Config::dbpassword;
@@ -9,7 +12,7 @@ int Config::serverPort;
 int Config::loginAttempts;
 int Config::logLevel;
 int Config::maxLogBufferSize;
-std::string Config::commandPrefix;
+std::string Config::commandPrompt;
 int Config::commandWindowHeight;
 std::string Config::filename;
 std::array<void*, 11> Config::configPointers;
@@ -17,18 +20,18 @@ std::array<void*, 11> Config::configPointers;
 
 void Config::InitializePointers() {
     configPointers = {
-            reinterpret_cast<void*>(&dbname),
-            reinterpret_cast<void*>(&dbuser),
-            reinterpret_cast<void*>(&dbpassword),
-            reinterpret_cast<void*>(&dbhostaddr),
-            reinterpret_cast<void*>(&dbport),
-            reinterpret_cast<void*>(&serverPort),
-            reinterpret_cast<void*>(&loginAttempts),
-            reinterpret_cast<void*>(&logLevel),
-            reinterpret_cast<void*>(&maxLogBufferSize),
-            reinterpret_cast<void*>(&commandPrefix),
-            reinterpret_cast<void*>(&commandWindowHeight)
-        };
+        reinterpret_cast<void*>(&dbname),
+        reinterpret_cast<void*>(&dbuser),
+        reinterpret_cast<void*>(&dbpassword),
+        reinterpret_cast<void*>(&dbhostaddr),
+        reinterpret_cast<void*>(&dbport),
+        reinterpret_cast<void*>(&serverPort),
+        reinterpret_cast<void*>(&loginAttempts),
+        reinterpret_cast<void*>(&logLevel),
+        reinterpret_cast<void*>(&maxLogBufferSize),
+        reinterpret_cast<void*>(&commandPrompt),
+        reinterpret_cast<void*>(&commandWindowHeight)
+    };
 }
 
 void Config::LoadConfig(const std::string& filename) {
@@ -84,13 +87,17 @@ void Config::LoadConfig(const std::string& filename) {
         settings["maxLogBufferSize"] = "64";
         outFile << "maxLogBufferSize=64\n";
     }
-    if (settings.find("commandPrefix") == settings.end()) {
-        settings["commandPrefix"] = "> ";
-        outFile << "commandPrefix=> \n";
+    if (settings.find("commandPrompt") == settings.end()) {
+        settings["commandPrompt"] = "> ";
+        outFile << "commandPrompt=> \n";
     }
     if (settings.find("commandWindowHeight") == settings.end()) {
         settings["commandWindowHeight"] = "3";
         outFile << "commandWindowHeight=3\n";
+    }
+
+    if (!CheckSettingsFormat(settings)) {
+        std::runtime_error("Invalid settings format");
     }
 
     // Now you can use the settings map to set your variables
@@ -103,7 +110,7 @@ void Config::LoadConfig(const std::string& filename) {
     loginAttempts = std::stoi(settings["loginAttempts"]);
     logLevel = std::stoi(settings["logLevel"]);
     maxLogBufferSize = std::stoi(settings["maxLogBufferSize"]);
-    commandPrefix = settings["commandPrefix"];
+    commandPrompt = settings["commandPrompt"];
     commandWindowHeight = std::stoi(settings["commandWindowHeight"]);
 }
 
@@ -119,6 +126,62 @@ void Config::SaveConfig() {
     outFile << "loginAttempts=" << loginAttempts << "\n";
     outFile << "logLevel=" << logLevel << "\n";
     outFile << "maxLogBufferSize=" << maxLogBufferSize << "\n";
-    outFile << "commandPrefix=" << commandPrefix << "\n";
+    outFile << "commandPrompt=" << commandPrompt << "\n";
     outFile << "commandWindowHeight=" << commandWindowHeight << "\n";
+}
+
+bool Config::CheckSettingsFormat(std::unordered_map<std::string, std::string>& settings) {
+    bool valid = true;
+    if (!IsValidIPv4(settings["dbhostaddr"])) {
+        std::cerr << "Invalid IPv4 address";
+        valid = false;
+    }
+
+    int value;
+    if (!IsInt(settings["dbport"], value) && (value < 1 || value > 65535)) {
+        std::cerr << "Database port must be integer greater than 0 and smaller than 65536";
+        valid = false;
+    }
+    if (!IsInt(settings["serverPort"], value) && (value < 1 || value > 65535)) {
+        std::cerr << "Server port must be integer greater than  and smaller than 65536";
+        valid = false;
+    }
+    if (!IsInt(settings["loginAttempts"], value) && value < 1) {
+        std::cerr << "Login attempts must be integer greater than 0";
+        valid = false;
+    }
+    if (!IsInt(settings["logLevel"], value) && (value < 0 || value > 4)) {
+        std::cerr << "Log level must be integer between 0 and 4";
+        valid = false;
+    }
+    if (!IsInt(settings["maxLogBufferSize"], value) && value < 1) {
+        std::cerr << "Max log buffer size must be integer greater than 0";
+        valid = false;
+    }
+    if (!IsInt(settings["commandWindowHeight"], value) && value < 1) {
+        std::cerr << "Command window height must be integer greater than 0";
+        valid = false;
+    }
+
+    return valid;
+}
+
+bool Config::IsDouble(const std::string& s, double& d) {
+    std::istringstream iss(s);
+    iss >> d;
+    return iss.eof() && !iss.fail();
+}
+
+bool Config::IsInt(const std::string& s, int& i) {
+    std::istringstream iss(s);
+    iss >> i;
+    return iss.eof() && !iss.fail();
+}
+
+bool Config::IsValidIPv4(const std::string& ip) {
+    std::regex ipRegex("^((25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\\.){3}(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$");
+    if (std::regex_match(ip, ipRegex)) {
+        return true;
+    }
+    return false;
 }
