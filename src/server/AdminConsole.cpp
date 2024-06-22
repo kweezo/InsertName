@@ -9,7 +9,7 @@
 #include <regex>
 
 
-bool AdminConsole::isRunning = true;
+bool AdminConsole::isRunning;
 std::array<std::string, COMMAND_COUNT> AdminConsole::commands;
 std::array<std::vector<std::string>, COMMAND_COUNT> AdminConsole::secParam;
 WINDOW* AdminConsole::logWindow = nullptr;
@@ -21,10 +21,15 @@ int AdminConsole::currentCommand;
 std::string AdminConsole::prompt;
 int AdminConsole::commandWindowHeight;
 std::string AdminConsole::line;
+std::string AdminConsole::clipboard;
 size_t AdminConsole::cursorPos;
+size_t AdminConsole::selectionStart;
+size_t AdminConsole::selectionEnd;
+size_t AdminConsole::selectionStartOrdered;
+size_t AdminConsole::selectionEndOrdered;
 
 void AdminConsole::init() {
-    loadVariables();
+    initVariables();
     initscr(); // Initialize ncurses
     keypad(stdscr, TRUE);
     noecho();
@@ -33,9 +38,14 @@ void AdminConsole::init() {
     initWindows();
 }
 
-void AdminConsole::loadVariables() {
+void AdminConsole::initVariables() {
     commandWindowHeight = Config::commandWindowHeight;
     prompt = Config::commandPrompt;
+
+    isRunning = true;
+    currentCommand = -1;
+    selectionStart = std::string::npos;
+    selectionEnd = std::string::npos;
 }
 
 void AdminConsole::initColors() {
@@ -97,14 +107,122 @@ std::string AdminConsole::readLine() {
 
 void AdminConsole::processKey(int key) {
     switch (key) {
+        case 443: // Ctrl+KEY_LEFT
+            // Move cursorPos to the start of the previous word
+            if (cursorPos > 0) {
+                // Skip any spaces before the current position
+                while (cursorPos > 0 && line[cursorPos - 1] == ' ') cursorPos--;
+                // Move to the start of the word
+                while (cursorPos > 0 && line[cursorPos - 1] != ' ') cursorPos--;
+            }
+            selectionStart = std::string::npos;
+            break;
+
+        case 444: // Ctrl+KEY_RIGHT
+            // Move cursorPos to the start of the next word
+            if (cursorPos < line.length()) {
+                // Skip current word
+                while (cursorPos < line.length() && line[cursorPos] != ' ') cursorPos++;
+                // Skip any spaces after the current word
+                while (cursorPos < line.length() && line[cursorPos] == ' ') cursorPos++;
+            }
+            selectionStart = std::string::npos;
+            break;
+
+        case 23: // Ctrl+Backspace
+            if (cursorPos > 0) {
+                size_t startPos = cursorPos;
+                // Skip any spaces before the current position
+                while (cursorPos > 0 && line[cursorPos - 1] == ' ') cursorPos--;
+                // Move to the start of the word
+                while (cursorPos > 0 && line[cursorPos - 1] != ' ') cursorPos--;
+                // Erase the word
+                line.erase(cursorPos, startPos - cursorPos);
+            }
+            selectionStart = std::string::npos;
+            break;
+        
+        case 420: // Ctrl+Delete
+            if (cursorPos < line.length()) {
+                size_t startPos = cursorPos;
+                // Skip current word
+                while (cursorPos < line.length() && line[cursorPos] != ' ') cursorPos++;
+                // Skip any spaces after the current word
+                while (cursorPos < line.length() && line[cursorPos] == ' ') cursorPos++;
+                // Erase the word
+                line.erase(startPos, cursorPos - startPos);
+                cursorPos = startPos; // Reset cursor position to the start of deletion
+            }
+            selectionStart = std::string::npos;
+            break;
+
+        case 391: // Shift+Left
+            if (selectionStart == std::string::npos) {
+                selectionStart = cursorPos;
+            }
+            if (cursorPos > 0) {
+                cursorPos--;
+                selectionEnd = cursorPos;
+            }
+            break;
+
+        case 400: // Shift+Right
+            if (selectionStart == std::string::npos) {
+                selectionStart = cursorPos;
+            }
+            if (cursorPos < line.length()) {
+                cursorPos++;
+                selectionEnd = cursorPos;
+            }
+            break;
+
+        case 1: // Ctrl+A
+            selectionStart = 0;
+            selectionEnd = line.length();
+            break;
+
+        case 24: // Ctrl+X
+            if (selectionStartOrdered != std::string::npos && selectionEndOrdered != std::string::npos) {
+                clipboard = line.substr(selectionStartOrdered, selectionEndOrdered - selectionStartOrdered);
+                line.erase(selectionStartOrdered, selectionEndOrdered - selectionStartOrdered);
+                cursorPos = selectionStartOrdered;
+                selectionStart = std::string::npos;
+            }
+            break;
+
+        case 3: // Ctrl+C
+            if (selectionStartOrdered != std::string::npos && selectionEndOrdered != std::string::npos) {
+                clipboard = line.substr(selectionStartOrdered, selectionEndOrdered - selectionStartOrdered);
+                selectionStart = std::string::npos;
+            }
+            break;
+
+        case 22: // Ctrl+V
+            if (!clipboard.empty()) {
+                line.insert(cursorPos, clipboard);
+                cursorPos += clipboard.length();
+                selectionStart = std::string::npos;
+            }
+            break;
+
+        case KEY_HOME:
+            cursorPos = 0;
+            selectionStart = std::string::npos;
+            break;
+
+        case KEY_END:
+            cursorPos = line.length();
+            selectionStart = std::string::npos;
+            break;
+
         case KEY_LEFT:
             if (cursorPos > 0) cursorPos--;
-
+            selectionStart = std::string::npos;
             break;
 
         case KEY_RIGHT:
             if (cursorPos < line.length()) cursorPos++;
-
+            selectionStart = std::string::npos;
             break;
 
         case KEY_UP:
@@ -113,7 +231,7 @@ void AdminConsole::processKey(int key) {
                 line = commandHistory[commandHistory.size() - 1 - currentCommand];
             }
             cursorPos = line.size();
-
+            selectionStart = std::string::npos;
             break;
 
         case KEY_DOWN:
@@ -125,7 +243,7 @@ void AdminConsole::processKey(int key) {
                 line.clear();
             }
             cursorPos = line.size();
-
+            selectionStart = std::string::npos;
             break;
 
         case '\t': {
@@ -175,6 +293,7 @@ void AdminConsole::processKey(int key) {
                         for (size_t i = 0; i < commonPrefix.size(); i++) {
                             if (i == match.size() || match[i] != commonPrefix[i]) {
                                 commonPrefix = commonPrefix.substr(0, i);
+                                selectionStart = std::string::npos;
                                 break;
                             }
                         }
@@ -187,23 +306,33 @@ void AdminConsole::processKey(int key) {
 
             cursorPos = line.size();
             }
-
+            selectionStart = std::string::npos;
             break;
 
-        case 8:
+        case 8: // Backspace
         case 127:
-            if (!line.empty() && cursorPos > 0) {
+            if (selectionStartOrdered != std::string::npos && selectionEndOrdered != std::string::npos) {
+                line.erase(selectionStartOrdered, selectionEndOrdered - selectionStartOrdered); // Remove selected text
+                cursorPos = selectionStartOrdered;
+
+            } else if (cursorPos > 0) {
                 line.erase(cursorPos - 1, 1); // Remove character before the cursor
                 cursorPos--;
             }
 
+            selectionStart = std::string::npos;
             break;
 
         case KEY_DC:
-            if (cursorPos < line.length()) {
+            if (selectionStartOrdered != std::string::npos && selectionEndOrdered != std::string::npos) {
+                line.erase(selectionStartOrdered, selectionEndOrdered - selectionStartOrdered); // Remove selected text
+                cursorPos = selectionStartOrdered;
+
+            } else if (cursorPos < line.length()) {
                 line.erase(cursorPos, 1); // Remove character at the cursor position
             }
-            
+
+            selectionStart = std::string::npos;
             break;
         
         default:
@@ -211,16 +340,41 @@ void AdminConsole::processKey(int key) {
                 line.insert(cursorPos, 1, key); // Insert character at cursor
                 cursorPos++;
             }
+            else{line+=std::to_string(key);cursorPos+=std::to_string(key).size();} // For debugging purposes
 
+            selectionStart = std::string::npos;
             break;
+    }
+
+    selectionStartOrdered = selectionStart;
+    selectionEndOrdered = selectionEnd;
+    if (selectionStartOrdered > selectionEndOrdered) {
+        std::swap(selectionStartOrdered, selectionEndOrdered);
     }
 
     // Update the console
     move(LINES-1, 0);
     clrtoeol();
     printw(prompt.c_str());
-    printw(line.c_str());
-    move(LINES-1, cursorPos + prompt.size());  // Move the cursor to the correct position
+
+
+    if (selectionStartOrdered != std::string::npos && selectionEndOrdered != std::string::npos) {
+        std::string beforeSelection = line.substr(0, selectionStartOrdered);
+        printw(beforeSelection.c_str());
+
+        attron(A_REVERSE);
+        std::string selectedText = line.substr(selectionStartOrdered, selectionEndOrdered - selectionStartOrdered);
+        printw(selectedText.c_str());
+        attroff(A_REVERSE);
+
+        std::string afterSelection = line.substr(selectionEndOrdered);
+        printw(afterSelection.c_str());
+
+    } else {
+        printw(line.c_str());
+    }
+
+    move(LINES-1, cursorPos + prompt.size());
 }
 
 void AdminConsole::cmdReport(const std::string& msg, int colorPair) { // Same functionality as printLog, just different window

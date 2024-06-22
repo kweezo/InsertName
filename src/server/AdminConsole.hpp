@@ -36,10 +36,16 @@ private:
     static int currentCommand;
     static std::string prompt;
     static int commandWindowHeight;
-    static std::string line;
-    static size_t cursorPos;
 
-    static void loadVariables();
+    static std::string line;
+    static std::string clipboard;
+    static size_t cursorPos;
+    static size_t selectionStart;
+    static size_t selectionEnd;
+    static size_t selectionStartOrdered;
+    static size_t selectionEndOrdered;
+
+    static void initVariables();
     static void initWindows();
     static void initColors();
     static void addCommands();
