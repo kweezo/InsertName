@@ -35,15 +35,16 @@ private:
     static std::deque<std::string> commandHistory;
     static int currentCommand;
     static std::string prompt;
-    static std::string line;
     static int commandWindowHeight;
+    static std::string line;
+    static size_t cursorPos;
 
     static void loadVariables();
     static void initWindows();
     static void initColors();
     static void addCommands();
     
-    static void processKey(int key, const std::string& prompt);
+    static void processKey(int key);
     static void cmdReport(const std::string& msg, int colorPair = 1);
 
     static void stop(double waitTime);

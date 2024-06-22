@@ -19,8 +19,9 @@ WINDOW* AdminConsole::commandFeedbackWindow = nullptr;
 std::deque<std::string> AdminConsole::commandHistory;
 int AdminConsole::currentCommand;
 std::string AdminConsole::prompt;
-std::string AdminConsole::line;
 int AdminConsole::commandWindowHeight;
+std::string AdminConsole::line;
+size_t AdminConsole::cursorPos;
 
 void AdminConsole::init() {
     loadVariables();
@@ -74,10 +75,60 @@ std::string AdminConsole::readLine() {
     wrefresh(commandWindow);
 
     int ch;
-    std::string line;
+    line = "";
+    cursorPos = 0;
     
     while ((ch = getch()) != '\n' && ch != '\r') {
-        if (ch == '\t') {
+        processKey(ch);
+
+        if (line.empty() && (ch == '\n' || ch == '\r')) {
+            return "";  // Return an empty string if the line is empty
+        }
+    }
+
+    if (!line.empty()) {
+        // Add the command to the history
+        commandHistory.push_back(line);
+        currentCommand = -1;
+    }
+
+    return line;
+}
+
+void AdminConsole::processKey(int key) {
+    switch (key) {
+        case KEY_LEFT:
+            if (cursorPos > 0) cursorPos--;
+
+            break;
+
+        case KEY_RIGHT:
+            if (cursorPos < line.length()) cursorPos++;
+
+            break;
+
+        case KEY_UP:
+            if (!commandHistory.empty() && currentCommand < (int)commandHistory.size() - 1) {
+                currentCommand++;
+                line = commandHistory[commandHistory.size() - 1 - currentCommand];
+            }
+            cursorPos = line.size();
+
+            break;
+
+        case KEY_DOWN:
+            if (currentCommand > 0) {
+                currentCommand--;
+                line = commandHistory[commandHistory.size() - 1 - currentCommand];
+            } else if (currentCommand == 0) {
+                currentCommand = -1;
+                line.clear();
+            }
+            cursorPos = line.size();
+
+            break;
+
+        case '\t': {
             std::vector<std::string> matches;
             size_t spacePos = line.find(' ');
             int commandIndex = -1;
@@ -101,7 +152,7 @@ std::string AdminConsole::readLine() {
                         }
                     }
                 } else {
-                    continue;
+                    return;
                 }
 
             } else {
@@ -134,61 +185,34 @@ std::string AdminConsole::readLine() {
                 }
             }
 
-            move(LINES-1, 0);
-            clrtoeol();
-            printw(prompt.c_str());
-            printw(line.c_str());
-            move(LINES-1, line.length() + prompt.size());
-
-        } else if (ch == KEY_UP || ch == KEY_DOWN) {
-            processKey(ch, prompt);
-
-        } else {
-            if (ch == 8 || ch == 127) {
-                if (!line.empty()) {
-                    line.pop_back(); // Remove the last character
-                    currentCommand = -1;
-                }
-
-            } else if (ch >= 32 && ch <= 126 && line.length() < COLS - prompt.size() - 1) {
-                line += ch; // Append the character to the line
-                currentCommand = -1;
+            cursorPos = line.size();
             }
 
-            move(LINES-1, 0);
-            clrtoeol();
-            printw(prompt.c_str());
-            printw(line.c_str());
-            move(LINES-1, line.length() + prompt.size());  // Move the cursor to the correct position
-        }
-        if (line.empty() && (ch == '\n' || ch == '\r')) {
-            return "";  // Return an empty string if the line is empty
-        }
-    }
+            break;
 
-    if (!line.empty()) {
-        // Add the command to the history
-        commandHistory.push_back(line);
-        currentCommand = -1;
-    }
+        case 8:
+        case 127:
+            if (!line.empty() && cursorPos > 0) {
+                line.erase(cursorPos - 1, 1); // Remove character before the cursor
+                cursorPos--;
+            }
 
-    return line;
-}
+            break;
 
-void AdminConsole::processKey(int key, const std::string& prompt) {
-    if (key == KEY_UP) {
-        if (!commandHistory.empty() && currentCommand < (int)commandHistory.size() - 1) {
-            currentCommand++;
-            line = commandHistory[commandHistory.size() - 1 - currentCommand];
-        }
-    } else if (key == KEY_DOWN) {
-        if (currentCommand > 0) {
-            currentCommand--;
-            line = commandHistory[commandHistory.size() - 1 - currentCommand];
-        } else if (currentCommand == 0) {
-            currentCommand = -1;
-            line.clear();
-        }
+        case KEY_DC:
+            if (cursorPos < line.length()) {
+                line.erase(cursorPos, 1); // Remove character at the cursor position
+            }
+            
+            break;
+        
+        default:
+            if (key >= 32 && key <= 126 && line.length() < COLS - prompt.size() - 1) {
+                line.insert(cursorPos, 1, key); // Insert character at cursor
+                cursorPos++;
+            }
+
+            break;
     }
 
     // Update the console
@@ -196,7 +220,7 @@ void AdminConsole::processKey(int key, const std::string& prompt) {
     clrtoeol();
     printw(prompt.c_str());
     printw(line.c_str());
-    move(LINES-1, line.length() + prompt.size());  // Move the cursor to the correct position
+    move(LINES-1, cursorPos + prompt.size());  // Move the cursor to the correct position
 }
 
 void AdminConsole::cmdReport(const std::string& msg, int colorPair) { // Same functionality as printLog, just different window
@@ -337,7 +361,7 @@ void AdminConsole::processLine(const std::string& line) {
             cmdReport("Setting '" + commands[1] + "' is set to: '" + std::to_string(value) + '\'', 2);
         }
     } else {
-        cmdReport("Unknown command: " + line, 4);
+        cmdReport("Unknown command: '" + line + '\'', 4);
     }
     
 }
