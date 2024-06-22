@@ -233,8 +233,11 @@ void AdminConsole::printLog(const std::string& msg, int colorPair) {
 }
 
 void AdminConsole::processLine(const std::string& line) {
-    if (line.empty() || !isRunning) {
+    if (line.empty()) {
         return;
+    }
+    if (!isRunning) {
+        exit(0);
     }
 
     std::vector<std::string> commands;
@@ -272,7 +275,7 @@ void AdminConsole::processLine(const std::string& line) {
     if (commands[0] == "stop") {
         double value;
         if (cmdSize == 2) {
-            if (Config::IsDouble(commands[1], value)) {
+            if (Config::TryPassDouble(commands[1], value)) {
                 stop(value);
             } else {
                 cmdReport("Invalid argument for 'stop' command. Argument should be type double.", 4);
@@ -280,7 +283,7 @@ void AdminConsole::processLine(const std::string& line) {
         } else if (cmdSize == 1) {
             cmdReport("'stop' command requires a time argument.", 4);
         } else {
-            cmdReport("Too much arguments for 'stop' command.", 4);
+            cmdReport("Too many arguments for 'stop' command.", 4);
         }
         
 
@@ -303,27 +306,27 @@ void AdminConsole::processLine(const std::string& line) {
         int index = std::distance(secParam[1].begin(), it);
 
         if (cmdSize == 2) {
-            cmdReport("Setting '" + commands[1] + "' is set to: '" + *static_cast<std::string*>(Config::configPointers[index]) + '\'', 2);
+            cmdReport("Setting '" + commands[1] + "' is set to: '" + Config::AccessConfigPointer(index) + '\'', 2);
             return;
         }
 
         // Size is 3
         if (index <= 2 || index == 9) {
-            std::string* stringPointer = static_cast<std::string*>(Config::configPointers[index]);
-            *stringPointer = commands[2];
+            Config::SetConfigStringValue(index, commands[2]);
+            cmdReport("Setting '" + commands[1] + "' is set to: '" + commands[2] + '\'', 2);
             return;
         }
         if (index == 3) {
             if (Config::IsValidIPv4(commands[2])) {
-                std::string* stringPointer = static_cast<std::string*>(Config::configPointers[index]);
-                *stringPointer = commands[2];
+                Config::SetConfigStringValue(index, commands[2]);
+                cmdReport("Setting '" + commands[1] + "' is set to: '" + commands[2] + '\'', 2);
                 return;
             }
             cmdReport("Invalid IPv4 address", 4);
             return;
         }
         int value;
-        if (!Config::IsInt(commands[2], value)) {
+        if (!Config::TryPassInt(commands[2], value)) {
             cmdReport("Invalid argument for config command. Argument should be type int", 4);
             return;
         }
@@ -340,8 +343,8 @@ void AdminConsole::processLine(const std::string& line) {
         } else if (index == 10 && value < 1) {
             cmdReport("Command window height must be greater than 0", 4);
         } else {
-            int* intPointer = static_cast<int*>(Config::configPointers[index]);
-            *intPointer = static_cast<int>(value);
+            Config::SetConfigIntValue(index, value);
+            cmdReport("Setting '" + commands[1] + "' is set to: '" + std::to_string(value) + '\'', 2);
         }
     } else {
         cmdReport("Unknown command: " + line, 4);
@@ -366,6 +369,7 @@ void AdminConsole::stop(double waitTime) {
         Log::destroy();
         isRunning = false;
 
-        cmdReport("Server stopped. Press ENTER to exit", 1);
+        cmdReport("Server stopped.", 1);
+        exit(0);
     }).detach();
 }

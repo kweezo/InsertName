@@ -20,9 +20,7 @@ int main() {
         // Run the adminConsole in a loop
         while (AdminConsole::isRunning) {
             line = AdminConsole::readLine();
-            if (!line.empty()) {
-                AdminConsole::processLine(line);
-            }
+            AdminConsole::processLine(line);
         }
     });
 
@@ -30,7 +28,6 @@ int main() {
 
     Server::handleClients();
 
-    // Join the adminConsoleThread before exiting the main function
     adminConsoleThread.join();
 
     return 0;

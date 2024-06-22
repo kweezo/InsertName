@@ -15,23 +15,63 @@ int Config::maxLogBufferSize;
 std::string Config::commandPrompt;
 int Config::commandWindowHeight;
 std::string Config::filename;
-std::array<void*, 11> Config::configPointers;
+std::array<ConfigPointerVariant, 11> Config::configPointers;
 
 
 void Config::InitializePointers() {
     configPointers = {
-        reinterpret_cast<void*>(&dbname),
-        reinterpret_cast<void*>(&dbuser),
-        reinterpret_cast<void*>(&dbpassword),
-        reinterpret_cast<void*>(&dbhostaddr),
-        reinterpret_cast<void*>(&dbport),
-        reinterpret_cast<void*>(&serverPort),
-        reinterpret_cast<void*>(&loginAttempts),
-        reinterpret_cast<void*>(&logLevel),
-        reinterpret_cast<void*>(&maxLogBufferSize),
-        reinterpret_cast<void*>(&commandPrompt),
-        reinterpret_cast<void*>(&commandWindowHeight)
+        &dbname,
+        &dbuser,
+        &dbpassword,
+        &dbhostaddr,
+        &dbport,
+        &serverPort,
+        &loginAttempts,
+        &logLevel,
+        &maxLogBufferSize,
+        &commandPrompt,
+        &commandWindowHeight
     };
+}
+
+std::string Config::AccessConfigPointer(size_t index) {
+    if (index >= Config::configPointers.size()) {
+        std::cerr << "Index out of range." << std::endl;
+        return "";
+    }
+
+    return std::visit([](auto&& arg) -> std::string {
+        using T = std::decay_t<decltype(arg)>;
+        if constexpr (std::is_same_v<T, std::string*>) {
+            return *arg;
+
+        } else if constexpr (std::is_same_v<T, int*>) {
+            return std::to_string(*arg);
+
+        } else {
+            return "Unsupported type";
+        }
+    }, Config::configPointers[index]);
+}
+
+void Config::SetConfigStringValue(size_t index, const std::string& value) {
+    auto& variant = Config::configPointers[index];
+    std::string** stringPtr = std::get_if<std::string*>(&variant);
+    if (stringPtr) {
+        **stringPtr = value;
+    } else {
+        std::cerr << "Index " << index << " does not point to a std::string type." << std::endl;
+    }
+}
+
+void Config::SetConfigIntValue(size_t index, int value) {
+    auto& variant = Config::configPointers[index];
+    int** intPtr = std::get_if<int*>(&variant);
+    if (intPtr) {
+        **intPtr = value;
+    } else {
+        std::cerr << "Index " << index << " does not point to an int type." << std::endl;
+    }
 }
 
 void Config::LoadConfig(const std::string& filename) {
@@ -138,27 +178,27 @@ bool Config::CheckSettingsFormat(std::unordered_map<std::string, std::string>& s
     }
 
     int value;
-    if (!IsInt(settings["dbport"], value) && (value < 1 || value > 65535)) {
+    if (!TryPassInt(settings["dbport"], value) && (value < 1 || value > 65535)) {
         std::cerr << "Database port must be integer greater than 0 and smaller than 65536";
         valid = false;
     }
-    if (!IsInt(settings["serverPort"], value) && (value < 1 || value > 65535)) {
+    if (!TryPassInt(settings["serverPort"], value) && (value < 1 || value > 65535)) {
         std::cerr << "Server port must be integer greater than  and smaller than 65536";
         valid = false;
     }
-    if (!IsInt(settings["loginAttempts"], value) && value < 1) {
+    if (!TryPassInt(settings["loginAttempts"], value) && value < 1) {
         std::cerr << "Login attempts must be integer greater than 0";
         valid = false;
     }
-    if (!IsInt(settings["logLevel"], value) && (value < 0 || value > 4)) {
+    if (!TryPassInt(settings["logLevel"], value) && (value < 0 || value > 4)) {
         std::cerr << "Log level must be integer between 0 and 4";
         valid = false;
     }
-    if (!IsInt(settings["maxLogBufferSize"], value) && value < 1) {
+    if (!TryPassInt(settings["maxLogBufferSize"], value) && value < 1) {
         std::cerr << "Max log buffer size must be integer greater than 0";
         valid = false;
     }
-    if (!IsInt(settings["commandWindowHeight"], value) && value < 1) {
+    if (!TryPassInt(settings["commandWindowHeight"], value) && value < 1) {
         std::cerr << "Command window height must be integer greater than 0";
         valid = false;
     }
@@ -166,13 +206,13 @@ bool Config::CheckSettingsFormat(std::unordered_map<std::string, std::string>& s
     return valid;
 }
 
-bool Config::IsDouble(const std::string& s, double& d) {
+bool Config::TryPassDouble(const std::string& s, double& d) {
     std::istringstream iss(s);
     iss >> d;
     return iss.eof() && !iss.fail();
 }
 
-bool Config::IsInt(const std::string& s, int& i) {
+bool Config::TryPassInt(const std::string& s, int& i) {
     std::istringstream iss(s);
     iss >> i;
     return iss.eof() && !iss.fail();
