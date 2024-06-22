@@ -12,7 +12,7 @@
 #include <array> 
 #include <deque>
 
-#define COMMAND_COUNT 2
+#define COMMAND_COUNT 3
 
 class AdminConsole {
 public:

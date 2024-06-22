@@ -72,10 +72,11 @@ void AdminConsole::initWindows() {
 }
 
 void AdminConsole::addCommands() {
-    commands = {"stop", "config"};
+    commands = {"stop", "config", "save"};
 
     secParam[0] = {"0"};
     secParam[1] = {"dbname", "dbuser", "dbpassword", "dbhostaddr", "dbport", "serverport", "loginattempts", "loglevel", "maxlogbuffersize", "commandprompt", "commandwindowheight"};
+    secParam[2] = {"all", "config", "logs"};
 }
 
 std::string AdminConsole::readLine() {
@@ -513,6 +514,42 @@ void AdminConsole::processLine(const std::string& line) {
         } else {
             Config::SetConfigIntValue(index, value);
             cmdReport("Setting '" + commands[1] + "' is set to: '" + std::to_string(value) + '\'', 2);
+        }
+    } else if (commands[0] == "save") {
+        if (cmdSize == 1) {
+            cmdReport("Saving all...", 2);
+            Config::SaveConfig();
+            Log::sendLogsToDatabase();
+            return;
+        }
+
+        if (cmdSize > 2) {
+            cmdReport("Too many arguments for save command", 4);
+            return;
+        }
+
+        auto it = std::find(secParam[2].begin(), secParam[2].end(), commands[1]);
+        if (it == secParam[2].end()) {
+            cmdReport("Unknown parameter: " + commands[1], 4);
+            return;
+        }
+        int index = std::distance(secParam[2].begin(), it);
+
+        if (index == 0) {
+            cmdReport("Saving all...", 2);
+            Config::SaveConfig();
+            Log::sendLogsToDatabase();
+            return;
+        }
+        if (index == 1) {
+            cmdReport("Saving config...", 2);
+            Config::SaveConfig();
+            return;
+        }
+        if (index == 2) {
+            cmdReport("Saving logs...", 2);
+            Log::sendLogsToDatabase();
+            return;
         }
     } else {
         cmdReport("Unknown command: '" + line + '\'', 4);
