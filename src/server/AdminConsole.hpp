@@ -35,7 +35,7 @@ private:
     static std::deque<std::string> commandHistory;
     static int currentCommand;
     static std::string prompt;
-    static char line[256];
+    static std::string line;
     static int commandWindowHeight;
 
     static void loadVariables();
