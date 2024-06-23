@@ -5,12 +5,11 @@
 #include "Log.hpp"
 
 #include <algorithm>
-#include <cstring>
 #include <thread>
 #include <regex>
 
 
-bool AdminConsole::isRunning = true;
+bool AdminConsole::isRunning;
 std::array<std::string, COMMAND_COUNT> AdminConsole::commands;
 std::array<std::vector<std::string>, COMMAND_COUNT> AdminConsole::secParam;
 WINDOW* AdminConsole::logWindow = nullptr;
@@ -18,13 +17,19 @@ WINDOW* AdminConsole::separatorWindow = nullptr;
 WINDOW* AdminConsole::commandWindow = nullptr;
 WINDOW* AdminConsole::commandFeedbackWindow = nullptr;
 std::deque<std::string> AdminConsole::commandHistory;
-int AdminConsole::currentCommand = -1;
+int AdminConsole::currentCommand;
 std::string AdminConsole::prompt;
-char AdminConsole::line[256] = {0};
 int AdminConsole::commandWindowHeight;
+std::string AdminConsole::line;
+std::string AdminConsole::clipboard;
+size_t AdminConsole::cursorPos;
+size_t AdminConsole::selectionStart;
+size_t AdminConsole::selectionEnd;
+size_t AdminConsole::selectionStartOrdered;
+size_t AdminConsole::selectionEndOrdered;
 
 void AdminConsole::init() {
-    loadVariables();
+    initVariables();
     initscr(); // Initialize ncurses
     keypad(stdscr, TRUE);
     noecho();
@@ -33,9 +38,14 @@ void AdminConsole::init() {
     initWindows();
 }
 
-void AdminConsole::loadVariables() {
+void AdminConsole::initVariables() {
     commandWindowHeight = Config::commandWindowHeight;
-    prompt = Config::commandPrefix;
+    prompt = Config::commandPrompt;
+
+    isRunning = true;
+    currentCommand = -1;
+    selectionStart = std::string::npos;
+    selectionEnd = std::string::npos;
 }
 
 void AdminConsole::initColors() {
@@ -64,8 +74,8 @@ void AdminConsole::initWindows() {
 void AdminConsole::addCommands() {
     commands = {"stop", "config"};
 
-    secParam[0] = {};
-    secParam[1] = {"dbname", "dbuser", "dbpassword", "dbhostaddr", "dbport", "serverPort", "loginAttempts", "logLevel", "maxLogBufferSize", "commandPrefix", "commandWindowHeight"};
+    secParam[0] = {"0"};
+    secParam[1] = {"dbname", "dbuser", "dbpassword", "dbhostaddr", "dbport", "serverport", "loginattempts", "loglevel", "maxlogbuffersize", "commandprompt", "commandwindowheight"};
 }
 
 std::string AdminConsole::readLine() {
@@ -73,19 +83,177 @@ std::string AdminConsole::readLine() {
     clrtoeol(); // Clear the command line
     printw(prompt.c_str()); // Print the command prefix
     wrefresh(commandWindow);
+
     int ch;
-    int pos = 0;
+    line = "";
+    cursorPos = 0;
     
     while ((ch = getch()) != '\n' && ch != '\r') {
-        if (ch == '\t') {
-            std::string currentInput(line);
+        processKey(ch);
+
+        if (line.empty() && (ch == '\n' || ch == '\r')) {
+            return "";  // Return an empty string if the line is empty
+        }
+    }
+
+    if (!line.empty()) {
+        // Add the command to the history
+        commandHistory.push_back(line);
+        currentCommand = -1;
+    }
+
+    return line;
+}
+
+void AdminConsole::processKey(int key) {
+    switch (key) {
+        case 443: // Ctrl+KEY_LEFT
+            // Move cursorPos to the start of the previous word
+            if (cursorPos > 0) {
+                // Skip any spaces before the current position
+                while (cursorPos > 0 && line[cursorPos - 1] == ' ') cursorPos--;
+                // Move to the start of the word
+                while (cursorPos > 0 && line[cursorPos - 1] != ' ') cursorPos--;
+            }
+            selectionStart = std::string::npos;
+            break;
+
+        case 444: // Ctrl+KEY_RIGHT
+            // Move cursorPos to the start of the next word
+            if (cursorPos < line.length()) {
+                // Skip current word
+                while (cursorPos < line.length() && line[cursorPos] != ' ') cursorPos++;
+                // Skip any spaces after the current word
+                while (cursorPos < line.length() && line[cursorPos] == ' ') cursorPos++;
+            }
+            selectionStart = std::string::npos;
+            break;
+
+        case 23: // Ctrl+Backspace
+            if (cursorPos > 0) {
+                size_t startPos = cursorPos;
+                // Skip any spaces before the current position
+                while (cursorPos > 0 && line[cursorPos - 1] == ' ') cursorPos--;
+                // Move to the start of the word
+                while (cursorPos > 0 && line[cursorPos - 1] != ' ') cursorPos--;
+                // Erase the word
+                line.erase(cursorPos, startPos - cursorPos);
+            }
+            selectionStart = std::string::npos;
+            break;
+        
+        case 420: // Ctrl+Delete
+            if (cursorPos < line.length()) {
+                size_t startPos = cursorPos;
+                // Skip current word
+                while (cursorPos < line.length() && line[cursorPos] != ' ') cursorPos++;
+                // Skip any spaces after the current word
+                while (cursorPos < line.length() && line[cursorPos] == ' ') cursorPos++;
+                // Erase the word
+                line.erase(startPos, cursorPos - startPos);
+                cursorPos = startPos; // Reset cursor position to the start of deletion
+            }
+            selectionStart = std::string::npos;
+            break;
+
+        case 391: // Shift+Left
+            if (selectionStart == std::string::npos) {
+                selectionStart = cursorPos;
+            }
+            if (cursorPos > 0) {
+                cursorPos--;
+                selectionEnd = cursorPos;
+            }
+            break;
+
+        case 400: // Shift+Right
+            if (selectionStart == std::string::npos) {
+                selectionStart = cursorPos;
+            }
+            if (cursorPos < line.length()) {
+                cursorPos++;
+                selectionEnd = cursorPos;
+            }
+            break;
+
+        case 1: // Ctrl+A
+            selectionStart = 0;
+            selectionEnd = line.length();
+            break;
+
+        case 24: // Ctrl+X
+            if (selectionStartOrdered != std::string::npos && selectionEndOrdered != std::string::npos) {
+                clipboard = line.substr(selectionStartOrdered, selectionEndOrdered - selectionStartOrdered);
+                line.erase(selectionStartOrdered, selectionEndOrdered - selectionStartOrdered);
+                cursorPos = selectionStartOrdered;
+                selectionStart = std::string::npos;
+            }
+            break;
+
+        case 3: // Ctrl+C
+            if (selectionStartOrdered != std::string::npos && selectionEndOrdered != std::string::npos) {
+                clipboard = line.substr(selectionStartOrdered, selectionEndOrdered - selectionStartOrdered);
+                selectionStart = std::string::npos;
+            }
+            break;
+
+        case 22: // Ctrl+V
+            if (!clipboard.empty()) {
+                line.insert(cursorPos, clipboard);
+                cursorPos += clipboard.length();
+                selectionStart = std::string::npos;
+            }
+            break;
+
+        case KEY_HOME:
+            cursorPos = 0;
+            selectionStart = std::string::npos;
+            break;
+
+        case KEY_END:
+            cursorPos = line.length();
+            selectionStart = std::string::npos;
+            break;
+
+        case KEY_LEFT:
+            if (cursorPos > 0) cursorPos--;
+            selectionStart = std::string::npos;
+            break;
+
+        case KEY_RIGHT:
+            if (cursorPos < line.length()) cursorPos++;
+            selectionStart = std::string::npos;
+            break;
+
+        case KEY_UP:
+            if (!commandHistory.empty() && currentCommand < (int)commandHistory.size() - 1) {
+                currentCommand++;
+                line = commandHistory[commandHistory.size() - 1 - currentCommand];
+            }
+            cursorPos = line.size();
+            selectionStart = std::string::npos;
+            break;
+
+        case KEY_DOWN:
+            if (currentCommand > 0) {
+                currentCommand--;
+                line = commandHistory[commandHistory.size() - 1 - currentCommand];
+            } else if (currentCommand == 0) {
+                currentCommand = -1;
+                line.clear();
+            }
+            cursorPos = line.size();
+            selectionStart = std::string::npos;
+            break;
+
+        case '\t': {
             std::vector<std::string> matches;
-            size_t spacePos = currentInput.find(' ');
+            size_t spacePos = line.find(' ');
             int commandIndex = -1;
 
             if (spacePos != std::string::npos) {
-                std::string baseCommand = currentInput.substr(0, spacePos);
-                std::string additionalParam = currentInput.substr(spacePos + 1);
+                std::string baseCommand = line.substr(0, spacePos);
+                std::string additionalParam = line.substr(spacePos + 1);
 
                 // Find the index of the base command
                 for (size_t i = 0; i < commands.size(); ++i) {
@@ -102,13 +270,13 @@ std::string AdminConsole::readLine() {
                         }
                     }
                 } else {
-                    continue;
+                    return;
                 }
 
             } else {
                 // Find all commands that start with the current input
                 for (const auto& cmd : commands) {
-                    if (cmd.find(currentInput) == 0) {
+                    if (cmd.find(line) == 0) {
                         matches.push_back(cmd);
                     }
                 }
@@ -117,8 +285,7 @@ std::string AdminConsole::readLine() {
             if (!matches.empty()) {
                 // If there is only one match, complete the command
                 if (matches.size() == 1) {
-                    strncpy(line, (((spacePos != std::string::npos && commandIndex != -1) ? commands[commandIndex] + ' ' : "") + matches[0] + ' ').c_str(), sizeof(line) - 1);
-                    pos = strlen(line);
+                    line = ((spacePos != std::string::npos && commandIndex != -1) ? commands[commandIndex] + ' ' : "") + matches[0] + ' ';
                 } else {
                     // Find the common prefix of all matches
                     std::string commonPrefix = matches[0];
@@ -126,87 +293,88 @@ std::string AdminConsole::readLine() {
                         for (size_t i = 0; i < commonPrefix.size(); i++) {
                             if (i == match.size() || match[i] != commonPrefix[i]) {
                                 commonPrefix = commonPrefix.substr(0, i);
+                                selectionStart = std::string::npos;
                                 break;
                             }
                         }
                     }
                     
                     // Copy the common prefix to the input line
-                    strncpy(line, (((spacePos != std::string::npos && commandIndex != -1) ? commands[commandIndex] + ' ' : "") + commonPrefix).c_str(), sizeof(line) - 1);
-                    pos = strlen(line);
+                    line = ((spacePos != std::string::npos && commandIndex != -1) ? commands[commandIndex] + ' ' : "") + commonPrefix;
                 }
             }
 
-            move(LINES-1, 0);
-            clrtoeol();
-            printw(prompt.c_str());
-            printw(line);
-            move(LINES-1, pos + prompt.size());
+            cursorPos = line.size();
+            }
+            selectionStart = std::string::npos;
+            break;
 
-        } else if (ch == KEY_UP || ch == KEY_DOWN) {
-            processKey(ch, prompt);
-            pos = strlen(line);
+        case 8: // Backspace
+        case 127:
+            if (selectionStartOrdered != std::string::npos && selectionEndOrdered != std::string::npos) {
+                line.erase(selectionStartOrdered, selectionEndOrdered - selectionStartOrdered); // Remove selected text
+                cursorPos = selectionStartOrdered;
 
-        } else {
-            if (ch == 8 || ch == 127) {
-                if (pos > 0) {
-                    pos--;
-                    line[pos] = '\0';
-                    currentCommand = -1;
-                }
-
-            } else if (ch >= 32 && ch <= 126 && pos < COLS - prompt.size() - 1) {
-                line[pos++] = ch;
-                line[pos] = '\0';
-                currentCommand = -1;
+            } else if (cursorPos > 0) {
+                line.erase(cursorPos - 1, 1); // Remove character before the cursor
+                cursorPos--;
             }
 
-            move(LINES-1, 0);
-            clrtoeol();
-            printw(prompt.c_str());
-            printw(line);
-            move(LINES-1, pos + prompt.size());  // Move the cursor to the correct position
-        }
-        if (pos == 0 && (ch == '\n' || ch == '\r')) {
-            return "";  // Return an empty string if the line is empty
-        }
+            selectionStart = std::string::npos;
+            break;
+
+        case KEY_DC:
+            if (selectionStartOrdered != std::string::npos && selectionEndOrdered != std::string::npos) {
+                line.erase(selectionStartOrdered, selectionEndOrdered - selectionStartOrdered); // Remove selected text
+                cursorPos = selectionStartOrdered;
+
+            } else if (cursorPos < line.length()) {
+                line.erase(cursorPos, 1); // Remove character at the cursor position
+            }
+
+            selectionStart = std::string::npos;
+            break;
+        
+        default:
+            if (key >= 32 && key <= 126 && line.length() < COLS - prompt.size() - 1) {
+                line.insert(cursorPos, 1, key); // Insert character at cursor
+                cursorPos++;
+            }
+            else{line+=std::to_string(key);cursorPos+=std::to_string(key).size();} // For debugging purposes
+
+            selectionStart = std::string::npos;
+            break;
     }
 
-    std::string strLine(line);
-    if (!strLine.empty()) {
-        // Add the command to the history
-        commandHistory.push_back(strLine);
-        currentCommand = -1;
+    selectionStartOrdered = selectionStart;
+    selectionEndOrdered = selectionEnd;
+    if (selectionStartOrdered > selectionEndOrdered) {
+        std::swap(selectionStartOrdered, selectionEndOrdered);
     }
-    line[0] = '\0';
 
-    return strLine;
-}
-
-void AdminConsole::processKey(int key, const std::string& prompt) {
-    if (key == KEY_UP) {
-        if (!commandHistory.empty() && currentCommand < (int)commandHistory.size() - 1) {
-            currentCommand++;
-            strncpy(line, commandHistory[commandHistory.size() - 1 - currentCommand].c_str(), sizeof(line) - 1);
-            line[sizeof(line) - 1] = '\0'; // Add null terminator
-        }
-    } else if (key == KEY_DOWN) {
-        if (currentCommand > 0) {
-            currentCommand--;
-            strncpy(line, commandHistory[commandHistory.size() - 1 - currentCommand].c_str(), sizeof(line) - 1);
-            line[sizeof(line) - 1] = '\0'; // Add null terminator
-        } else if (currentCommand == 0) {
-            currentCommand = -1;
-            line[0] = '\0';
-        }
-    }
     // Update the console
-    int pos = strlen(line);
     move(LINES-1, 0);
     clrtoeol();
     printw(prompt.c_str());
-    printw(line);
-    move(LINES-1, pos + prompt.size());  // Move the cursor to the correct position
+
+
+    if (selectionStartOrdered != std::string::npos && selectionEndOrdered != std::string::npos) {
+        std::string beforeSelection = line.substr(0, selectionStartOrdered);
+        printw(beforeSelection.c_str());
+
+        attron(A_REVERSE);
+        std::string selectedText = line.substr(selectionStartOrdered, selectionEndOrdered - selectionStartOrdered);
+        printw(selectedText.c_str());
+        attroff(A_REVERSE);
+
+        std::string afterSelection = line.substr(selectionEndOrdered);
+        printw(afterSelection.c_str());
+
+    } else {
+        printw(line.c_str());
+    }
+
+    move(LINES-1, cursorPos + prompt.size());
 }
 
 void AdminConsole::cmdReport(const std::string& msg, int colorPair) { // Same functionality as printLog, just different window
@@ -214,7 +382,7 @@ void AdminConsole::cmdReport(const std::string& msg, int colorPair) { // Same fu
     wprintw(commandFeedbackWindow, "\n%s", msg.c_str());
     wattroff(commandFeedbackWindow, COLOR_PAIR(colorPair));
     wrefresh(commandFeedbackWindow);
-    wmove(commandWindow, 0, strlen(line) + prompt.size());
+    wmove(commandWindow, 0, line.size() + prompt.size());
     wrefresh(commandWindow);
 }
 
@@ -228,13 +396,16 @@ void AdminConsole::printLog(const std::string& msg, int colorPair) {
     wrefresh(logWindow);
 
     // Move the cursor back to the command line
-    wmove(commandWindow, 0, strlen(line) + prompt.size());
+    wmove(commandWindow, 0, line.size() + prompt.size());
     wrefresh(commandWindow);
 }
 
 void AdminConsole::processLine(const std::string& line) {
-    if (line.empty() || !isRunning) {
+    if (line.empty()) {
         return;
+    }
+    if (!isRunning) {
+        exit(0);
     }
 
     std::vector<std::string> commands;
@@ -272,7 +443,7 @@ void AdminConsole::processLine(const std::string& line) {
     if (commands[0] == "stop") {
         double value;
         if (cmdSize == 2) {
-            if (isDouble(commands[1], value)) {
+            if (Config::TryPassDouble(commands[1], value)) {
                 stop(value);
             } else {
                 cmdReport("Invalid argument for 'stop' command. Argument should be type double.", 4);
@@ -280,7 +451,7 @@ void AdminConsole::processLine(const std::string& line) {
         } else if (cmdSize == 1) {
             cmdReport("'stop' command requires a time argument.", 4);
         } else {
-            cmdReport("Too much arguments for 'stop' command.", 4);
+            cmdReport("Too many arguments for 'stop' command.", 4);
         }
         
 
@@ -303,27 +474,27 @@ void AdminConsole::processLine(const std::string& line) {
         int index = std::distance(secParam[1].begin(), it);
 
         if (cmdSize == 2) {
-            cmdReport("Setting '" + commands[1] + "' is set to: '" + *static_cast<std::string*>(Config::configPointers[index]) + '\'', 2);
+            cmdReport("Setting '" + commands[1] + "' is set to: '" + Config::AccessConfigPointer(index) + '\'', 2);
             return;
         }
 
         // Size is 3
         if (index <= 2 || index == 9) {
-            std::string* stringPointer = static_cast<std::string*>(Config::configPointers[index]);
-            *stringPointer = commands[2];
+            Config::SetConfigStringValue(index, commands[2]);
+            cmdReport("Setting '" + commands[1] + "' is set to: '" + commands[2] + '\'', 2);
             return;
         }
         if (index == 3) {
-            if (isValidIPv4(commands[2])) {
-                std::string* stringPointer = static_cast<std::string*>(Config::configPointers[index]);
-                *stringPointer = commands[2];
+            if (Config::IsValidIPv4(commands[2])) {
+                Config::SetConfigStringValue(index, commands[2]);
+                cmdReport("Setting '" + commands[1] + "' is set to: '" + commands[2] + '\'', 2);
                 return;
             }
             cmdReport("Invalid IPv4 address", 4);
             return;
         }
         int value;
-        if (!isInt(commands[2], value)) {
+        if (!Config::TryPassInt(commands[2], value)) {
             cmdReport("Invalid argument for config command. Argument should be type int", 4);
             return;
         }
@@ -340,11 +511,11 @@ void AdminConsole::processLine(const std::string& line) {
         } else if (index == 10 && value < 1) {
             cmdReport("Command window height must be greater than 0", 4);
         } else {
-            int* intPointer = static_cast<int*>(Config::configPointers[index]);
-            *intPointer = static_cast<int>(value);
+            Config::SetConfigIntValue(index, value);
+            cmdReport("Setting '" + commands[1] + "' is set to: '" + std::to_string(value) + '\'', 2);
         }
     } else {
-        cmdReport("Unknown command: " + line, 4);
+        cmdReport("Unknown command: '" + line + '\'', 4);
     }
     
 }
@@ -366,26 +537,7 @@ void AdminConsole::stop(double waitTime) {
         Log::destroy();
         isRunning = false;
 
-        cmdReport("Server stopped. Press ENTER to exit", 1);
+        cmdReport("Server stopped.", 1);
+        exit(0);
     }).detach();
-}
-
-bool AdminConsole::isDouble(const std::string& s, double& d) {
-    std::istringstream iss(s);
-    iss >> d;
-    return iss.eof() && !iss.fail();
-}
-
-bool AdminConsole::isInt(const std::string& s, int& i) {
-    std::istringstream iss(s);
-    iss >> i;
-    return iss.eof() && !iss.fail();
-}
-
-bool AdminConsole::isValidIPv4(const std::string& ip) {
-    std::regex ipRegex("^((25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\\.){3}(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$");
-    if (std::regex_match(ip, ipRegex)) {
-        return true;
-    }
-    return false;
 }

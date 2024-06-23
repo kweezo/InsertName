@@ -35,20 +35,23 @@ private:
     static std::deque<std::string> commandHistory;
     static int currentCommand;
     static std::string prompt;
-    static char line[256];
     static int commandWindowHeight;
 
-    static void loadVariables();
+    static std::string line;
+    static std::string clipboard;
+    static size_t cursorPos;
+    static size_t selectionStart;
+    static size_t selectionEnd;
+    static size_t selectionStartOrdered;
+    static size_t selectionEndOrdered;
+
+    static void initVariables();
     static void initWindows();
     static void initColors();
     static void addCommands();
     
-    static void processKey(int key, const std::string& prompt);
+    static void processKey(int key);
     static void cmdReport(const std::string& msg, int colorPair = 1);
 
     static void stop(double waitTime);
-
-    static bool isDouble(const std::string& s, double& d);
-    static bool isInt(const std::string& s, int& i);
-    static bool isValidIPv4(const std::string& ip);
 };
