@@ -104,7 +104,8 @@ void StaticModelInstance::Update(){
     for(uint32_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++){
         uint32_t y = 0;
         for(auto& [buff, instances] : staticModelInstanceMap){
-            secondaryBuffers[y][instances.model->GetShader()].push_back(instances.commandBuffer[i].GetCommandBuffer());
+            VkCommandBuffer buf = instances.commandBuffer[i].GetCommandBuffer();
+            secondaryBuffers[y][instances.model->GetShader()].push_back(buf);
             y++;
         }
     }
@@ -147,10 +148,13 @@ void StaticModelInstance::UploadDataToInstanceBuffer(StaticModelInstanceData& in
     instances.dataBufferInitialized = true;     
 
     for(uint32_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++){
+        static std::mutex threadSpawnMutex;
+        std::lock_guard<std::mutex> nextThreadInWaitListLock(threadSpawnMutex);
+
         threadQueues[nextThreadInWaitlist].push_back(&instances.threadLock[i]);
         instances.commandBuffer[i] = CommandBuffer(VK_COMMAND_BUFFER_LEVEL_SECONDARY, COMMAND_BUFFER_GRAPHICS_FLAG, nextThreadInWaitlist + 1);
 
-        threads.push_back(std::thread(&RecordStaticCommandBuffer, std::ref(instances), i, nextThreadInWaitlist, threadQueues.size()-1));
+        threads.push_back(std::thread(&RecordStaticCommandBuffer, std::ref(instances), i, nextThreadInWaitlist, threadQueues[nextThreadInWaitlist].size()-1));
 
         nextThreadInWaitlist = (nextThreadInWaitlist + 1) % std::thread::hardware_concurrency();
     }

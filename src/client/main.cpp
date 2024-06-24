@@ -200,10 +200,14 @@ int main(){
     TextureHandle texture = Texture::CreateTexture(dir + "res/textures/test.jpeg", 1, shader->GetDescriptorSet());
     Texture::EnableTextures();
 
-    ModelHandle model = Model::CreateModel(dir + "res/models/backpack/Survival_BackPack_2.fbx",
-     Shader::GetShader("basicMesh"), {}, {});
+    
+    std::vector<ModelInstanceHandle> m2;
+    for(uint32_t i = 0; i < 100; i++){
+        ModelHandle tipot = Model::CreateModel(dir + "res/models/teapot/teapot.fbx",
+         Shader::GetShader("basicMesh"), {}, {});
+        m2.push_back(ModelInstance::Create(tipot, {{},{},{}}, true));
+    }
 
-    ModelInstanceHandle modelInstance = ModelInstance::Create(model, {{},{},{}}, true); 
     ModelInstance::Update();
 
     while(!glfwWindowShouldClose(Window::GetGLFWwindow())){
