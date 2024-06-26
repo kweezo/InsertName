@@ -121,7 +121,7 @@ int AdminConsole::filterKey(int key) {
 
     std::string sequence = line.substr(cursorPos - 4, 4);
 
-
+    
 
     return key;
 }
@@ -130,7 +130,7 @@ void AdminConsole::processKey(int key) {
     key = filterKey(key);
 
     switch (key) {
-        case CTL_LEFT:
+        case 443: // Ctrl+KEY_LEFT
             // Move cursorPos to the start of the previous word
             if (cursorPos > 0) {
                 // Skip any spaces before the current position
@@ -141,7 +141,7 @@ void AdminConsole::processKey(int key) {
             selectionStart = std::string::npos;
             break;
 
-        case CTL_RIGHT:
+        case 444: // Ctrl+KEY_RIGHT
             // Move cursorPos to the start of the next word
             if (cursorPos < line.length()) {
                 // Skip current word
@@ -165,7 +165,7 @@ void AdminConsole::processKey(int key) {
             selectionStart = std::string::npos;
             break;
         
-        case ALT_D: // Ctrl+Delete
+        case 420: // Ctrl+Delete
             if (cursorPos < line.length()) {
                 size_t startPos = cursorPos;
                 // Skip current word
@@ -179,7 +179,7 @@ void AdminConsole::processKey(int key) {
             selectionStart = std::string::npos;
             break;
 
-        case KEY_SLEFT:
+        case 391: // Shift+Left
             if (selectionStart == std::string::npos) {
                 selectionStart = cursorPos;
             }
@@ -189,7 +189,7 @@ void AdminConsole::processKey(int key) {
             }
             break;
 
-        case KEY_SRIGHT:
+        case 400: // Shift+Right
             if (selectionStart == std::string::npos) {
                 selectionStart = cursorPos;
             }
