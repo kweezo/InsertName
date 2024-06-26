@@ -51,7 +51,7 @@ private:
     static void addCommands();
     
     static void processKey(int key);
-    static char filterKey(int key);
+    static int filterKey(int key);
     static void cmdReport(const std::string& msg, int colorPair = 1);
 
     static void stop(double waitTime);

@@ -106,7 +106,7 @@ std::string AdminConsole::readLine() {
     return line;
 }
 
-char AdminConsole::filterKey(int key) {
+int AdminConsole::filterKey(int key) {
     switch (key) {
         case 8:
         case 127:
