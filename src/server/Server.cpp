@@ -7,9 +7,9 @@
 bool Server::isShuttingDown = false;
 bool Server::shutdown = false;
 std::unique_ptr<pqxx::connection> Server::c;
-std::unordered_map<int, std::pair<int, SSL*>> Server::UIDs;
+std::map<int, std::pair<int, SSL*>> Server::UIDs;
 std::mutex Server::mapMutex;
-std::unordered_map<int, std::mutex> Server::clientMutexes;
+std::map<int, std::mutex> Server::clientMutexes;
 ClientHandler Server::clientHandler;
 std::string Server::dir;
 int Server::port;

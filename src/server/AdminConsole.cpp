@@ -106,9 +106,31 @@ std::string AdminConsole::readLine() {
     return line;
 }
 
-void AdminConsole::processKey(int key) {
+char AdminConsole::filterKey(int key) {
     switch (key) {
-        case 443: // Ctrl+KEY_LEFT
+        case 8:
+        case 127:
+            return KEY_BACKSPACE;
+    }
+
+    // For ANSI escape sequences
+
+    if (line.length() < 4) {
+        return key;
+    }
+
+    std::string sequence = line.substr(cursorPos - 4, 4);
+
+
+
+    return key;
+}
+
+void AdminConsole::processKey(int key) {
+    key = filterKey(key);
+
+    switch (key) {
+        case CTL_LEFT:
             // Move cursorPos to the start of the previous word
             if (cursorPos > 0) {
                 // Skip any spaces before the current position
@@ -119,7 +141,7 @@ void AdminConsole::processKey(int key) {
             selectionStart = std::string::npos;
             break;
 
-        case 444: // Ctrl+KEY_RIGHT
+        case CTL_RIGHT:
             // Move cursorPos to the start of the next word
             if (cursorPos < line.length()) {
                 // Skip current word
@@ -143,7 +165,7 @@ void AdminConsole::processKey(int key) {
             selectionStart = std::string::npos;
             break;
         
-        case 420: // Ctrl+Delete
+        case ALT_D: // Ctrl+Delete
             if (cursorPos < line.length()) {
                 size_t startPos = cursorPos;
                 // Skip current word
@@ -157,7 +179,7 @@ void AdminConsole::processKey(int key) {
             selectionStart = std::string::npos;
             break;
 
-        case 391: // Shift+Left
+        case KEY_SLEFT:
             if (selectionStart == std::string::npos) {
                 selectionStart = cursorPos;
             }
@@ -167,7 +189,7 @@ void AdminConsole::processKey(int key) {
             }
             break;
 
-        case 400: // Shift+Right
+        case KEY_SRIGHT:
             if (selectionStart == std::string::npos) {
                 selectionStart = cursorPos;
             }
@@ -310,8 +332,7 @@ void AdminConsole::processKey(int key) {
             selectionStart = std::string::npos;
             break;
 
-        case 8: // Backspace
-        case 127:
+        case KEY_BACKSPACE:
             if (selectionStartOrdered != std::string::npos && selectionEndOrdered != std::string::npos) {
                 line.erase(selectionStartOrdered, selectionEndOrdered - selectionStartOrdered); // Remove selected text
                 cursorPos = selectionStartOrdered;

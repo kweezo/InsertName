@@ -4,7 +4,7 @@
 #include "Log.hpp"
 
 
-void ClientHandler::handleConnection(pqxx::connection& c, int clientSocket, std::unordered_map<int, std::pair<int, SSL*>>& UIDs, std::mutex& mapMutex, fd_set& readfds) {
+void ClientHandler::handleConnection(pqxx::connection& c, int clientSocket, std::map<int, std::pair<int, SSL*>>& UIDs, std::mutex& mapMutex, fd_set& readfds) {
     int UID = getUID(clientSocket, UIDs, mapMutex);
 
     std::unique_lock<std::mutex> lock(mapMutex);
@@ -107,7 +107,7 @@ void ClientHandler::handleConnection(pqxx::connection& c, int clientSocket, std:
     }
 }
 
-std::string ClientHandler::handleMsg(const char* receivedData, int dataSize, int clientSocket, std::unordered_map<int, std::pair<int, SSL*>>& UIDs, std::mutex& mapMutex, pqxx::connection& c) {
+std::string ClientHandler::handleMsg(const char* receivedData, int dataSize, int clientSocket, std::map<int, std::pair<int, SSL*>>& UIDs, std::mutex& mapMutex, pqxx::connection& c) {
     int UID = getUID(clientSocket, UIDs, mapMutex);
     std::string response="E";
 
@@ -203,7 +203,7 @@ std::string ClientHandler::handleMsg(const char* receivedData, int dataSize, int
     return response;
 }
 
-char ClientHandler::registerUser(const std::string& username, const std::string& password, int clientSocket, std::unordered_map<int, std::pair<int, SSL*>>& UIDs, std::mutex& mapMutex, pqxx::connection& c) {
+char ClientHandler::registerUser(const std::string& username, const std::string& password, int clientSocket, std::map<int, std::pair<int, SSL*>>& UIDs, std::mutex& mapMutex, pqxx::connection& c) {
     try {
         #ifndef NO_DB
             pqxx::work W(c);
@@ -247,7 +247,7 @@ char ClientHandler::registerUser(const std::string& username, const std::string&
     return 'r';
 }
 
-char ClientHandler::loginUser(const std::string& username, const std::string& password, int clientSocket, std::unordered_map<int, std::pair<int, SSL*>>& UIDs, std::mutex& mapMutex, pqxx::connection& c) {
+char ClientHandler::loginUser(const std::string& username, const std::string& password, int clientSocket, std::map<int, std::pair<int, SSL*>>& UIDs, std::mutex& mapMutex, pqxx::connection& c) {
 
     try {
         #ifndef NO_DB
@@ -380,7 +380,7 @@ std::vector<std::pair<std::string, std::string>> ClientHandler::getNewMessages(s
     return messages;
 }
 */
-void ClientHandler::cleanupConnection(int clientSocket, std::unordered_map<int, std::pair<int, SSL*>>& UIDs, SSL* ssl, std::mutex& mapMutex, fd_set& readfds) {
+void ClientHandler::cleanupConnection(int clientSocket, std::map<int, std::pair<int, SSL*>>& UIDs, SSL* ssl, std::mutex& mapMutex, fd_set& readfds) {
     Log::print(0, "Client disconnected with UID: " + std::to_string(getUID(clientSocket, UIDs, mapMutex)));
 
     // Lock the mutex before accessing the shared map
@@ -439,7 +439,7 @@ std::string ClientHandler::generateHash(const std::string& password, const std::
     return ss.str();
 }
 
-int ClientHandler::getUID(int clientSocket, std::unordered_map<int, std::pair<int, SSL*>>& UIDs, std::mutex& mapMutex) {
+int ClientHandler::getUID(int clientSocket, std::map<int, std::pair<int, SSL*>>& UIDs, std::mutex& mapMutex) {
     std::lock_guard<std::mutex> lock(mapMutex);
     auto it = UIDs.find(clientSocket);
     if (it != UIDs.end()) {

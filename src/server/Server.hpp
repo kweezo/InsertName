@@ -19,7 +19,7 @@
 #endif
 
 #include <mutex>
-#include <unordered_map>
+#include <map>
 
 
 class Server {
@@ -35,9 +35,9 @@ public:
 
 private:
     static std::unique_ptr<pqxx::connection> c;
-    static std::unordered_map<int, std::pair<int, SSL*>> UIDs;
+    static std::map<int, std::pair<int, SSL*>> UIDs;
     static std::mutex mapMutex;
-    static std::unordered_map<int, std::mutex> clientMutexes;
+    static std::map<int, std::mutex> clientMutexes;
 
     static ClientHandler clientHandler;
     
