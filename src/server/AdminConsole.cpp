@@ -120,15 +120,29 @@ int AdminConsole::filterKey(int key) {
     }
 
     std::string sequence = line.substr(cursorPos - 4, 4);
+    int sequenceLength = 0;
 
     if (sequence == "27[D") {
+        sequenceLength = 4;
         return 443; // Ctrl+KEY_LEFT
     } else if (sequence == "27[C") {
+        sequenceLength = 4;
         return 444; // Ctrl+KEY_RIGHT
-    } else if (sequence == "27[1;2D") {
-        return 391; // Shift+Left
-    } else if (sequence == "27[1;2C") {
-        return 400; // Shift+Right
+    }
+
+    sequence = line.substr(cursorPos - 5, 5);
+
+    if (sequence == "27[1~") {
+        sequenceLength = 5;
+        return KEY_HOME;
+    } else if (sequence == "27[4~") {
+        sequenceLength = 5;
+        return KEY_END;
+    }
+
+    if (sequenceLength > 0) {
+        line.erase(cursorPos - sequenceLength, sequenceLength);
+        cursorPos -= sequenceLength;
     }
 
     return key;
