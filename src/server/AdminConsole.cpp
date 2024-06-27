@@ -121,7 +121,15 @@ int AdminConsole::filterKey(int key) {
 
     std::string sequence = line.substr(cursorPos - 4, 4);
 
-    
+    if (sequence == "27[D") {
+        return 443; // Ctrl+KEY_LEFT
+    } else if (sequence == "27[C") {
+        return 444; // Ctrl+KEY_RIGHT
+    } else if (sequence == "27[1;2D") {
+        return 391; // Shift+Left
+    } else if (sequence == "27[1;2C") {
+        return 400; // Shift+Right
+    }
 
     return key;
 }
