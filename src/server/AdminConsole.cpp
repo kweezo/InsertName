@@ -115,12 +115,12 @@ int AdminConsole::filterKey(int key) {
 
     // For ANSI escape sequences
 
-    if (line.length() < 4) {
+    int sequenceLength = 0;
+    
+    if (cursorPos < 4) {
         return key;
     }
-
     std::string sequence = line.substr(cursorPos - 4, 4);
-    int sequenceLength = 0;
 
     if (sequence == "27[D") {
         sequenceLength = 4;
@@ -130,6 +130,9 @@ int AdminConsole::filterKey(int key) {
         return 444; // Ctrl+KEY_RIGHT
     }
 
+    if (cursorPos < 5) {
+        return key;
+    }
     sequence = line.substr(cursorPos - 5, 5);
 
     if (sequence == "27[1~") {
