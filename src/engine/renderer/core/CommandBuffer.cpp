@@ -2,51 +2,45 @@
 namespace renderer
 {
 
-CommandBuffer::CommandBuffer() : commandBuffer(VK_NULL_HANDLE)
-{
-    useCount = new uint32_t;
-    *useCount = 1;
+CommandBuffer::CommandBuffer() : commandBuffer(VK_NULL_HANDLE){
+    useCount = std::make_shared<uint32_t>(1);
     flags = 0;
 }
 
-CommandBuffer::CommandBuffer(VkCommandBufferLevel level, uint32_t flags, uint32_t poolID)
-{
+CommandBuffer::CommandBuffer(CommandBufferCreateInfo createInfo): flags(createInfo.flags), level(createInfo.level){
+
+    poolID = createInfo.type * std::thread::hardware_concurrency() + createInfo.threadIndex; // TODO does this work?=????
+
     VkCommandBufferAllocateInfo allocInfo = {};
     allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
-    allocInfo.level = level;
+    allocInfo.level = createInfo.level;
     allocInfo.commandBufferCount = 1;
 
     if(flags & COMMAND_BUFFER_GRAPHICS_FLAG == COMMAND_BUFFER_GRAPHICS_FLAG){
+
         allocInfo.commandPool = CommandPool::GetGraphicsCommandPool(poolID);
         if(level == VK_COMMAND_BUFFER_LEVEL_PRIMARY){
             flags |= VK_SUBPASS_CONTENTS_SECONDARY_COMMAND_BUFFERS;
         }else{
             flags |= VK_COMMAND_BUFFER_USAGE_RENDER_PASS_CONTINUE_BIT;
         }
+        
     }else{
         allocInfo.commandPool = CommandPool::GetTransferCommandPool(poolID);
     }
 
-    if (vkAllocateCommandBuffers(Device::GetDevice(), &allocInfo, &commandBuffer) != VK_SUCCESS)
-    {
+    if (vkAllocateCommandBuffers(Device::GetDevice(), &allocInfo, &commandBuffer) != VK_SUCCESS){
         throw std::runtime_error("Failed to allocate command buffers");
     }
 
-    useCount = new uint32_t;
-    *useCount = 1;
-
-    this->flags = flags;
-    this->level = level;
-    this->poolID = poolID;
+    useCount = std::make_shared<uint32_t>(1);
 }
 
-void CommandBuffer::ResetCommandBuffer()
-{
+void CommandBuffer::ResetCommandBuffer(){
     vkResetCommandBuffer(commandBuffer, 0);
 }
 
-void CommandBuffer::BeginCommandBuffer(VkCommandBufferInheritanceInfo *inheritanceInfo)
-{
+void CommandBuffer::BeginCommandBuffer(VkCommandBufferInheritanceInfo *inheritanceInfo, bool reset){
     //    if(level == VK_COMMAND_BUFFER_LEVEL_SECONDARY){
     //        throw std::runtime_error("Tried to record a secondary command buffer, aborting!");
     //    }
@@ -59,7 +53,9 @@ void CommandBuffer::BeginCommandBuffer(VkCommandBufferInheritanceInfo *inheritan
         throw std::runtime_error("Tried to begin the recording of an uninitialized command buffer, aborting (commandBuffer = VK_NULL_HANDLE)");
     }
 
-    vkResetCommandBuffer(commandBuffer, 0);
+    if(reset){
+        vkResetCommandBuffer(commandBuffer, 0);
+    }
 
     VkCommandBufferBeginInfo beginInfo = {};
     beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
@@ -74,10 +70,15 @@ void CommandBuffer::BeginCommandBuffer(VkCommandBufferInheritanceInfo *inheritan
     }
 }
 
-void CommandBuffer::EndCommandBuffer()
-{
+void CommandBuffer::EndCommandBuffer(){
     if (vkEndCommandBuffer(commandBuffer) != VK_SUCCESS){
         throw std::runtime_error("Failed to record command buffer");
+    }
+}
+
+void CommandBuffer::ResetPools(CommandBufferType type){
+    for(uint32_t i = 0; i < std::thread::hardware_concurrency(); i++){
+        CommandPool::ResetPool(type * std::thread::hardware_concurrency() + i);
     }
 }
 
@@ -90,7 +91,7 @@ CommandBuffer::CommandBuffer(const CommandBuffer &other){
     useCount = other.useCount;
     flags = other.flags;
     poolID = other.poolID;
-    *useCount += 1;
+    (*useCount.get())++;
 }
 
 CommandBuffer CommandBuffer::operator=(const CommandBuffer &other){
@@ -102,12 +103,13 @@ CommandBuffer CommandBuffer::operator=(const CommandBuffer &other){
     useCount = other.useCount;
     flags = other.flags;
     poolID = other.poolID;
-    *useCount += 1;
+    (*useCount.get())++;
+
     return *this;
 }
 
 CommandBuffer::~CommandBuffer(){
-    if (useCount == nullptr){
+    if (useCount.get() == nullptr){
         return;
     }
 
@@ -118,11 +120,10 @@ CommandBuffer::~CommandBuffer(){
         else{
             CommandPool::FreeCommandBuffer(commandBuffer, poolID, COMMAND_POOL_TYPE_TRANSFER);
         }
-        delete useCount;
-        useCount = nullptr;
+        useCount.reset();
     }
     else{
-        *useCount -= 1;
+        (*useCount.get())--;
     }
 }
 

@@ -3,6 +3,7 @@
 #include <stdexcept>
 #include <iostream>
 #include <limits>
+#include <memory>
 
 #include <vulkan/vulkan.h>
 
@@ -14,14 +15,19 @@
 
 namespace renderer{
 
+struct GraphicsPipelineCreateInfo{
+    Shader* shader;
+    std::vector<VkVertexInputAttributeDescription> attributeDescriptions;
+    std::vector<VkVertexInputBindingDescription> bindingDescriptions;
+};
+
 class GraphicsPipeline{
 public:
-
     static void Init();
     static void Cleanup();
 
     GraphicsPipeline();
-    GraphicsPipeline(ShaderHandle shader, BufferDescriptions& bufferDescriptions);
+    GraphicsPipeline(GraphicsPipelineCreateInfo createInfo);
     
     ~GraphicsPipeline();
 
@@ -42,9 +48,9 @@ private:
     VkPipelineLayout pipelineLayout;
     static VkRenderPass renderPass;
 
-    static std::vector <VkFramebuffer> framebuffers;
+    static std::vector<VkFramebuffer> framebuffers;
 
-    uint32_t *useCount;
+    std::shared_ptr<uint32_t> useCount;
 };
 
 }

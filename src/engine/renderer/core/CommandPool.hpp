@@ -27,6 +27,7 @@ public:
     static VkCommandPool GetTransferCommandPool(uint32_t poolID);
     static VkCommandPool GetGraphicsCommandPool(uint32_t poolID);
 
+    static VkCommandPool ResetPool(uint32_t poolID);// TODO implement lol
 private:
     static std::unordered_map<uint32_t, CommandPoolSet> commandPools;
 };

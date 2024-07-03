@@ -1,6 +1,9 @@
 #pragma once
 
 #include <stdexcept>
+#include <vector>
+#include <memory>
+#include <utility>
 
 #include <vulkan/vulkan.h>
 
@@ -9,83 +12,67 @@
 #include "CommandBuffer.hpp"
 #include "Fence.hpp"
 
-namespace renderer{class ImageImpl;}
-
-#define ImageHandle renderer::ImageImpl*
-
 namespace renderer{
 
-typedef struct ImageTransitionCMDInfo{
-    CommandBuffer commandBuffer;
-    bool free;
-    ImageHandle image;
-} ImageCopyCMDInfo;
+struct ImageCreateInfo{
+    VkImageLayout layout;
+    VkFormat format;
+    VkImageAspectFlags aspectMask;
+    VkImageUsageFlags usage;
+    VkExtent2D imageExtent;
 
-typedef struct LoadDataIntoImageInfo{
-    VkImage image;
-    VkDeviceMemory memory;
     size_t size;
     void* data;
-    VkExtent3D extent;
-    VkImageSubresourceLayers subresource;
-    VkImageLayout layout;
-} LoadDataIntoImageInfo;
 
+    uint32_t threadIndex;
+};
 
 class Image{
 public:
+    static void Init();
+    static void Update();
+    static void Cleanup();
 
-    static ImageHandle CreateImage(VkImageLayout layout, VkFormat format, VkImageAspectFlags aspectMask, VkImageUsageFlags usage,
-     uint32_t width, uint32_t height, size_t size, void* data);
-
-    static void Free(ImageHandle image);
-
-    static void Initialize();
-    static void UpdateCommandBuffers();
+    Image();
+    Image(ImageCreateInfo createInfo);
+    Image operator=(const Image& other);
+    Image(const Image& other);
+    ~Image();
 
     static VkFormat GetSupportedFormat(std::vector<VkFormat> candidates, VkImageTiling tiling, VkFormatFeatureFlags features);
     static inline bool HasStencilComponent(VkFormat format);
-};
 
-class ImageImpl{
-public:
-    ImageImpl();
-    ImageImpl(VkImageLayout layout, VkFormat format, VkImageAspectFlags aspectMask, uint32_t width, VkImageUsageFlags usage,
-     uint32_t height, size_t size, void* data);
-
-    ~ImageImpl();
-    ImageImpl(const ImageImpl& other);
-    ImageImpl&  operator=(const ImageImpl& other);
-
-    static void Initialize();
-    static void Cleanup();
-
-    VkImage GetImage();
-    void LoadDataIntoImage();
     void TransitionLayout(VkImageLayout oldLayout, VkImageLayout newLayout);
 
+    VkImage GetImage();
     VkImageView GetImageView();
 
-    static void UpdateCommandBuffers();
 private:
-    void CreateImage(uint32_t width, uint32_t height, VkFormat format, VkImageUsageFlags usage);
-    void CreateImageView(VkFormat format, VkImageAspectFlags aspectMask);
+    void CreateImage();
+    void CreateImageView();
+    void AllocateMemory();
 
-    static void CreateCommandBuffers();
-    static CommandBuffer GetFreeCommandBuffer(ImageHandle image);
 
-    static std::vector<ImageTransitionCMDInfo> stagingBuffers;
-    static Fence finishedTransitioningFence;
+    static CommandBuffer GetFreeCommandBuffer(uint32_t threadIndex);
+    static std::vector<std::vector<std::pair<CommandBuffer, bool>>> secondaryCommandBuffers;
+
+    static void RecordPrimaryCommandBuffer();
+    static void SubmitPrimaryCommandBuffer();
+    static void UpdateCleanup();
+
+    static void CreateCommmandBuffers();
+
     static CommandBuffer primaryCommandBuffer;
-
-    uint32_t* useCount;
-
-    LoadDataIntoImageInfo loadDataInfo;
+    static Fence finishedPrimaryCommandBufferExecutionFence;
 
     VkImage image;
     VkImageView imageView;
     VkDeviceMemory memory;
 
-    VkImageAspectFlags aspectMask;
+    ImageCreateInfo createInfo;
+
+
+    std::shared_ptr<uint32_t> useCount;
 };
-}
+    
+} 

@@ -31,19 +31,19 @@ class ModelImpl;
 
 class Model{
 public:
-    static ModelHandle CreateModel(std::string path, ShaderHandle shader, BufferDescriptions extraDescriptions, std::function<void(void)> extraDrawCommands);
+    static ModelHandle CreateModel(std::string path, Shader shader, BufferDescriptions extraDescriptions, std::function<void(void)> extraDrawCommands);
     static void Free(ModelHandle model);
 };
 
 class ModelImpl{
 public:
-    ModelImpl(std::string path, ShaderHandle shader, BufferDescriptions extraDescriptions, std::function<void(void)> extraDrawCommands);
+    ModelImpl(std::string path, Shader shader, BufferDescriptions extraDescriptions, std::function<void(void)> extraDrawCommands);
 
     void RecordDrawCommands(CommandBuffer& commandBuffer, uint32_t instanceCount);
     
-    static std::unordered_map<ShaderHandle, std::vector<ModelHandle>> GetModelList();
+    static std::unordered_map<Shader, std::vector<ModelHandle>> GetModelList();
 
-    ShaderHandle GetShader();
+    Shader GetShader();
     std::function<void(void)> GetExtraDrawCommands();
     BufferDescriptions GetExtraDescriptions();
 
@@ -51,12 +51,12 @@ public:
 private: //copied from learnopengl.com *mostly* shamelessly
     void ProcessNode(aiNode* node, const aiScene* scene);
 
-    static std::unordered_map<ShaderHandle, std::vector<ModelHandle>> modelList;
+    static std::unordered_map<Shader, std::vector<ModelHandle>> modelList;
 
     std::vector<Mesh> meshes;
     std::unordered_map<std::string, Texture> loadedTextures;
 
-    ShaderHandle shader;
+    Shader shader;
     BufferDescriptions extraDescriptions;
     std::function<void(void)> extraDrawCommands;
 };

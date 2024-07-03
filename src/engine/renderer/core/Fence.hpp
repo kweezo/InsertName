@@ -4,6 +4,7 @@
 
 
 #include <stdexcept>
+#include <memory>
 
 #include <vulkan/vulkan.h>
 
@@ -23,7 +24,8 @@ public:
     VkFence GetFence();
 private:
     VkFence fence;
-    uint32_t* useCount;
+    
+    std::shared_ptr<uint32_t> useCount;
 };
 
 }

@@ -4,6 +4,7 @@
 
 
 #include <stdexcept>
+#include <memory>
 
 #include <vulkan/vulkan.h>
 
@@ -23,7 +24,7 @@ public:
     VkSemaphore GetSemaphore();
 private:
     VkSemaphore fence;
-    uint32_t* useCount;
+    std::shared_ptr<uint32_t> useCount;
 };
 
 typedef struct RenderSemaphores{

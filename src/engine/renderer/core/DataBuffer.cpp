@@ -1,277 +1,133 @@
 #include "DataBuffer.hpp"
 
-#define MAX_FREE_COMMAND_BUFFER_COUNT 3 //probably needs to be adjusted for performance but idk
-
 namespace renderer{
 
-std::unordered_map<VkCommandBuffer, StagingBufferCopyCMDInfo> DataBuffer::stagingBuffers = {};
-bool DataBuffer::createdStagingBuffers = false;
-CommandBuffer DataBuffer::commandBuffer = CommandBuffer();
-Fence DataBuffer::finishedCopyingFence = Fence();
+const uint32_t TARGET_STAGING_BUFFER_COUNT_PER_THREAD = 5;
 
-DataBuffer::DataBuffer(): stagingBufferKey(0){
-    useCount = new uint32_t;
-    *useCount = 1;
+CommandBuffer DataBuffer::primaryCommandBuffer = {};
+std::vector<std::vector<std::pair<CommandBuffer, bool>>> DataBuffer::stagingCommandBuffers = {};
+std::vector<std::pair<VkBuffer, VkDeviceMemory>> DataBuffer::stagingBufferAndMemoryDeleteQueue = {};
+Fence DataBuffer::finishedCopyingFence = {};
+
+void DataBuffer::Init(){
+    CreateCommandBuffers();
+
+    finishedCopyingFence = Fence(false);
 }
 
-DataBuffer::DataBuffer(BufferDescriptions bufferDescriptions, size_t size,
- void* data, bool transferToLocalDevMem, uint32_t flags): stagingBufferKey(0){
+void DataBuffer::CreateCommandBuffers(){
+    CommandBufferCreateInfo commandBufferInfo{};
+    commandBufferInfo.type = CommandBufferType::GENERIC;
+    commandBufferInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+    commandBufferInfo.flags = COMMAND_POOL_TYPE_TRANSFER | COMMAND_BUFFER_ONE_TIME_SUBMIT_FLAG;
+    commandBufferInfo.threadIndex = 0;
 
-    if(!createdStagingBuffers){
-        CreateStagingBuffers();
+    primaryCommandBuffer = CommandBuffer(commandBufferInfo);
 
-        commandBuffer = CommandBuffer(VK_COMMAND_BUFFER_LEVEL_PRIMARY, COMMAND_BUFFER_TRANSFER_FLAG, 0); //TODO multithreading
+    uint32_t i = 0;
+    stagingCommandBuffers.resize(std::thread::hardware_concurrency());
+    for(std::vector<std::pair<CommandBuffer, bool>>& commandBuffers : stagingCommandBuffers){
 
-        finishedCopyingFence = Fence(false);
+        CommandBufferCreateInfo stagingCommandBufferInfo;
+        stagingCommandBufferInfo.type = CommandBufferType::DATA;
+        stagingCommandBufferInfo.level = VK_COMMAND_BUFFER_LEVEL_SECONDARY;
+        stagingCommandBufferInfo.flags = COMMAND_POOL_TYPE_TRANSFER | COMMAND_BUFFER_ONE_TIME_SUBMIT_FLAG;
+        stagingCommandBufferInfo.threadIndex = i;
+
+        commandBuffers = std::vector<std::pair<CommandBuffer, bool>>(TARGET_STAGING_BUFFER_COUNT_PER_THREAD, {CommandBuffer(stagingCommandBufferInfo), false});
+
+        i = (i + 1) % std::thread::hardware_concurrency();
     }
+}
 
-    VkBufferUsageFlagBits bufferType;
-    if(flags == DATA_BUFFER_VERTEX_BIT){
-        bufferType = VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
-    }else if(flags == DATA_BUFFER_INDEX_BIT){
-        bufferType = VK_BUFFER_USAGE_INDEX_BUFFER_BIT;
-    }else if(flags == DATA_BUFFER_UNIFORM_BIT){
-        bufferType = VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT;
-    }else{
-        throw std::runtime_error("Invalid buffer type");
-    }
+void DataBuffer::Update(){
+    RecordPrimaryCommandBuffer();
+    SubmitPrimaryCommandBuffer();
+    UpdateCleanup();
+}
+
+void DataBuffer::Cleanup(){
+    primaryCommandBuffer.~CommandBuffer();
+    stagingCommandBuffers.clear();
+}
+
+
+DataBuffer::DataBuffer(){
+    useCount = std::make_shared<uint32_t>(1);
+}
+
+DataBuffer::DataBuffer(DataBufferCreateInfo createInfo){
 
     if(!Device::DeviceMemoryFree()){
-        transferToLocalDevMem = false;
+        createInfo.transferToLocalDeviceMemory = false;
     }
 
-    if(transferToLocalDevMem){
-        CreateBuffer(buff, bufferType | VK_BUFFER_USAGE_TRANSFER_DST_BIT, size);
-        AllocateMemory(mem, buff, size, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+    if(createInfo.transferToLocalDeviceMemory){
+        CreateBuffer(buffer, createInfo.usage | VK_BUFFER_USAGE_TRANSFER_DST_BIT, size);
+        AllocateMemory(memory, buffer, size, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
 
-        StagingBufferCopyCMDInfo stagingBuffer = GetStagingBuffer(size);
+        CreateBuffer(stagingBuffer, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, size);
+        AllocateMemory(stagingMemory, stagingBuffer, size, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
 
-        void *stagingData;
-        if(vkMapMemory(Device::GetDevice(), stagingBuffer.bufferMemory, 0, size, 0, &stagingData) != VK_SUCCESS){
-            throw std::runtime_error("Failed to map vertex buffer memory");
-        }
-        memcpy(stagingData, data, size);
-        vkUnmapMemory(Device::GetDevice(), stagingBuffer.bufferMemory);
+        UploadDataToBuffer(stagingMemory, createInfo.data, createInfo.size);
 
-        stagingBufferKey = stagingBuffer.commandBuffer.GetCommandBuffer(); 
-        CopyFromBuffer(stagingBuffer, size);
-    }
-    else{
-        CreateBuffer(buff, bufferType, size);
-        AllocateMemory(mem, buff, size, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+        RecordCopyCommandBuffer(createInfo.threadIndex, size);
 
-        void *stagingData;
-        if(vkMapMemory(Device::GetDevice(), mem, 0, size, 0, &stagingData) != VK_SUCCESS){
-            throw std::runtime_error("Failed to map vertex buffer memory");
-        }
-        memcpy(stagingData, data, size);
-        vkUnmapMemory(Device::GetDevice(), mem);
-    }
-
-
-    descriptions = bufferDescriptions;
-
-    useCount = new uint32_t;
-    *useCount = 1;
-
-    this->size = size;
-    this->transferToLocalDevMem = transferToLocalDevMem;
-
- //   std::cerr << "CREATION " << buff << std::endl;
-}
-void DataBuffer::LoadDataIntoImage(VkImage image, size_t size, void* data, VkExtent3D extent,
-VkImageSubresourceLayers subresourceLayers, VkImageLayout format){
-    StagingBufferCopyCMDInfo copyInfo = GetStagingBuffer(size);
-
-    void* stagingData;
-    if(vkMapMemory(Device::GetDevice(), copyInfo.bufferMemory, 0, size, 0, &stagingData) != VK_SUCCESS){
-        throw std::runtime_error("Failed to map image buffer memory");
-    }
-    memcpy(stagingData, data, size);
-    vkUnmapMemory(Device::GetDevice(), copyInfo.bufferMemory);
-
-    VkCommandBufferInheritanceInfo inheritanceInfo{};
-    inheritanceInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_INFO;
-
-    copyInfo.commandBuffer.BeginCommandBuffer(&inheritanceInfo);
-
-    VkBufferImageCopy copyRegion{};
-    copyRegion.bufferOffset = 0;
-    copyRegion.bufferRowLength = 0;
-    copyRegion.bufferImageHeight = 0;
-    copyRegion.imageExtent = extent;
-    copyRegion.imageSubresource = subresourceLayers;
-
-    vkCmdCopyBufferToImage(copyInfo.commandBuffer.GetCommandBuffer(), copyInfo.buffer,
-     image, format, 1, &copyRegion);
-
-    copyInfo.commandBuffer.EndCommandBuffer();
-}
-
-
-StagingBufferCopyCMDInfo DataBuffer::GetStagingBuffer(size_t size){
-        StagingBufferCopyCMDInfo *stagingBuffer;
-        bool foundFreeBuff = false;
-        for(auto &[i, currStagingBuffer] : stagingBuffers){
-            if(currStagingBuffer.free){
-                currStagingBuffer.free = false;
-                foundFreeBuff = true;
-                stagingBuffer = &currStagingBuffer;
-                CreateBuffer(stagingBuffer->buffer, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, size);
-                AllocateMemory(stagingBuffer->bufferMemory, stagingBuffer->buffer, size,
-                 VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
-
-                break;
-            }
-        }
-        if(!foundFreeBuff){
-            StagingBufferCopyCMDInfo tmpStagingBuffer;
-            tmpStagingBuffer.free = false;
-            tmpStagingBuffer.commandBuffer = CommandBuffer(VK_COMMAND_BUFFER_LEVEL_SECONDARY, COMMAND_BUFFER_TRANSFER_FLAG, 0);
-        
-            CreateBuffer(tmpStagingBuffer.buffer, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, size);
-            AllocateMemory(tmpStagingBuffer.bufferMemory, tmpStagingBuffer.buffer, size,
-             VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
-
-            stagingBuffers[tmpStagingBuffer.commandBuffer.GetCommandBuffer()] = tmpStagingBuffer;
-
-            stagingBuffer = &stagingBuffers[tmpStagingBuffer.commandBuffer.GetCommandBuffer()];
-        }
-
-    return *stagingBuffer;
-}
-
-void DataBuffer::CreateStagingBuffers(){
-    for(int i = 0; i < MAX_FREE_COMMAND_BUFFER_COUNT; i++){
-        StagingBufferCopyCMDInfo stagingBuffer;
-        stagingBuffer.free = true;
-        stagingBuffer.commandBuffer = CommandBuffer(VK_COMMAND_BUFFER_LEVEL_SECONDARY,//one time usage
-         COMMAND_BUFFER_TRANSFER_FLAG, 0);
-        
-        stagingBuffers[stagingBuffer.commandBuffer.GetCommandBuffer()] = stagingBuffer;
-    }
-    createdStagingBuffers = true;
-}
-
-void DataBuffer::CopyBufferData(VkBuffer dst, void* data, size_t size){
-    StagingBufferCopyCMDInfo stagingBuffer = GetStagingBuffer(size);
-
-    VkCommandBufferInheritanceInfo inheritanceInfo{};
-    inheritanceInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_INFO;
-
-    void* stagingData;
-    if(vkMapMemory(Device::GetDevice(), stagingBuffer.bufferMemory, 0, size, 0, &stagingData) != VK_SUCCESS){
-        throw std::runtime_error("Failed to map vertex buffer memory");
-    }
-    memcpy(data, stagingData, size);
-    vkUnmapMemory(Device::GetDevice(), stagingBuffer.bufferMemory);
-
-    stagingBuffer.commandBuffer.BeginCommandBuffer(&inheritanceInfo);
-
-    VkBufferCopy copyRegion{};
-    copyRegion.size = size;
-    vkCmdCopyBuffer(stagingBuffer.commandBuffer.GetCommandBuffer(), stagingBuffer.buffer, dst, 1, &copyRegion);
-
-    stagingBuffer.commandBuffer.EndCommandBuffer();
-}
-
-void DataBuffer::UpdateData(void* data, size_t size){
-    if(this->size != size){
-        throw std::runtime_error("Size of data does not match size of buffer, you need to create a new buffer for this");
-    }
-    if(transferToLocalDevMem){
-        StagingBufferCopyCMDInfo stagingBuffer = GetStagingBuffer(size);
-
-        void *stagingData;
-        if(vkMapMemory(Device::GetDevice(), stagingBuffer.bufferMemory, 0, size, 0, &stagingData) != VK_SUCCESS){
-            throw std::runtime_error("Failed to map buffer memory");
-        }
-        memcpy(stagingData, data, size);
-        vkUnmapMemory(Device::GetDevice(), stagingBuffer.bufferMemory);
-
-        CopyFromBuffer(stagingBuffer, size);
     }else{
-        void *mappedData;
-        if(vkMapMemory(Device::GetDevice(), mem, 0, size, 0, &mappedData) != VK_SUCCESS){
-            throw std::runtime_error("Failed to map buffer memory");
-        }
-        memcpy(mappedData, data, size);
-        vkUnmapMemory(Device::GetDevice(), mem);
+        CreateBuffer(buffer, createInfo.usage, size);
+        AllocateMemory(memory, buffer, size, VK_MEMORY_PROPERTY_HOST_COHERENT_BIT | VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT);
+
+        UploadDataToBuffer(memory, createInfo.data, createInfo.size);
     }
     
-}
-
-void DataBuffer::CopyFromBuffer(StagingBufferCopyCMDInfo stagingBuffer, VkDeviceSize size){
-    VkCommandBufferInheritanceInfo inheritanceInfo{};
-    inheritanceInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_INFO;
-
-    stagingBuffer.commandBuffer.BeginCommandBuffer(&inheritanceInfo);
-
-    VkBufferCopy copyRegion{};
-    copyRegion.size = size;
-    vkCmdCopyBuffer(stagingBuffer.commandBuffer.GetCommandBuffer(), stagingBuffer.buffer, buff, 1, &copyRegion);
-
-    stagingBuffer.commandBuffer.EndCommandBuffer();
+   
+    useCount = std::make_shared<uint32_t>(1);
 }
 
 
-void DataBuffer::UpdateCommandBuffer(){
-    std::vector<VkCommandBuffer> cleanupList;
-    std::vector<VkCommandBuffer> commandBuffers;
-    for(auto &[i, stagingBuffer] : stagingBuffers){
-        if(!stagingBuffers[i].free){
-            cleanupList.push_back(i);
-            commandBuffers.push_back(stagingBuffers[i].commandBuffer.GetCommandBuffer());
-        }
+DataBuffer::DataBuffer(const DataBuffer& other){
+    buffer = other.buffer;
+    memory = other.memory;
+    stagingBuffer = other.stagingBuffer;
+    stagingMemory = other.stagingMemory;
+
+    (*useCount.get())++;
+}
+
+DataBuffer DataBuffer::operator=(const DataBuffer& other) {
+    if(this == &other){
+        return *this;
     }
-    
-    if(commandBuffers.empty()){
+
+
+    buffer = other.buffer;
+    memory = other.memory;
+    stagingBuffer = other.stagingBuffer;
+    stagingMemory = other.stagingMemory;
+
+    (*useCount.get())++;
+
+    return *this;
+}
+
+DataBuffer::~DataBuffer(){
+    if(useCount.get() == nullptr){
         return;
     }
 
-
-    VkFence fence = finishedCopyingFence.GetFence();
-
-    vkResetFences(Device::GetDevice(), 1, &fence);
-
-    commandBuffer.BeginCommandBuffer(nullptr);
-    vkCmdExecuteCommands(commandBuffer.GetCommandBuffer(), commandBuffers.size(), commandBuffers.data());
-    commandBuffer.EndCommandBuffer();
-
-
-
-    VkSubmitInfo submitInfo{};
-    submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
-    submitInfo.commandBufferCount = 1;
-    VkCommandBuffer commandBufferHandle = commandBuffer.GetCommandBuffer();
-    submitInfo.pCommandBuffers = &commandBufferHandle;
-    submitInfo.waitSemaphoreCount = 0;
-    submitInfo.signalSemaphoreCount = 0;
-
-    if(vkQueueSubmit(Device::GetTransferQueue(), 1, &submitInfo, finishedCopyingFence.GetFence()) != VK_SUCCESS){
-        throw std::runtime_error("Failed to submit transfer command buffer");
-    }
-    
-    VkFence fences[] = {finishedCopyingFence.GetFence()};
-    vkWaitForFences(Device::GetDevice(), 1, fences, VK_TRUE, UINT64_MAX);
-
-    for(VkCommandBuffer& commandBuffer : commandBuffers){
-        vkResetCommandBuffer(commandBuffer, 0);
+    if(*useCount.get() == 1){
+        vkFreeMemory(Device::GetDevice(), memory, nullptr);
+        vkDestroyBuffer(Device::GetDevice(), buffer, nullptr); 
+        useCount.reset();
+        return;
     }
 
-    for(VkCommandBuffer i : cleanupList){
-        stagingBuffers[i].free = true;
-        vkDestroyBuffer(Device::GetDevice(), stagingBuffers[i].buffer, nullptr);
-        vkFreeMemory(Device::GetDevice(), stagingBuffers[i].bufferMemory, nullptr);
-    }
-
-    while(stagingBuffers.size() > MAX_FREE_COMMAND_BUFFER_COUNT){
-        stagingBuffers.erase(stagingBuffers.begin());
-    }
+    (*useCount.get())--;
 }
 
 void DataBuffer::CreateBuffer(VkBuffer& buffer, VkBufferUsageFlags usage, VkDeviceSize size){
     VkBufferCreateInfo bufferInfo{};
+
     bufferInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
     bufferInfo.usage = usage;
     bufferInfo.size = size;
@@ -279,8 +135,10 @@ void DataBuffer::CreateBuffer(VkBuffer& buffer, VkBufferUsageFlags usage, VkDevi
     if(Device::GetQueueFamilyInfo().transferFamilyFound){
         bufferInfo.sharingMode = VK_SHARING_MODE_CONCURRENT;
         bufferInfo.queueFamilyIndexCount = 2;
+
         uint32_t queueFamilyIndices[] = {Device::GetQueueFamilyInfo().graphicsQueueCreateInfo.queueFamilyIndex,
          Device::GetQueueFamilyInfo().transferQueueCreateInfo.queueFamilyIndex};
+
         bufferInfo.pQueueFamilyIndices = queueFamilyIndices;
     }else{
         bufferInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
@@ -291,8 +149,7 @@ void DataBuffer::CreateBuffer(VkBuffer& buffer, VkBufferUsageFlags usage, VkDevi
     }
 }
 
-void DataBuffer::AllocateMemory(VkDeviceMemory& memory, VkBuffer buffer, size_t size,
- VkMemoryPropertyFlags properties){
+void DataBuffer::AllocateMemory(VkDeviceMemory& memory, VkBuffer buffer, size_t size, VkMemoryPropertyFlags properties){
     VkMemoryRequirements memRequirements;
     vkGetBufferMemoryRequirements(Device::GetDevice(), buffer, &memRequirements);
 
@@ -317,82 +174,102 @@ void DataBuffer::AllocateMemory(VkDeviceMemory& memory, VkBuffer buffer, size_t 
     vkBindBufferMemory(Device::GetDevice(), buffer, memory, 0);
 }
 
-VkBuffer DataBuffer::GetBuffer(){
-    return buff;
+void DataBuffer::UploadDataToBuffer(VkDeviceMemory memory, void* data, size_t size){
+    void* mappedMem;
+
+    if(vkMapMemory(Device::GetDevice(), memory, 0, size, 0, &mappedMem) != VK_SUCCESS){
+        throw std::runtime_error("Failed to map vertex buffer memory, out of RAM?");
+    }
+    memcpy(mappedMem, data, size);
+    vkUnmapMemory(Device::GetDevice(), memory);
 }
 
-
-void DataBuffer::Cleanup(){
-    for(auto &[tmp, stagingBuffer] : stagingBuffers){
-        if(!stagingBuffer.free){
-            stagingBuffer.free = true;
-            vkDestroyBuffer(Device::GetDevice(), stagingBuffer.buffer, nullptr);
-            vkFreeMemory(Device::GetDevice(), stagingBuffer.bufferMemory, nullptr);
+CommandBuffer DataBuffer::RetrieveFreeStagingCommandBuffer(uint32_t threadIndex){
+    for(std::pair<CommandBuffer, bool>& commandBuffer : stagingCommandBuffers[threadIndex]){
+        if(std::get<bool>(commandBuffer)){
+            std::get<bool>(commandBuffer) = false;
+            return std::get<CommandBuffer>(commandBuffer);
         }
     }
-    stagingBuffers.clear();
-    finishedCopyingFence.~Fence();
-    commandBuffer.~CommandBuffer();
+
+    CommandBufferCreateInfo stagingCommandBufferInfo;
+    stagingCommandBufferInfo.type = CommandBufferType::DATA;
+    stagingCommandBufferInfo.level = VK_COMMAND_BUFFER_LEVEL_SECONDARY;
+    stagingCommandBufferInfo.flags = COMMAND_POOL_TYPE_TRANSFER | COMMAND_BUFFER_ONE_TIME_SUBMIT_FLAG;
+    stagingCommandBufferInfo.threadIndex = threadIndex;
+
+    stagingCommandBuffers[threadIndex].push_back({CommandBuffer(stagingCommandBufferInfo), false});
+    return std::get<CommandBuffer>(stagingCommandBuffers[threadIndex].back());
 }
 
-DataBuffer::DataBuffer(const DataBuffer& other){
-    buff = other.buff;
-    mem = other.mem;
-    descriptions = other.descriptions;
-    size = other.size;
-    useCount = other.useCount;
-    transferToLocalDevMem = other.transferToLocalDevMem;
-    stagingBufferKey = other.stagingBufferKey;
-    *useCount += 1;
+void DataBuffer::RecordCopyCommandBuffer(uint32_t threadIndex, size_t size){
+    CommandBuffer commandBuffer = RetrieveFreeStagingCommandBuffer(threadIndex);
+
+    VkCommandBufferInheritanceInfo inheritanceInfo{};
+    inheritanceInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_INFO;
+
+
+    commandBuffer.BeginCommandBuffer(&inheritanceInfo, false);
+
+    VkBufferCopy copyRegion{};
+    copyRegion.size = size;
+
+    vkCmdCopyBuffer(commandBuffer.GetCommandBuffer(), stagingBuffer, buffer, 1, &copyRegion);
+
+    commandBuffer.EndCommandBuffer();
+
+
+    stagingBufferAndMemoryDeleteQueue.push_back({stagingBuffer, stagingMemory});
 }
 
-DataBuffer DataBuffer::operator=(const DataBuffer& other){
-    if(this == &other){
-        return *this;
-    }
+void DataBuffer::RecordPrimaryCommandBuffer(){
+    std::vector<VkCommandBuffer> usedSecondaryCommandBuffers;
 
-    buff = other.buff;
-    mem = other.mem;
-    descriptions = other.descriptions;
-    size = other.size;
-    useCount = other.useCount;
-    transferToLocalDevMem = other.transferToLocalDevMem;
-    stagingBufferKey = other.stagingBufferKey;
-    *useCount += 1;
-
-    return *this;
-}
-
-DataBuffer::~DataBuffer(){
-    if(useCount == nullptr){
-        return;
-    }
-
-    if(*useCount == 1){
-        vkDestroyBuffer(Device::GetDevice(), buff, nullptr);
-        vkFreeMemory(Device::GetDevice(), mem, nullptr);
-        //std::cerr << "DELETION 1 " << buff << std::endl;
-        if(stagingBuffers.find(stagingBufferKey) != stagingBuffers.end()){
-            StagingBufferCopyCMDInfo& stagingBuffer = stagingBuffers[stagingBufferKey];
-            //std::cerr << "DELETION 2 " << buff << std::endl;
-            if(!stagingBuffer.free){
-                //std::cerr << "DELETION 3 " << buff << std::endl;
-                vkFreeMemory(Device::GetDevice(), stagingBuffer.bufferMemory, nullptr);
-                vkDestroyBuffer(Device::GetDevice(), stagingBuffer.buffer, nullptr);
-                stagingBuffers[stagingBufferKey].free = true;
+    for(std::vector<std::pair<CommandBuffer, bool>>& commandBuffers : stagingCommandBuffers){
+        for(std::pair<CommandBuffer, bool>& commandBuffer : commandBuffers){
+            if(!std::get<bool>(commandBuffer)){
+                usedSecondaryCommandBuffers.push_back(std::get<CommandBuffer>(commandBuffer).GetCommandBuffer());
             }
         }
-        delete useCount;
-        useCount = nullptr;
     }
-    else{
-        *useCount -= 1;
+
+    primaryCommandBuffer.BeginCommandBuffer(nullptr, false);
+    vkCmdExecuteCommands(primaryCommandBuffer.GetCommandBuffer(), usedSecondaryCommandBuffers.size(), usedSecondaryCommandBuffers.data());
+    primaryCommandBuffer.EndCommandBuffer();
+}
+
+void DataBuffer::SubmitPrimaryCommandBuffer(){
+    VkCommandBuffer primaryCommandBufferRaw = primaryCommandBuffer.GetCommandBuffer();
+    VkFence finishedCopyingFenceRaw = finishedCopyingFence.GetFence();
+
+    VkSubmitInfo submitInfo{};
+    submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+    submitInfo.commandBufferCount = 1;
+    submitInfo.pCommandBuffers = &primaryCommandBufferRaw;
+
+    if(vkQueueSubmit(Device::GetTransferQueue(), 1, &submitInfo, finishedCopyingFence.GetFence()) != VK_SUCCESS){
+        throw std::runtime_error("Failed to submit data buffer command buffer");
     }
+
+    vkWaitForFences(Device::GetDevice(), 1, &finishedCopyingFenceRaw, VK_TRUE, std::numeric_limits<uint64_t>::max());
 }
 
 
-BufferDescriptions DataBuffer::GetDescriptions(){
-    return descriptions;
+void DataBuffer::UpdateCleanup(){
+   CommandBuffer::ResetPools(CommandBufferType::DATA); 
+
+   for(std::pair<VkBuffer, VkDeviceMemory>& stagingBufferAndMemory : stagingBufferAndMemoryDeleteQueue){
+        vkFreeMemory(Device::GetDevice(), std::get<VkDeviceMemory>(stagingBufferAndMemory), nullptr);
+        vkDestroyBuffer(Device::GetDevice(), std::get<VkBuffer>(stagingBufferAndMemory), nullptr);
+   }
+   stagingBufferAndMemoryDeleteQueue.clear();
+
+    for(std::vector<std::pair<CommandBuffer, bool>>& commandBuffers : stagingCommandBuffers){
+        commandBuffers.resize(TARGET_STAGING_BUFFER_COUNT_PER_THREAD);
+        for(std::pair<CommandBuffer, bool>& commandBuffer : commandBuffers){
+            std::get<bool>(commandBuffer) = true;
+        }
+    }
 }
 
 }

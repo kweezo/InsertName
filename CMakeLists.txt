@@ -104,6 +104,7 @@ if(BUILD_ENGINE)
         target_link_libraries(engine PUBLIC glfw)
         target_link_libraries(engine PUBLIC assimp)
         target_link_libraries(engine PUBLIC vulkan)
+        target_link_libraries(engine PUBLIC boost_container)
     endif()
 endif()
 

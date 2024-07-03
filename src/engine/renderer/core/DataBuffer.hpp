@@ -4,7 +4,9 @@
 #include <stdexcept>
 #include <cstring>
 #include <memory>
-#include <unordered_map>
+#include <utility>
+#include <thread>
+#include <limits>
 
 #include <vulkan/vulkan.h>
 
@@ -13,76 +15,65 @@
 #include "CommandBuffer.hpp"
 #include "Fence.hpp"
 
-#define DATA_BUFFER_VERTEX_BIT 1
-#define DATA_BUFFER_INDEX_BIT 2
-#define DATA_BUFFER_UNIFORM_BIT 4
-#define DATA_BUFFER_IMAGE_BIT 8
 
 namespace renderer{
 
-typedef struct StagingBufferCopyCMDInfo{
-    VkBuffer buffer;
-    VkDeviceMemory bufferMemory;
-    CommandBuffer commandBuffer;
-    bool free;
-} StagingBuffer;
-
-typedef struct BufferDescriptions{
+struct DataBufferCreateInfo{
     std::vector<VkVertexInputAttributeDescription> attributeDescriptions;
-    std::vector<VkVertexInputBindingDescription> bindingDescriptions;
-   // std::vector
-} BufferDescriptions;
+    std::vector<VkVertexInputBindingDescription> bindingDescriptions; 
+
+    void* data;
+    size_t size;
+
+    VkBufferUsageFlags usage;
+    bool transferToLocalDeviceMemory;
+    uint32_t threadIndex;
+};
 
 class DataBuffer{
 public:
-    DataBuffer();
-    DataBuffer(BufferDescriptions bufferDescriptions, size_t size,
-     void* data, bool transferToLocalDevMem, uint32_t flags);
-
-    static void LoadDataIntoImage(VkImage image, size_t size, void* data, VkExtent3D extent,
-    VkImageSubresourceLayers subresourceLayers, VkImageLayout format);
-
-    VkBuffer GetBuffer();
-
-    BufferDescriptions GetDescriptions();
-
-    void CopyFromBuffer(StagingBufferCopyCMDInfo stagingBuffer, VkDeviceSize size);
-    void UpdateData(void* data, size_t size);
-
-    static void CopyBufferData(VkBuffer dst, void* data, size_t size); // is this needed(obligatory suicide joke)?
-    static void UpdateCommandBuffer();
-
+    static void Init();
+    static void Update();
     static void Cleanup();
 
+
+    DataBuffer();
+    DataBuffer(DataBufferCreateInfo createInfo);
+
     DataBuffer(const DataBuffer& other);
-    DataBuffer operator=(const DataBuffer& other);
+    DataBuffer operator=(const DataBuffer& other);    
+
     ~DataBuffer();
+
+
+    VkBuffer GetBuffer();
 private:
-    static void CreateStagingBuffers();
 
-    static std::unordered_map<VkCommandBuffer, StagingBufferCopyCMDInfo> stagingBuffers;
-    static bool createdStagingBuffers;
+    static void CreateCommandBuffers();
+    static void CreateBuffer(VkBuffer& buffer, VkBufferUsageFlags usage, VkDeviceSize size);
+    static void AllocateMemory(VkDeviceMemory& memory, VkBuffer buffer, size_t size, VkMemoryPropertyFlags properties);
+    static void UploadDataToBuffer(VkDeviceMemory memory, void* data, size_t size);
+    static CommandBuffer RetrieveFreeStagingCommandBuffer(uint32_t threadIndex);
 
-    static CommandBuffer commandBuffer;
+    static void RecordPrimaryCommandBuffer();
+    static void SubmitPrimaryCommandBuffer();
+    static void UpdateCleanup();
+
+    void RecordCopyCommandBuffer(uint32_t threadIndex, size_t size);
+
+
+    VkBuffer buffer;
+    VkDeviceMemory memory;
+
+    VkBuffer stagingBuffer;
+    VkDeviceMemory stagingMemory;
+
+    static CommandBuffer primaryCommandBuffer;
+    static std::vector<std::vector<std::pair<CommandBuffer, bool>>> stagingCommandBuffers;
+    static std::vector<std::pair<VkBuffer, VkDeviceMemory>> stagingBufferAndMemoryDeleteQueue;
     static Fence finishedCopyingFence;
 
-    uint32_t* useCount;
-
-    static void AllocateMemory(VkDeviceMemory& memory, VkBuffer buffer, size_t size, VkMemoryPropertyFlags properties);
-    static void CreateBuffer(VkBuffer& buffer, VkBufferUsageFlags usage, VkDeviceSize size);
-
-    static StagingBufferCopyCMDInfo GetStagingBuffer(size_t size);
-    
-    VkBuffer buff;
-    VkDeviceMemory mem;
-
-    VkCommandBuffer stagingBufferKey;
-
-    BufferDescriptions descriptions;
-
-    size_t size;
-    bool transferToLocalDevMem;
-
+    std::shared_ptr<uint32_t> useCount;
 };
 
 }

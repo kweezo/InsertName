@@ -12,6 +12,8 @@ std::vector<const char*> instanceExtensions = {
 #ifdef NDEBUG
     "VK_EXT_debug_utils",
 #endif
+
+
 };
 
 namespace renderer{
@@ -34,7 +36,7 @@ VkResult CreateDebugUtilsMessengerEXT(VkInstance instance, const VkDebugUtilsMes
 VkInstance Instance::instance = VK_NULL_HANDLE;
 VkDebugUtilsMessengerEXT Instance::debugMessenger = VK_NULL_HANDLE;
 
-void Instance::CreateInstance(){
+void Instance::Init(){
     if (instance != VK_NULL_HANDLE) {
         throw std::runtime_error("Vulkan instance already created");
     }
@@ -102,7 +104,7 @@ VkInstance Instance::GetInstance(){
     return instance;
 }
 
-void Instance::DestroyInstance(){
+void Instance::Cleanup(){
     if (debugMessenger != VK_NULL_HANDLE) {
         auto func = (PFN_vkDestroyDebugUtilsMessengerEXT) vkGetInstanceProcAddr(instance, "vkDestroyDebugUtilsMessengerEXT");
         if (func != nullptr) {

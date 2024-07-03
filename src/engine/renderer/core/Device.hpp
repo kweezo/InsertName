@@ -22,8 +22,8 @@ typedef struct QueueFamilyInfo{
 
 class Device{
 public:
-    static void CreateDevice();
-    static void DestroyDevice();
+    static void Init();
+    static void Cleanup();
 
     static VkDevice GetDevice();
     static VkPhysicalDevice GetPhysicalDevice();

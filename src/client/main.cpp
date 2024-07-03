@@ -121,10 +121,10 @@ int main(){
     userTemp(userManager);
 
     Window::CreateWindowContext(settings.windowWidth, settings.windowHeight, "Vulkan");
-    Renderer::InitRenderer();
+    Renderer::Init();
 {
 
-    ShaderHandle shader = Shader::GetShader("triangle");
+    Shader shader = ShaderManager::GetShader("triangle");
 
     std::vector<VkVertexInputAttributeDescription> attributeDescriptions(2);
 
@@ -204,7 +204,7 @@ int main(){
     std::vector<ModelInstanceHandle> m2;
     for(uint32_t i = 0; i < 100; i++){
         ModelHandle tipot = Model::CreateModel(dir + "res/models/teapot/teapot.fbx",
-         Shader::GetShader("basicMesh"), {}, {});
+         ShaderManager::GetShader("basicMesh"), {}, {});
         m2.push_back(ModelInstance::Create(tipot, {{},{},{}}, true));
     }
 

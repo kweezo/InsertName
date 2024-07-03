@@ -1,27 +1,46 @@
 #include "Image.hpp"
 
-#define MAX_FREE_COMMAND_BUFFER_COUNT 3 
-
 namespace renderer{
-std::vector<ImageTransitionCMDInfo> ImageImpl::stagingBuffers = {};
-Fence ImageImpl::finishedTransitioningFence = Fence();
-CommandBuffer ImageImpl::primaryCommandBuffer = CommandBuffer();
 
-ImageHandle Image::CreateImage(VkImageLayout layout, VkFormat format, VkImageAspectFlags aspectMask, VkImageUsageFlags usage,
-     uint32_t width, uint32_t height, size_t size, void* data){
-        return new ImageImpl(layout, format, aspectMask, usage, width, height, size, data);
+const uint32_t TARGET_SECONDARY_BUFFER_COUNT_PER_THREAD = 5;
+    
+std::vector<std::vector<std::pair<CommandBuffer, bool>>> Image::secondaryCommandBuffers = {};
+CommandBuffer Image::primaryCommandBuffer = {};
+
+
+void Image::Init(){
+    CreateCommmandBuffers();
+
+    finishedPrimaryCommandBufferExecutionFence = Fence(false);
 }
 
-void Image::Free(ImageHandle image){
-    delete image;   
+void Image::Update(){
+    RecordPrimaryCommandBuffer();
+    SubmitPrimaryCommandBuffer();
+    UpdateCleanup();
 }
 
-void Image::Initialize(){
-    ImageImpl::Initialize();
+void Image::Cleanup(){
+    secondaryCommandBuffers.clear();
+    primaryCommandBuffer.~CommandBuffer();
 }
 
-void Image::UpdateCommandBuffers(){
-    ImageImpl::UpdateCommandBuffers();
+void Image::RecordPrimaryCommandBuffer(){
+    
+    std::vector<VkCommandBuffer> usedSecondaryCommandBuffers;
+
+    for(std::vector<std::pair<CommandBuffer, bool>>& commandBuffers : secondaryCommandBuffers){
+        for(std::pair<CommandBuffer, bool>& commandBuffer : commandBuffers){
+            if(!std::get<bool>(commandBuffer)){
+                usedSecondaryCommandBuffers.push_back(std::get<CommandBuffer>(commandBuffer).GetCommandBuffer());
+            }
+        }
+    }
+
+    primaryCommandBuffer.BeginCommandBuffer(nullptr, false);
+    vkCmdExecuteCommands(primaryCommandBuffer.GetCommandBuffer(), usedSecondaryCommandBuffers.size(), usedSecondaryCommandBuffers.data());
+    primaryCommandBuffer.EndCommandBuffer();
+
 }
 
 VkFormat Image::GetSupportedFormat(std::vector<VkFormat> candidates, VkImageTiling tiling, VkFormatFeatureFlags features){
@@ -43,22 +62,118 @@ inline bool Image::HasStencilComponent(VkFormat format){
     return format == VK_FORMAT_D32_SFLOAT_S8_UINT || format == VK_FORMAT_D24_UNORM_S8_UINT;
 }
 
-void ImageImpl::Initialize(){
-    finishedTransitioningFence = Fence(0);
-    CreateCommandBuffers();
+
+void Image::SubmitPrimaryCommandBuffer(){
+    VkCommandBuffer primaryCommandBufferRaw = primaryCommandBuffer.GetCommandBuffer();
+    VkFence finishedCopyingFenceRaw = finishedPrimaryCommandBufferExecutionFence.GetFence();
+
+    VkSubmitInfo submitInfo{};
+    submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+    submitInfo.commandBufferCount = 1;
+    submitInfo.pCommandBuffers = &primaryCommandBufferRaw;
+
+    if(vkQueueSubmit(Device::GetTransferQueue(), 1, &submitInfo, finishedPrimaryCommandBufferExecutionFence.GetFence()) != VK_SUCCESS){
+        throw std::runtime_error("Failed to submit data buffer command buffer");
+    }
+
+    vkWaitForFences(Device::GetDevice(), 1, &finishedCopyingFenceRaw, VK_TRUE, std::numeric_limits<uint64_t>::max());
 }
 
-ImageImpl::ImageImpl(){
-    useCount = new uint32_t;
-    (*useCount) = 1;
+void Image::UpdateCleanup(){
+    CommandBuffer::ResetPools(CommandBufferType::IMAGE); 
 }
 
-ImageImpl::ImageImpl(VkImageLayout layout, VkFormat format, VkImageAspectFlags aspectMask, VkImageUsageFlags usage,
- uint32_t width, uint32_t height, size_t size, void* data){
+CommandBuffer Image::GetFreeCommandBuffer(uint32_t threadIndex){
+    for(std::pair<CommandBuffer, bool>& commandBuffer : secondaryCommandBuffers[threadIndex]){
+        if(std::get<bool>(commandBuffer)){
+            std::get<bool>(commandBuffer) = false;
+            return std::get<CommandBuffer>(commandBuffer);
+        }
+    }
 
+    CommandBufferCreateInfo secondaryCommandBufferInfo;
+    secondaryCommandBufferInfo.type = CommandBufferType::DATA;
+    secondaryCommandBufferInfo.level = VK_COMMAND_BUFFER_LEVEL_SECONDARY;
+    secondaryCommandBufferInfo.flags = COMMAND_POOL_TYPE_TRANSFER | COMMAND_BUFFER_ONE_TIME_SUBMIT_FLAG;
+    secondaryCommandBufferInfo.threadIndex = threadIndex;
 
-    CreateImage(width, height, format, usage);
+    secondaryCommandBuffers[threadIndex].push_back({CommandBuffer(secondaryCommandBufferInfo), false});
+    return std::get<CommandBuffer>(secondaryCommandBuffers[threadIndex].back());
+}
 
+void Image::CreateCommmandBuffers(){
+    CommandBufferCreateInfo commandBufferInfo{};
+    commandBufferInfo.type = CommandBufferType::GENERIC;
+    commandBufferInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+    commandBufferInfo.flags = COMMAND_POOL_TYPE_TRANSFER | COMMAND_BUFFER_ONE_TIME_SUBMIT_FLAG;
+    commandBufferInfo.threadIndex = 0;
+
+    primaryCommandBuffer = CommandBuffer(commandBufferInfo);
+
+    uint32_t i = 0;
+    secondaryCommandBuffers.resize(std::thread::hardware_concurrency());
+    for(std::vector<std::pair<CommandBuffer, bool>>& commandBuffers : secondaryCommandBuffers){
+
+        CommandBufferCreateInfo stagingCommandBufferInfo;
+        stagingCommandBufferInfo.type = CommandBufferType::DATA;
+        stagingCommandBufferInfo.level = VK_COMMAND_BUFFER_LEVEL_SECONDARY;
+        stagingCommandBufferInfo.flags = COMMAND_POOL_TYPE_TRANSFER | COMMAND_BUFFER_ONE_TIME_SUBMIT_FLAG;
+        stagingCommandBufferInfo.threadIndex = i;
+
+        commandBuffers = std::vector<std::pair<CommandBuffer, bool>>(TARGET_SECONDARY_BUFFER_COUNT_PER_THREAD, {CommandBuffer(stagingCommandBufferInfo), false});
+
+        i = (i + 1) % std::thread::hardware_concurrency();
+    }
+}
+
+Image::Image(){
+    useCount = std::make_shared<uint32_t>(1);
+}
+
+Image::Image(ImageCreateInfo createInfo): createInfo(createInfo) {
+    CreateImage();
+    AllocateMemory();
+    TransitionLayout(VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
+
+    useCount = std::make_shared<uint32_t>(1);
+}
+
+void Image::CreateImage(){
+    VkImageCreateInfo imageInfo = {};
+
+    QueueFamilyInfo queueFamilyInfo = Device::GetQueueFamilyInfo();
+    if(queueFamilyInfo.transferFamilyFound){
+        imageInfo.queueFamilyIndexCount = 2;
+
+        uint32_t queueFamilyIndices[] = {queueFamilyInfo.graphicsQueueCreateInfo.queueFamilyIndex,
+         queueFamilyInfo.transferQueueCreateInfo.queueFamilyIndex};
+
+        imageInfo.pQueueFamilyIndices = queueFamilyIndices;
+        imageInfo.queueFamilyIndexCount = 2;
+        imageInfo.sharingMode = VK_SHARING_MODE_CONCURRENT;
+    }else{
+        imageInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+    }
+
+    imageInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
+    imageInfo.imageType = VK_IMAGE_TYPE_2D;
+    imageInfo.extent.width = createInfo.imageExtent.width;
+    imageInfo.extent.height = createInfo.imageExtent.height;
+    imageInfo.extent.depth = 1;
+    imageInfo.mipLevels = 1;
+    imageInfo.arrayLayers = 1;
+    imageInfo.format = createInfo.format;
+    imageInfo.tiling = VK_IMAGE_TILING_OPTIMAL;
+    imageInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+    imageInfo.usage = VK_IMAGE_USAGE_TRANSFER_DST_BIT | createInfo.usage;
+    imageInfo.samples = VK_SAMPLE_COUNT_1_BIT;
+
+    if(vkCreateImage(Device::GetDevice(), &imageInfo, nullptr, &image) != VK_SUCCESS){
+        throw std::runtime_error("Failed to create an image");
+    }
+}
+
+void Image::AllocateMemory(){
     VkMemoryRequirements memRequirements;
     vkGetImageMemoryRequirements(Device::GetDevice(), image, &memRequirements);
 
@@ -84,72 +199,15 @@ ImageImpl::ImageImpl(VkImageLayout layout, VkFormat format, VkImageAspectFlags a
             break;
         }
     }
-
-    vkBindImageMemory(Device::GetDevice(), image, memory, 0);
-
-    CreateImageView(format, aspectMask);
-
-    VkImageSubresourceLayers subresourceLayers = {};
-    subresourceLayers.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-    subresourceLayers.baseArrayLayer = 0;
-    subresourceLayers.layerCount = 1;
-    subresourceLayers.mipLevel = 0;
-
-
-    this->aspectMask = aspectMask;
-    TransitionLayout(VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
-
-    loadDataInfo = {image, memory, size, data, {width, height, 1}, subresourceLayers, layout};
-
-
-    useCount = new uint32_t;
-    (*useCount) = 1;
-
 }
 
-void ImageImpl::CreateImage(uint32_t width, uint32_t height, VkFormat format, VkImageUsageFlags usage){
-    VkImageCreateInfo imageInfo = {};
-
-    QueueFamilyInfo queueFamilyInfo = Device::GetQueueFamilyInfo();
-    if(queueFamilyInfo.transferFamilyFound){
-        imageInfo.queueFamilyIndexCount = 2;
-
-        uint32_t queueFamilyIndices[] = {queueFamilyInfo.graphicsQueueCreateInfo.queueFamilyIndex,
-         queueFamilyInfo.transferQueueCreateInfo.queueFamilyIndex};
-
-        imageInfo.pQueueFamilyIndices = queueFamilyIndices;
-        imageInfo.queueFamilyIndexCount = 2;
-        imageInfo.sharingMode = VK_SHARING_MODE_CONCURRENT;
-    }else{
-        imageInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
-    }
-
-    imageInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
-    imageInfo.imageType = VK_IMAGE_TYPE_2D;
-    imageInfo.extent.width = width;
-    imageInfo.extent.height = height;
-    imageInfo.extent.depth = 1;
-    imageInfo.mipLevels = 1;
-    imageInfo.arrayLayers = 1;
-    imageInfo.format = format;
-    imageInfo.tiling = VK_IMAGE_TILING_OPTIMAL;
-    imageInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-    imageInfo.usage = VK_IMAGE_USAGE_TRANSFER_DST_BIT | usage;
-    imageInfo.samples = VK_SAMPLE_COUNT_1_BIT;
-
-    if(vkCreateImage(Device::GetDevice(), &imageInfo, nullptr, &image) != VK_SUCCESS){
-        throw std::runtime_error("Failed to create image");
-    }
-}
-
-
-void ImageImpl::CreateImageView(VkFormat format, VkImageAspectFlags aspectMask){
+void Image::CreateImageView(){
     VkImageViewCreateInfo createInfo{};
 
     createInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
     createInfo.image = image;
     createInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
-    createInfo.format = format;
+    createInfo.format = this->createInfo.format;
     createInfo.components = {
         VK_COMPONENT_SWIZZLE_IDENTITY,
         VK_COMPONENT_SWIZZLE_IDENTITY,
@@ -157,24 +215,19 @@ void ImageImpl::CreateImageView(VkFormat format, VkImageAspectFlags aspectMask){
         VK_COMPONENT_SWIZZLE_IDENTITY,
     };
     createInfo.subresourceRange = {
-        aspectMask,
+        this->createInfo.aspectMask,
         0,
         1,
         0,
         1
-    };// make mutable
+    };// TODO make mutable
 
     if(vkCreateImageView(Device::GetDevice(), &createInfo, nullptr, &imageView) != VK_SUCCESS){
         throw std::runtime_error("Failed to create image view");
     }
 }
 
-VkImageView ImageImpl::GetImageView(){
-    return imageView;
-}
-
-
-void ImageImpl::TransitionLayout(VkImageLayout oldLayout, VkImageLayout newLayout){
+void Image::TransitionLayout(VkImageLayout oldLayout, VkImageLayout newLayout){
     VkImageMemoryBarrier imageMemoryBarrier = {};
     imageMemoryBarrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
     imageMemoryBarrier.oldLayout = oldLayout;
@@ -182,7 +235,7 @@ void ImageImpl::TransitionLayout(VkImageLayout oldLayout, VkImageLayout newLayou
     imageMemoryBarrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
     imageMemoryBarrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
     imageMemoryBarrier.image = image;
-    imageMemoryBarrier.subresourceRange.aspectMask = aspectMask;
+    imageMemoryBarrier.subresourceRange.aspectMask = createInfo.aspectMask;
     imageMemoryBarrier.subresourceRange.baseMipLevel = 0;
     imageMemoryBarrier.subresourceRange.levelCount = 1;
     imageMemoryBarrier.subresourceRange.baseArrayLayer = 0;
@@ -199,137 +252,64 @@ void ImageImpl::TransitionLayout(VkImageLayout oldLayout, VkImageLayout newLayou
     inheritanceInfo.queryFlags = 0;
     inheritanceInfo.pipelineStatistics = 0;
 
-    CommandBuffer commandBuffer = GetFreeCommandBuffer(this);
-    commandBuffer.BeginCommandBuffer(&inheritanceInfo); 
+    CommandBuffer commandBuffer = GetFreeCommandBuffer(createInfo.threadIndex);
+
+    commandBuffer.BeginCommandBuffer(&inheritanceInfo, false); 
+
     vkCmdPipelineBarrier(commandBuffer.GetCommandBuffer(), VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
     VK_PIPELINE_STAGE_TRANSFER_BIT, 0, 0, nullptr, 0, nullptr, 1, &imageMemoryBarrier);
+
     commandBuffer.EndCommandBuffer();
 }
 
-void ImageImpl::LoadDataIntoImage(){
-    DataBuffer::LoadDataIntoImage(loadDataInfo.image, loadDataInfo.size, loadDataInfo.data, loadDataInfo.extent, loadDataInfo.subresource, loadDataInfo.layout);
-}
-
-void ImageImpl::UpdateCommandBuffers(){
-    std::vector<VkCommandBuffer> commandBuffers;
-    for(int i = 0; i < stagingBuffers.size(); i++){
-        if(!stagingBuffers[i].free){
-            commandBuffers.push_back(stagingBuffers[i].commandBuffer.GetCommandBuffer());
-        }
-    }
-    
-    if(commandBuffers.empty()){
-        return;
-    }
-
-    VkFence fence = finishedTransitioningFence.GetFence();
-
-    vkResetFences(Device::GetDevice(), 1, &fence);
-
-    primaryCommandBuffer.BeginCommandBuffer(nullptr);
-    vkCmdExecuteCommands(primaryCommandBuffer.GetCommandBuffer(), commandBuffers.size(), commandBuffers.data());
-    primaryCommandBuffer.EndCommandBuffer();
-
-
-
-    VkSubmitInfo submitInfo{};
-    submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
-    submitInfo.commandBufferCount = 1;
-    VkCommandBuffer commandBufferHandle = primaryCommandBuffer.GetCommandBuffer();
-    submitInfo.pCommandBuffers = &commandBufferHandle;
-    submitInfo.waitSemaphoreCount = 0;
-    submitInfo.signalSemaphoreCount = 0;
-
-    if(vkQueueSubmit(Device::GetGraphicsQueue(), 1, &submitInfo, finishedTransitioningFence.GetFence()) != VK_SUCCESS){
-        throw std::runtime_error("Failed to submit transfer command buffer");
-    }
-    
-    vkWaitForFences(Device::GetDevice(), 1, &fence, VK_TRUE, UINT64_MAX);
-
-    for(ImageCopyCMDInfo& buffer : stagingBuffers){
-        buffer.commandBuffer.ResetCommandBuffer();
-        if(buffer.free){
-            continue;
-        }
-        buffer.free = true;
-    }
-
-    while(stagingBuffers.size() > MAX_FREE_COMMAND_BUFFER_COUNT){
-        stagingBuffers.erase(stagingBuffers.begin());
-    }
-}
-
-
-void ImageImpl::CreateCommandBuffers(){
-    for(int i = 0; i < MAX_FREE_COMMAND_BUFFER_COUNT; i++){
-        stagingBuffers.push_back({CommandBuffer(VK_COMMAND_BUFFER_LEVEL_SECONDARY,
-        COMMAND_BUFFER_ONE_TIME_SUBMIT_FLAG | COMMAND_BUFFER_GRAPHICS_FLAG/*cuz of stencil formats and shit*/, 0), true});
-    }
-    primaryCommandBuffer = CommandBuffer(VK_COMMAND_BUFFER_LEVEL_PRIMARY, COMMAND_BUFFER_GRAPHICS_FLAG, 0);
-}
-
-VkImage ImageImpl::GetImage(){
+VkImage Image::GetImage(){
     return image;
-
 }
 
-CommandBuffer ImageImpl::GetFreeCommandBuffer(ImageHandle image){
-    for(ImageCopyCMDInfo& buffer : stagingBuffers){
-        if(buffer.free){
-            buffer.free = false;
-            buffer.image = image;
-            return buffer.commandBuffer;
-        }
-    }
-
-    stagingBuffers.push_back({CommandBuffer(VK_COMMAND_BUFFER_LEVEL_SECONDARY,
-     COMMAND_BUFFER_ONE_TIME_SUBMIT_FLAG | COMMAND_BUFFER_TRANSFER_FLAG, 0), false}); //TODO implement multithreading¸
-
-    return stagingBuffers.back().commandBuffer;
+VkImageView Image::GetImageView(){
+    return imageView;
 }
 
-ImageImpl::ImageImpl(const ImageImpl& other){
-    loadDataInfo = other.loadDataInfo;
-    image = other.image;
-    memory = other.memory;
-    useCount = other.useCount;
-    imageView = other.imageView;
-    aspectMask = other.aspectMask;
-    (*useCount)++;
-}
 
-ImageImpl& ImageImpl::operator=(const ImageImpl& other){
+Image Image::operator=(const Image& other){
     if(this == &other){
         return *this;
     }
 
-    loadDataInfo = other.loadDataInfo;
     image = other.image;
-    memory = other.memory;
-    useCount = other.useCount;
     imageView = other.imageView;
-    aspectMask = other.aspectMask;
-    (*useCount)++;
+    memory = other.memory;
+    createInfo = other.createInfo;
+    useCount = other.useCount;
 
-    return *this;
+    (*useCount.get())++;
 }
 
-ImageImpl::~ImageImpl(){
-    if((*useCount) <= 1){
-        vkDestroyImageView(Device::GetDevice(), imageView, nullptr);
-        vkDestroyImage(Device::GetDevice(), image, nullptr);
+Image::Image(const Image& other){
+    image = other.image;
+    imageView = other.imageView;
+    memory = other.memory;
+    createInfo = other.createInfo;
+    useCount = other.useCount;
+
+    (*useCount.get())++;
+}
+
+Image::~Image(){
+    if(useCount.get() == nullptr){
+        return;
+    }
+
+    if(*useCount.get() == 1){
         vkFreeMemory(Device::GetDevice(), memory, nullptr);
+        vkDestroyImage(Device::GetDevice(), image, nullptr);
+        vkDestroyImageView(Device::GetDevice(), imageView, nullptr);
+
+        useCount.reset();
+        return;
     }
-}
 
-void ImageImpl::Cleanup(){
-    finishedTransitioningFence.~Fence();
-    primaryCommandBuffer.~CommandBuffer();
-    for (ImageTransitionCMDInfo& buffer : stagingBuffers){
-        buffer.commandBuffer.~CommandBuffer();
-    }
+    (*useCount.get())--;
 }
 
 }
-
-

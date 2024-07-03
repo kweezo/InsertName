@@ -4,10 +4,10 @@ namespace renderer{
 
 const std::string shaderPath = "client_data/shaders/bin/";
 
-std::vector<ShaderBindingInfo> ShaderImpl::shaderBindings = {};
-std::unordered_map<std::string, ShaderHandle> Shader::shaders = {};
+std::vector<ShaderBindingInfo> Shader::shaderBindings = {};
+boost::container::flat_map<std::string, Shader> ShaderManager::shaders = {};
 
-void Shader::Initialize(){
+void ShaderManager::Init(){
     std::ifstream stream("client_data/shaders/shaders.json");
     if(!stream.is_open()){
         throw std::runtime_error("Failed to open shaders.json");
@@ -66,30 +66,28 @@ void Shader::Initialize(){
         vertexPath = shaderPath + vertexPath;
         fragmentPath = shaderPath + fragmentPath;
 
-        Shader::shaders[name] = new ShaderImpl(vertexPath.c_str(), fragmentPath.c_str(),
-        name.c_str(), descriptorBindings);
+        ShaderManager::shaders.emplace(name, Shader(vertexPath, fragmentPath,
+        name, descriptorBindings));
     }
 
-    ShaderImpl::EnableNewShaders();
+    Shader::CreateDescriptorSets();
 
     stream.close();
 }
 
-ShaderHandle Shader::GetShader(std::string name){
+Shader ShaderManager::GetShader(std::string name){
     if(shaders.find(name) == shaders.end()){
         throw std::runtime_error("Attempting to get nonexistent shader with name " + name);
     }
     return shaders[name];
 }
 
-void Shader::Cleanup(){
-    for(auto& [name, shader] : shaders){
-        delete shader;
-    }
+void ShaderManager::Cleanup(){
+    shaders.clear();
 }
 
 
-void ShaderImpl::EnableNewShaders(){
+void Shader::CreateDescriptorSets(){
     if(shaderBindings.empty()){
         std::cout << "Warning, tried to enable new shader bindings but no new shaders have been created" << std::endl;
         return;
@@ -98,58 +96,44 @@ void ShaderImpl::EnableNewShaders(){
     std::vector<VkDescriptorSetLayoutCreateInfo> descriptorSetLayoutInfos(shaderBindings.size());
 
 
-    for(uint32_t i = 0; i < shaderBindings.size(); i++){
-        descriptorSetLayoutInfos[i].sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
-        descriptorSetLayoutInfos[i].bindingCount = shaderBindings[i].bindings.size();
-        descriptorSetLayoutInfos[i].pBindings = shaderBindings[i].bindings.data();
-        descriptorSetLayoutInfos[i].flags = VK_DESCRIPTOR_SET_LAYOUT_CREATE_PER_STAGE_BIT_NV;
-    }
 
-
-    std::vector<uint32_t> layoutIndexes = DescriptorManager::CreateLayouts(descriptorSetLayoutInfos);
+    DescriptorSetBatchAllocateInfo allocInfo{}; 
     
-    std::unordered_map<VkDescriptorType, uint32_t> bindingCounts;
-
-    std::vector<DescriptorBatchInfo> batchInfos;
-    uint32_t i = 0;
-    for(VkDescriptorSetLayoutBinding& binding : shaderBindings[i].bindings){
-        if(bindingCounts.find(binding.descriptorType) == bindingCounts.end()){
-            bindingCounts[binding.descriptorType] = 1;
-        }
-        else{
-            bindingCounts[binding.descriptorType]++;
-        }
+    allocInfo.descriptorLayoutBindings.resize(shaderBindings.size());
+    for(uint32_t i = 0; i < shaderBindings.size(); i++){
+        allocInfo.descriptorLayoutBindings[i]= shaderBindings[i].bindings;
     }
 
-    for(auto& [descriptorType, count] : bindingCounts){
-        batchInfos.push_back({count, descriptorType});
-    }
 
-    std::vector<DescriptorHandle> handles = DescriptorManager::CreateDescriptors(batchInfos, layoutIndexes);
-
-    for(uint32_t i = 0; i < handles.size(); i++){
-        shaderBindings[i].handle->SetDescriptorSet(DescriptorManager::GetDescriptorSet(handles[i]));
+    std::vector<DescriptorSetLocation> locations = DescriptorManager::AllocateDescriptorSetBatch(allocInfo);
+    
+    for(uint32_t i = 0; i < locations.size(); i++){
+        shaderBindings[i].handle->SetDescriptorSet(DescriptorManager::RetrieveDescriptorSet(locations[i]));
     }
 
 }
 
-void ShaderImpl::Bind(VkCommandBuffer commandBuffer, VkPipelineLayout pipelineLayout){
+void Shader::Bind(VkCommandBuffer commandBuffer, VkPipelineLayout pipelineLayout){
     vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 0, 1, &descriptorSet, 0, nullptr);
 }
 
-void ShaderImpl::SetDescriptorSet(VkDescriptorSet descriptorSet){
+void Shader::SetDescriptorSet(VkDescriptorSet descriptorSet){
     this->descriptorSet = descriptorSet;
 }
 
 
-VkDescriptorSet ShaderImpl::GetDescriptorSet() const{
+VkDescriptorSet Shader::GetDescriptorSet() const{
     return descriptorSet;
 }
 
-ShaderImpl::ShaderImpl(const char* vertexShaderPath, const char* fragmentShaderPath, const char* name,
- std::vector<VkDescriptorSetLayoutBinding> bindings){
-    useCount = new uint32_t;
-    useCount[0] = 1;
+Shader::Shader(){
+    useCount = std::make_shared<uint32_t>(1);
+}
+
+Shader::Shader(const std::string vertexShaderPath, const std::string fragmentShaderPath, const std::string name, 
+     std::vector<VkDescriptorSetLayoutBinding> bindings){    
+
+    useCount = std::make_shared<uint32_t>(1);
 
     std::vector<unsigned char> vertexShaderBytecode = ReadBytecode(vertexShaderPath);
     std::vector<unsigned char> fragmentShaderBytecode = ReadBytecode(fragmentShaderPath);
@@ -174,11 +158,11 @@ ShaderImpl::ShaderImpl(const char* vertexShaderPath, const char* fragmentShaderP
     this->name = name;
 }
 
-std::vector<unsigned char> ShaderImpl::ReadBytecode(const char* path){
+std::vector<unsigned char> Shader::ReadBytecode(const std::string path){
     std::ifstream file(path, std::ios::ate | std::ios::binary);
 
     if(!file.is_open()){
-        std::string error = "Failed to open file: " + std::string(path);
+        std::string error = "Failed to open file: " + path;
         throw std::runtime_error(error);
     }
 
@@ -186,22 +170,21 @@ std::vector<unsigned char> ShaderImpl::ReadBytecode(const char* path){
     std::vector<unsigned char> buffer(fileSize);
 
     file.seekg(0);
-
     file.read((char*) buffer.data(), fileSize);
 
     return buffer;
 
 }
 
-void ShaderImpl::UpdateDescriptorSet(std::vector<VkWriteDescriptorSet> writeDescriptorSets){
+void Shader::UpdateDescriptorSet(std::vector<VkWriteDescriptorSet> writeDescriptorSets){
     vkUpdateDescriptorSets(Device::GetDevice(), writeDescriptorSets.size(), writeDescriptorSets.data(), 0, nullptr);
 }
 
-const char* ShaderImpl::GetName(){
+const std::string Shader::GetName(){
     return name;
 }
 
-std::array<VkPipelineShaderStageCreateInfo, 2> ShaderImpl::GetShaderStageCreateInfo() const{
+std::array<VkPipelineShaderStageCreateInfo, 2> Shader::GetShaderStageCreateInfo() const{
     VkPipelineShaderStageCreateInfo vertexShaderStageInfo = {};
     vertexShaderStageInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
     vertexShaderStageInfo.stage = VK_SHADER_STAGE_VERTEX_BIT;
@@ -217,36 +200,45 @@ std::array<VkPipelineShaderStageCreateInfo, 2> ShaderImpl::GetShaderStageCreateI
     return {vertexShaderStageInfo, fragmentShaderStageInfo};
 }
 
-ShaderImpl::ShaderImpl(const ShaderImpl& other){
+Shader::Shader(const Shader& other){
     useCount = other.useCount;
-    useCount[0]++;
     vertexShaderModule = other.vertexShaderModule;
     fragmentShaderModule = other.fragmentShaderModule;
     descriptorSet = other.descriptorSet;
+
+    (*useCount.get())++;
 }
 
-ShaderImpl ShaderImpl::operator=(const ShaderImpl& other){
+Shader Shader::operator=(const Shader& other){
     if(this == &other){
         return *this;
     }
 
     useCount = other.useCount;
-    useCount[0]++;
     vertexShaderModule = other.vertexShaderModule;
     fragmentShaderModule = other.fragmentShaderModule;
     descriptorSet = other.descriptorSet;
+
+    (*useCount.get())++;
+
     return *this;
 }
 
-ShaderImpl::~ShaderImpl(){
-    if(useCount[0] <= 1){
+Shader::~Shader(){
+    if(useCount.get() == nullptr){
+        return;
+    }
+
+    if(*useCount.get() <= 1){
         vkDestroyShaderModule(Device::GetDevice(), vertexShaderModule, nullptr);
         vkDestroyShaderModule(Device::GetDevice(), fragmentShaderModule, nullptr);
-        delete useCount;
+        
+        useCount.reset();
+
+        return;
     }
-    else{
-        useCount[0]--;
-    }
+
+    (*useCount.get())--;
 }
 
 }

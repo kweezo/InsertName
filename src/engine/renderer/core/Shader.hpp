@@ -7,48 +7,51 @@
 #include <vector>
 #include <array>
 #include <unordered_map>
+#include <memory>
+
 #include <jsoncpp/json/json.h>
+
+#include <boost/container/flat_map.hpp>
 
 #include <vulkan/vulkan.h>
 
 #include "Device.hpp"
 #include "DescriptorManager.hpp"
 
-#define ShaderHandle ShaderImpl*
-
 namespace renderer{
 
-class ShaderImpl;
+class Shader;
 
 typedef struct ShaderBindingInfo{
-    ShaderHandle handle;
+    Shader* handle;
     std::vector<VkDescriptorSetLayoutBinding> bindings;
 }ShaderBindingInfo;
 
-class Shader{
+class ShaderManager{
 public:
-    static void Initialize();
+    static void Init();
     static void Cleanup();
 
-    static ShaderHandle GetShader(std::string name);
+    static Shader GetShader(std::string name);
 
 private:
 
-    static std::unordered_map<std::string, ShaderHandle> shaders;
+    static boost::container::flat_map<std::string, Shader> shaders;
 };
 
 
-class ShaderImpl{
+class Shader{
 public:
-    ShaderImpl(const char* vertexShaderPath, const char* fragmentShaderPath, const char* name, 
+    Shader();
+    Shader(const std::string vertexShaderPath, const std::string fragmentShaderPath, const std::string name, 
      std::vector<VkDescriptorSetLayoutBinding> bindings);    
-    ~ShaderImpl();
-    ShaderImpl(const ShaderImpl& other);
-    ShaderImpl operator=(const ShaderImpl& other);
+    Shader(const Shader& other);
+    Shader operator=(const Shader& other);
+    ~Shader();
 
     VkShaderModule GetVertexShaderModule() const;
     VkShaderModule GetFragmentShaderModule() const;
-    const char* GetName();
+    const std::string GetName();
 
     void SetDescriptorSet(VkDescriptorSet descriptorSet);
     void UpdateDescriptorSet(std::vector<VkWriteDescriptorSet> writeDescriptorSets);
@@ -58,20 +61,20 @@ public:
 
     std::array<VkPipelineShaderStageCreateInfo, 2> GetShaderStageCreateInfo() const;
 
-    static void EnableNewShaders();
+    static void CreateDescriptorSets();
 private:
     static std::vector<ShaderBindingInfo> shaderBindings;
 
-    std::vector<unsigned char> ReadBytecode(const char* path); 
+    std::vector<unsigned char> ReadBytecode(const std::string path); 
 
     VkShaderModule vertexShaderModule;
     VkShaderModule fragmentShaderModule;
 
     VkDescriptorSet descriptorSet;
 
-    const char* name;
+    std::string name;
 
-    uint32_t* useCount;
+    std::shared_ptr<uint32_t> useCount;
 
 };
 

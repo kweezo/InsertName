@@ -20,8 +20,8 @@ namespace renderer{
 
 class Renderer{
 public:
-    static void InitRenderer();
-    static void DestroyRenderer();
+    static void Init();
+    static void Cleanup();
 
     static void RenderFrame();
 private:

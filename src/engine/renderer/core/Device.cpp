@@ -28,7 +28,7 @@ VKAPI_ATTR VkBool32 VKAPI_CALL debugCallback(
 }
 
 const std::vector<const char*> deviceExtensions = {
-    VK_KHR_SWAPCHAIN_EXTENSION_NAME
+    VK_KHR_SWAPCHAIN_EXTENSION_NAME,
 };
 
 VkDevice Device::device = VK_NULL_HANDLE;
@@ -42,7 +42,7 @@ bool Device::deviceMemoryFree = false;
 VkPhysicalDeviceProperties Device::physicalDeviceProperties = {};
 bool Device::initialized = false;
 
-void Device::CreateDevice(){
+void Device::Init(){
     PickPhysicalDevice();
     CreateQueueCreateInfos();
     CreateLogicalDevice();
@@ -224,7 +224,7 @@ bool Device::IsInitialized(){
     return initialized;
 }
 
-void Device::DestroyDevice(){
+void Device::Cleanup(){
     vkDestroyDevice(device, nullptr);
 }
 

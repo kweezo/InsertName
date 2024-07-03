@@ -3,9 +3,7 @@
 namespace renderer{
 
 Fence::Fence(): fence(VK_NULL_HANDLE){
-
-    useCount = new uint32_t;
-    *useCount = 1;
+    useCount = std::make_shared<uint32_t>(1);
 }
 
 Fence::Fence(bool signaled){
@@ -21,8 +19,7 @@ Fence::Fence(bool signaled){
         throw std::runtime_error("Failed to create fence");
     }
 
-    useCount = new uint32_t;
-    *useCount = 1;
+    useCount = std::make_shared<uint32_t>(1);
 }
 
 VkFence Fence::GetFence(){
@@ -32,7 +29,7 @@ VkFence Fence::GetFence(){
 Fence::Fence(const Fence& other){
     fence = other.fence;
     useCount = other.useCount;
-    *useCount += 1;
+    (*useCount.get())++;
 }
 
 Fence& Fence::operator=(const Fence& other){
@@ -42,13 +39,13 @@ Fence& Fence::operator=(const Fence& other){
 
     fence = other.fence;
     useCount = other.useCount;
-    *useCount += 1;
+    (*useCount.get())++;
 
     return *this;
 }
 
 Fence::~Fence(){
-    if(useCount == nullptr){
+    if(useCount.get() == nullptr){
         return;
     }
 
@@ -56,10 +53,9 @@ Fence::~Fence(){
         if(fence != VK_NULL_HANDLE){
             vkDestroyFence(Device::GetDevice(), fence, nullptr);
         }
-        delete useCount;
-        useCount = nullptr;
+        useCount.reset();
     }else{
-        *useCount -= 1;
+        (*useCount.get())--;
     }
 }
 

@@ -56,10 +56,10 @@ private:
     static void RecordStaticCommandBuffer(StaticModelInstanceData& instances, uint32_t imageIndex, uint32_t threadsIndex, uint32_t threadIndexInThreads);
     static void UploadDataToInstanceBuffer(StaticModelInstanceData& instances);
 
-    static std::unordered_map<ShaderHandle, GraphicsPipeline> staticModelPipelines;
+    static std::unordered_map<Shader, GraphicsPipeline> staticModelPipelines;
 
     static void InitializeMainRenderingObjects();
-    static std::array<std::unordered_map<ShaderHandle, std::vector<VkCommandBuffer>>, MAX_FRAMES_IN_FLIGHT> InitializeInstanceData();
+    static std::array<std::unordered_map<Shader, std::vector<VkCommandBuffer>>, MAX_FRAMES_IN_FLIGHT> InitializeInstanceData();
     static void HandleThreads();
 
     const static BufferDescriptions baseStaticInstanceDescriptions;

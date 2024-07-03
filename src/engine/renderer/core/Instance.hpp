@@ -14,8 +14,8 @@ namespace renderer{
 
 class Instance{
 public:
-    static void CreateInstance();
-    static void DestroyInstance();
+    static void Init();
+    static void Cleanup();
 
     static VkInstance GetInstance();
 private:

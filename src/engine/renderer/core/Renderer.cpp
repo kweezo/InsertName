@@ -2,22 +2,22 @@
 
 namespace renderer{
 
-void Renderer::InitRenderer(){
+void Renderer::Init(){
     HardInit();
     SoftInit();
 }
 void Renderer::HardInit(){
-    Instance::CreateInstance();
-    Device::CreateDevice();
+    Instance::Init();
+    Device::Init();
     Window::CreateVulkanSurface();
     ImageImpl::Initialize();
     Camera::Init();
 }
 
 void Renderer::SoftInit(){
-    Swapchain::CreateSwapchain();
+    Swapchain::Init();
     GraphicsPipeline::Init();
-    Shader::Initialize();
+    ShaderManager::Init();
 }
 
 void Renderer::RenderFrame(){
@@ -28,14 +28,14 @@ void Renderer::RenderFrame(){
 void Renderer::DestroyRenderer(){
     ModelInstance::Cleanup();
     Camera::Cleanup();
-    Shader::Cleanup();
-    Swapchain::DestroySwapchain();
+    ShaderManager::Cleanup();
+    Swapchain::Cleanup();
     DescriptorManager::Cleanup();
     DataBuffer::Cleanup();
     ImageImpl::Cleanup();
     vkDestroySurfaceKHR(Instance::GetInstance(), Window::GetVulkanSurface(), nullptr);
     GraphicsPipeline::Cleanup();
-    Device::DestroyDevice();
-    Instance::DestroyInstance();
+    Device::Cleanup();
+    Instance::Cleanup();
 }
 }

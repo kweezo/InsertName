@@ -4,7 +4,7 @@
 namespace renderer{
 
 std::unordered_map<ModelHandle, StaticModelInstanceData> StaticModelInstance::staticModelInstanceMap = {};
-std::unordered_map<ShaderHandle, GraphicsPipeline> StaticModelInstance::staticModelPipelines = {};
+std::unordered_map<Shader, GraphicsPipeline> StaticModelInstance::staticModelPipelines = {};
 std::array<CommandBuffer, MAX_FRAMES_IN_FLIGHT> StaticModelInstance::staticInstancesCommandBuffers = {};
 std::array<RenderSemaphores, MAX_FRAMES_IN_FLIGHT> StaticModelInstance::staticInstancesSemaphores = {};
 bool StaticModelInstance::mainRenderingObjectsInitialized = false;
@@ -40,35 +40,6 @@ void StaticModelInstance::InitializeMainRenderingObjects(){
     mainRenderingObjectsInitialized = true;
 }
 
-/*std::array<std::unordered_map<ShaderHandle, std::vector<VkCommandBuffer>>, MAX_FRAMES_IN_FLIGHT> 
-StaticModelInstance::InitializeInstanceData(){
-    std::array<std::unordered_map<ShaderHandle, std::vector<VkCommandBuffer>>, MAX_FRAMES_IN_FLIGHT> secondaryBuffers;
-    for(uint32_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++){
-        
-        uint32_t y = 0;
-        for(auto& [buff, instances] : staticModelInstanceMap){
-            if(instances.initialized){
-                continue;
-            }
-            uint32_t threadCount = std::thread::hardware_concurrency();
-            for(uint32_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++){
-                instances.commandBuffer[i] = CommandBuffer(VK_COMMAND_BUFFER_LEVEL_SECONDARY, COMMAND_BUFFER_GRAPHICS_FLAG, (i % threadCount) * (y + 1) + 1);
-                if(i >= threadCount){
-                    instances.threadLock[i] = true;
-                }
-                else{
-                    instances.threadLock[i] = false;
-                }
-            }
-            secondaryBuffers[y][instances.model->GetShader()].push_back(instances.commandBuffer[i].GetCommandBuffer());
-            y++;
-
-            instances.initialized = true;
-        }
-    }
-    return secondaryBuffers;
-}*/
-
 void StaticModelInstance::HandleThreads(){
     uint32_t y = 0;
     std::vector<StaticModelInstanceData*> modelInstanceMapPtrs(staticModelInstanceMap.size());
@@ -99,14 +70,12 @@ void StaticModelInstance::Update(){
         InitializeMainRenderingObjects();
     }
     
-    std::array<std::unordered_map<ShaderHandle, std::vector<VkCommandBuffer>>, MAX_FRAMES_IN_FLIGHT> secondaryBuffers{};
+    std::array<std::unordered_map<Shader, std::vector<VkCommandBuffer>>, MAX_FRAMES_IN_FLIGHT> secondaryBuffers{};
     HandleThreads();
     for(uint32_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++){
-        uint32_t y = 0;
         for(auto& [buff, instances] : staticModelInstanceMap){
             VkCommandBuffer buf = instances.commandBuffer[i].GetCommandBuffer();
-            secondaryBuffers[y][instances.model->GetShader()].push_back(buf);
-            y++;
+            secondaryBuffers[i][instances.model->GetShader()].push_back(buf);
         }
     }
 

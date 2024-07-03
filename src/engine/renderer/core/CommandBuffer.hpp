@@ -5,6 +5,8 @@
 #include <stdexcept>
 #include <memory>
 #include <thread>
+#include <array>
+#include <thread>
 
 #include <vulkan/vulkan.h>
 
@@ -16,10 +18,25 @@
 
 namespace renderer{
 
+enum CommandBufferType{
+    GENERIC = 1,
+    IMAGE = 2,
+    DATA = 3,
+    UNIFORM = 4,
+    size = 4
+};
+
+struct CommandBufferCreateInfo{
+    VkCommandBufferLevel level;
+    uint32_t flags;
+    CommandBufferType type;
+    uint32_t threadIndex;
+};
+
 class CommandBuffer{
 public:
     //You can ONLY pass the pipeline as nullptr if its a transfer command buffer
-    CommandBuffer(VkCommandBufferLevel level, uint32_t flags, uint32_t poolID);
+    CommandBuffer(CommandBufferCreateInfo createInfo);
     CommandBuffer();
     ~CommandBuffer();
 
@@ -27,8 +44,9 @@ public:
     CommandBuffer operator=(const CommandBuffer& other);
 
     void ResetCommandBuffer();
+    static void ResetPools(CommandBufferType type);
 
-    void BeginCommandBuffer(VkCommandBufferInheritanceInfo* inheritanceInfo);
+    void BeginCommandBuffer(VkCommandBufferInheritanceInfo* inheritanceInfo, bool reset);
     void EndCommandBuffer();
 
     VkCommandBuffer GetCommandBuffer();
@@ -38,7 +56,7 @@ private:
     uint32_t flags;
     uint32_t poolID;
 
-    uint32_t* useCount;
+    std::shared_ptr<uint32_t> useCount;
 
     VkCommandBuffer commandBuffer;
 };

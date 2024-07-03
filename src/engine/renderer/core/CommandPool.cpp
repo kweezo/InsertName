@@ -32,6 +32,7 @@ VkCommandPool CommandPool::GetGraphicsCommandPool(uint32_t poolID){
     if(commandPools.find(poolID) == commandPools.end()){
         CreateCommandPools(poolID);
     }
+
     CommandPoolSet& set = commandPools[poolID];
     set.commandBufferCount++;
     return set.graphicsCommandPool;
@@ -41,6 +42,7 @@ VkCommandPool CommandPool::GetTransferCommandPool(uint32_t poolID){
     if(commandPools.find(poolID) == commandPools.end()){
         CreateCommandPools(poolID);
     }
+
     CommandPoolSet& set = commandPools[poolID];
     set.commandBufferCount++;
     return set.transferCommandPool;
@@ -49,7 +51,9 @@ VkCommandPool CommandPool::GetTransferCommandPool(uint32_t poolID){
 void CommandPool::FreeCommandBuffer(VkCommandBuffer commandBuffer, uint32_t poolID, uint32_t commandPoolType){
     CommandPoolSet& set = commandPools[poolID];
     VkCommandPool commandPool = (commandPoolType == COMMAND_POOL_TYPE_GRAPHICS) ? set.graphicsCommandPool : set.transferCommandPool;
+
     vkFreeCommandBuffers(Device::GetDevice(), commandPool, 1, &commandBuffer);
+
     set.commandBufferCount--;
     if(!set.commandBufferCount){
         vkDestroyCommandPool(Device::GetDevice(), set.graphicsCommandPool, nullptr);

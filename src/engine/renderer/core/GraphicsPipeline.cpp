@@ -6,8 +6,7 @@ VkRenderPass GraphicsPipeline::renderPass = {};
 std::vector <VkFramebuffer> GraphicsPipeline::framebuffers = {};
 
 GraphicsPipeline::GraphicsPipeline(): pipeline(VK_NULL_HANDLE){
-    useCount = new uint32_t;
-    *useCount = 1;
+    useCount = std::make_shared<uint32_t>(1);
 }
 
 void GraphicsPipeline::Init(){
@@ -83,7 +82,7 @@ void GraphicsPipeline::CreateFramebuffers(){
 
     for(int i = 0; i < swapchainImageViews.size(); i++){
 
-        std::vector<VkImageView> attachments = {swapchainImageViews[i], Swapchain::GetDepthImage()->GetImageView()};
+        std::vector<VkImageView> attachments = {swapchainImageViews[i], Swapchain::GetDepthImage().GetImageView()};
 
         VkFramebufferCreateInfo framebufferInfo{};
         framebufferInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
@@ -115,25 +114,25 @@ void GraphicsPipeline::Cleanup(){
     }
 }
 
-GraphicsPipeline::GraphicsPipeline(ShaderHandle shader, BufferDescriptions& buffDescription){
+GraphicsPipeline::GraphicsPipeline(GraphicsPipelineCreateInfo createInfo){
     std::vector<VkDynamicState> dynamicStates = {VK_DYNAMIC_STATE_VIEWPORT, VK_DYNAMIC_STATE_SCISSOR};
 
     //its a clusterfuck that HAS to exist, may god have mercy on us all
 
     VkPipelineVertexInputStateCreateInfo vertexInputInfo{};
     vertexInputInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
-    vertexInputInfo.vertexBindingDescriptionCount = buffDescription.bindingDescriptions.size();
-    vertexInputInfo.pVertexBindingDescriptions = buffDescription.bindingDescriptions.data();
-    vertexInputInfo.vertexAttributeDescriptionCount = buffDescription.attributeDescriptions.size();
-    vertexInputInfo.pVertexAttributeDescriptions = buffDescription.attributeDescriptions.data();
+    vertexInputInfo.vertexBindingDescriptionCount = createInfo.bindingDescriptions.size();
+    vertexInputInfo.pVertexBindingDescriptions = createInfo.bindingDescriptions.data();
+    vertexInputInfo.vertexAttributeDescriptionCount = createInfo.attributeDescriptions.size();
+    vertexInputInfo.pVertexAttributeDescriptions = createInfo.attributeDescriptions.data();
  
 
-    std::vector<VkDescriptorSetLayout> *layouts = DescriptorManager::GetLayouts();
+    std::vector<VkDescriptorSetLayout> layouts = DescriptorManager::GetLayouts();
 
     VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
     pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
-    pipelineLayoutInfo.setLayoutCount = layouts->size();
-    pipelineLayoutInfo.pSetLayouts = layouts->data();
+    pipelineLayoutInfo.setLayoutCount = layouts.size();
+    pipelineLayoutInfo.pSetLayouts = layouts.data();
     pipelineLayoutInfo.pushConstantRangeCount = 0;
 
     VkPipelineMultisampleStateCreateInfo multisampling{};
@@ -192,7 +191,7 @@ GraphicsPipeline::GraphicsPipeline(ShaderHandle shader, BufferDescriptions& buff
     VkGraphicsPipelineCreateInfo pipelineInfo{};
     pipelineInfo.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
     pipelineInfo.stageCount = 2;
-    pipelineInfo.pStages = shader->GetShaderStageCreateInfo().data();
+    pipelineInfo.pStages = createInfo.shader->GetShaderStageCreateInfo().data();
     pipelineInfo.pVertexInputState = &vertexInputInfo;
     pipelineInfo.pInputAssemblyState = &inputAssembly;
     pipelineInfo.pViewportState = &viewportState;
@@ -210,8 +209,7 @@ GraphicsPipeline::GraphicsPipeline(ShaderHandle shader, BufferDescriptions& buff
         throw std::runtime_error("Failed to create graphics pipeline");
     }
 
-    useCount = new uint32_t;
-    *useCount = 1;
+    useCount = std::make_shared<uint32_t>(1);
 }
 
 void GraphicsPipeline::BeginRenderPassAndBindPipeline(uint32_t imageIndex, VkCommandBuffer commandBuffer){
@@ -273,7 +271,7 @@ GraphicsPipeline::GraphicsPipeline(const GraphicsPipeline& other){
     renderPass = other.renderPass;
     useCount = other.useCount;
     framebuffers = other.framebuffers;
-    *useCount += 1;
+    (*useCount.get())++;
 }
 
 GraphicsPipeline GraphicsPipeline::operator=(const GraphicsPipeline& other){
@@ -286,12 +284,13 @@ GraphicsPipeline GraphicsPipeline::operator=(const GraphicsPipeline& other){
     renderPass = other.renderPass;
     useCount = other.useCount;
     framebuffers = other.framebuffers;
-    *useCount += 1;
+    (*useCount.get())++;
+
     return *this;
 }
 
 GraphicsPipeline::~GraphicsPipeline(){
-    if(useCount == nullptr){
+    if(useCount.get() == nullptr){
         return;
     }
 
@@ -300,11 +299,10 @@ GraphicsPipeline::~GraphicsPipeline(){
             vkDestroyPipelineLayout(Device::GetDevice(), pipelineLayout, nullptr);
             vkDestroyPipeline(Device::GetDevice(), pipeline, nullptr);
         }
-        delete useCount;
-        useCount = nullptr;
+        useCount.reset();
     }
     else{
-        *useCount -= 1;
+        (*useCount.get())--;
     }
 }
 

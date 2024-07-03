@@ -4,12 +4,14 @@ namespace renderer{
 
 //TODO allow window resizing
 
+const uint32_t PREFERRED_IMAGE_COUNT = 3;
+
 VkSwapchainKHR Swapchain::swapchain = VK_NULL_HANDLE;
 std::vector<VkImageView> Swapchain::swapchainImageViews = {};
-ImageHandle Swapchain::depthImage = nullptr;
+Image Swapchain::depthImage = {};
 VkFormat Swapchain::depthFormat = {};
 
-void Swapchain::CreateSwapchain(){
+void Swapchain::Init(){
     VkSurfaceCapabilitiesKHR surfaceCapabilities;
     vkGetPhysicalDeviceSurfaceCapabilitiesKHR(Device::GetPhysicalDevice(), Window::GetVulkanSurface(),
      &surfaceCapabilities);
@@ -109,7 +111,7 @@ VkFormat Swapchain::GetDepthFormat(){
     return depthFormat;
 }
 
-ImageHandle Swapchain::GetDepthImage(){
+Image Swapchain::GetDepthImage(){
     return depthImage;
 }
 
@@ -117,19 +119,25 @@ void Swapchain::CreateDepthImage(){
     VkSurfaceCapabilitiesKHR surfaceCapabilites{};
     vkGetPhysicalDeviceSurfaceCapabilitiesKHR(Device::GetPhysicalDevice(), Window::GetVulkanSurface(), &surfaceCapabilites);
 
+
     depthFormat = Image::GetSupportedFormat({VK_FORMAT_D32_SFLOAT, VK_FORMAT_D32_SFLOAT_S8_UINT, VK_FORMAT_D24_UNORM_S8_UINT},
      VK_IMAGE_TILING_OPTIMAL, VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT);
 
-    depthImage = Image::CreateImage(VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL, depthFormat, 
-    VK_IMAGE_ASPECT_DEPTH_BIT, 
-    VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, 
-    std::clamp(GetExtent().width, surfaceCapabilites.minImageExtent.width, surfaceCapabilites.maxImageExtent.width),
-    std::clamp(GetExtent().height, surfaceCapabilites.minImageExtent.height, surfaceCapabilites.maxImageExtent.height),
-    0, nullptr);
 
-    depthImage->TransitionLayout(VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL);
+    ImageCreateInfo imageCreateInfo{};
+    imageCreateInfo.format = depthFormat;
+    imageCreateInfo.layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+    imageCreateInfo.aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT;
+    imageCreateInfo.usage = VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
+    imageCreateInfo.imageExtent =
+     {std::clamp(GetExtent().width, surfaceCapabilites.minImageExtent.width, surfaceCapabilites.maxImageExtent.width),
+    std::clamp(GetExtent().height, surfaceCapabilites.minImageExtent.height, surfaceCapabilites.maxImageExtent.height)};
+    imageCreateInfo.data = (void*)0;
+    imageCreateInfo.size = 0;
+    imageCreateInfo.threadIndex = 0;
 
-    
+
+    depthImage.TransitionLayout(VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL);
 }
 
 VkSwapchainKHR Swapchain::GetSwapchain(){
@@ -157,11 +165,10 @@ VkFormat Swapchain::GetImageFormat(){
     return ChooseSwapchainImageFormat();
 }
 
-void Swapchain::DestroySwapchain(){
+void Swapchain::Cleanup(){
     for(auto imageView : swapchainImageViews){
         vkDestroyImageView(Device::GetDevice(), imageView, nullptr);
     }
-    Image::Free(depthImage);
     vkDestroySwapchainKHR(Device::GetDevice(), swapchain, nullptr);
 }
 

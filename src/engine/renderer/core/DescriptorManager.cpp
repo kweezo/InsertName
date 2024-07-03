@@ -2,88 +2,95 @@
 
 namespace renderer{
 
-std::vector<VkDescriptorSetLayout> DescriptorManager::layouts = {};
-std::vector<DescriptorBatch> DescriptorManager::batches = {};
+const uint32_t DESCRIPTOR_TYPE_COUNT = 10;
 
-std::vector<uint32_t> DescriptorManager::CreateLayouts(std::vector<VkDescriptorSetLayoutCreateInfo>& layoutInfos){
-    size_t oldLayoutsSize = layouts.size();
-    layouts.resize(layoutInfos.size() + layouts.size());
-    std::vector<uint32_t> layoutIndexes;
-    for(uint32_t i = oldLayoutsSize; i < layouts.size(); i++){
-        if(vkCreateDescriptorSetLayout(Device::GetDevice(), &layoutInfos[i-oldLayoutsSize], nullptr, &layouts[i]) != VK_SUCCESS){
-            throw std::runtime_error("Failed to create descriptor set layout");
+std::list<VkDescriptorPool> DescriptorManager::descriptorPools = {};
+std::vector<VkDescriptorSetLayout> DescriptorManager::descriptorLayouts = {};
+boost::container::flat_map<VkDescriptorPool, std::vector<VkDescriptorSet>> DescriptorManager::descriptorSets = {};
+
+std::vector<DescriptorSetLocation> DescriptorManager::AllocateDescriptorSetBatch(DescriptorSetBatchAllocateInfo allocInfo){
+
+    std::vector<VkDescriptorSetLayout> currentDescriptorLayouts(allocInfo.descriptorLayoutBindings.size());
+
+    for(uint32_t i = 0; i < allocInfo.descriptorLayoutBindings.size(); i++){
+        
+        VkDescriptorSetLayoutCreateInfo layoutCreateInfo{};
+        layoutCreateInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
+        layoutCreateInfo.pBindings = allocInfo.descriptorLayoutBindings[i].data();
+        layoutCreateInfo.bindingCount = allocInfo.descriptorLayoutBindings[i].size();
+
+        VkDescriptorSetLayout layout;
+        if(vkCreateDescriptorSetLayout(Device::GetDevice(), &layoutCreateInfo, nullptr, &layout) != VK_SUCCESS){
+            throw std::runtime_error("Failed to create a descriptor layout");
         }
-        layoutIndexes.push_back(i);
+
+        descriptorLayouts.push_back(layout);
+        currentDescriptorLayouts[i] = layout;
     }
 
-    return layoutIndexes;
-}
 
-std::vector<DescriptorHandle> DescriptorManager::CreateDescriptors(std::vector<DescriptorBatchInfo> batchInfos,
-    std::vector<uint32_t> layoutIndex){
-    uint32_t descriptorCount = 0;
 
-    std::vector<VkDescriptorPoolSize> poolSizes;
-    for(const DescriptorBatchInfo& batchInfo : batchInfos){
-        poolSizes.push_back({batchInfo.descriptorType, batchInfo.setCount});
-        descriptorCount += batchInfo.setCount;
+    std::vector<VkDescriptorPoolSize> descriptorPoolSizes(DESCRIPTOR_TYPE_COUNT);
+    for(uint32_t i = 0; i < DESCRIPTOR_TYPE_COUNT; i++){
+        descriptorPoolSizes[i].type = (VkDescriptorType)i;
+        descriptorPoolSizes[i].descriptorCount = 0;
     }
 
-    batches.resize(batches.size()+1);
-
-    DescriptorBatch& batch = batches.back();
-
-
-    VkDescriptorPoolCreateInfo poolInfo{};
-    poolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
-    poolInfo.poolSizeCount = poolSizes.size();
-    poolInfo.pPoolSizes = poolSizes.data();
-    poolInfo.maxSets = descriptorCount;
-
-    if(vkCreateDescriptorPool(Device::GetDevice(), &poolInfo, nullptr, &batch.pool) != VK_SUCCESS){
-        throw std::runtime_error("Failed to create descriptor pool");
+    for(std::vector<VkDescriptorSetLayoutBinding>& bindings : allocInfo.descriptorLayoutBindings){
+        for(VkDescriptorSetLayoutBinding& binding : bindings){
+            descriptorPoolSizes[binding.descriptorType].descriptorCount++;
+        }
     }
 
-    uint32_t i = 0;
+    VkDescriptorPoolCreateInfo poolCreateInfo{};
+    poolCreateInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
+    poolCreateInfo.maxSets = allocInfo.descriptorLayoutBindings.size();
+    poolCreateInfo.poolSizeCount = descriptorPoolSizes.size();
+    poolCreateInfo.pPoolSizes = descriptorPoolSizes.data();
 
-    std::vector<VkDescriptorSetLayout> indexLayouts;
-    for(uint32_t index : layoutIndex){
-        indexLayouts.push_back(layouts[index]);
+    descriptorPools.push_front({});
+    if(vkCreateDescriptorPool(Device::GetDevice(), &poolCreateInfo, nullptr, &descriptorPools.front()) != VK_SUCCESS){
+        throw std::runtime_error("Failed to create a descriptor pool");
     }
+    descriptorSets[descriptorPools.back()].resize(allocInfo.descriptorLayoutBindings.size());
 
-    batch.sets.resize(descriptorCount);
-    std::vector<DescriptorHandle> handles(descriptorCount);
-    VkDescriptorSetAllocateInfo allocInfo{};
-    allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
-    allocInfo.descriptorPool = batch.pool;
-    allocInfo.descriptorSetCount = descriptorCount;
-    allocInfo.pSetLayouts = indexLayouts.data();
 
-    handles[i].batchIndex = batches.size()-1;
-    handles[i].index = i;
+    VkDescriptorSetAllocateInfo descriptorSetAllocInfo{};
+    descriptorSetAllocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
+    descriptorSetAllocInfo.descriptorPool = descriptorPools.front();
+    descriptorSetAllocInfo.descriptorSetCount = currentDescriptorLayouts.size();
+    descriptorSetAllocInfo.pSetLayouts = currentDescriptorLayouts.data();
 
-    if(vkAllocateDescriptorSets(Device::GetDevice(), &allocInfo, batch.sets.data()+(i * sizeof(VkDescriptorSet))) != VK_SUCCESS){
+    if(vkAllocateDescriptorSets(Device::GetDevice(), &descriptorSetAllocInfo, descriptorSets[descriptorPools.front()].data()) != VK_SUCCESS){
         throw std::runtime_error("Failed to allocate descriptor sets");
     }
 
-    return handles;
+
+    std::vector<DescriptorSetLocation> descriptorSetLocations(currentDescriptorLayouts.size());
+
+    for(uint32_t i = 0; i < descriptorSetLocations.size(); i++){
+        descriptorSetLocations[i].key = (uint64_t)descriptorPools.front();
+        descriptorSetLocations[i].index = i;
+    }
+
+    return descriptorSetLocations;
 }
 
-VkDescriptorSet DescriptorManager::GetDescriptorSet(DescriptorHandle handles){
-    return batches[handles.batchIndex].sets[handles.index];
+std::vector<VkDescriptorSetLayout> DescriptorManager::GetLayouts(){
+    return descriptorLayouts;
 }
 
-std::vector<VkDescriptorSetLayout>* DescriptorManager::GetLayouts(){
-    return &layouts;
+VkDescriptorSet DescriptorManager::RetrieveDescriptorSet(DescriptorSetLocation location){
+    return descriptorSets[(VkDescriptorPool)location.key][location.index];
 }
 
 void DescriptorManager::Cleanup(){
-    for(VkDescriptorSetLayout layout : layouts){
-        vkDestroyDescriptorSetLayout(Device::GetDevice(), layout, nullptr);
+    for(VkDescriptorPool descriptorPool : descriptorPools){
+        vkDestroyDescriptorPool(Device::GetDevice(), descriptorPool, nullptr);
     }
 
-    for(DescriptorBatch& batch : batches){
-        vkDestroyDescriptorPool(Device::GetDevice(), batch.pool, nullptr);
+    for(VkDescriptorSetLayout descriptorLayout : descriptorLayouts){
+        vkDestroyDescriptorSetLayout(Device::GetDevice(), descriptorLayout, nullptr);
     }
 }
 

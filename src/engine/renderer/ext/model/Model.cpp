@@ -2,9 +2,9 @@
 
 namespace renderer{
 
-std::unordered_map<ShaderHandle, std::vector<ModelHandle>> ModelImpl::modelList = {};
+std::unordered_map<Shader, std::vector<ModelHandle>> ModelImpl::modelList = {};
 
-ModelHandle Model::CreateModel(std::string path, ShaderHandle shader, BufferDescriptions extraDescriptions, std::function<void(void)> extraDrawCommands){
+ModelHandle Model::CreateModel(std::string path, Shader shader, BufferDescriptions extraDescriptions, std::function<void(void)> extraDrawCommands){
     return new ModelImpl(path, shader, extraDescriptions, extraDrawCommands);
 }
 
@@ -12,7 +12,7 @@ void Model::Free(ModelHandle model){
     delete model;
 }
 
-ModelImpl::ModelImpl(std::string path, ShaderHandle shader, BufferDescriptions extraDescriptions, std::function<void(void)> extraDrawCommands){
+ModelImpl::ModelImpl(std::string path, Shader shader, BufferDescriptions extraDescriptions, std::function<void(void)> extraDrawCommands){
     Assimp::Importer importer;
     const aiScene* scene = importer.ReadFile(path, aiProcess_Triangulate | aiProcess_FlipUVs |
      aiProcess_GenNormals);
@@ -88,7 +88,7 @@ std::function<void(void)> ModelImpl::GetExtraDrawCommands(){
     return extraDrawCommands;
 }
 
-ShaderHandle ModelImpl::GetShader(){
+Shader ModelImpl::GetShader(){
     return shader;
 }
 
@@ -96,7 +96,7 @@ BufferDescriptions ModelImpl::GetExtraDescriptions(){
     return extraDescriptions;
 }
 
-std::unordered_map<ShaderHandle, std::vector<ModelHandle>> ModelImpl::GetModelList(){
+std::unordered_map<Shader, std::vector<ModelHandle>> ModelImpl::GetModelList(){
     return modelList;
 }
 

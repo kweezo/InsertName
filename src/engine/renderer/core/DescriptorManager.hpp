@@ -1,45 +1,40 @@
 #pragma once
 
 #include <vector>
+#include <list>
+#include <utility>
 #include <stdexcept>
 
 #include <vulkan/vulkan.h>
+
+#include <boost/container/flat_map.hpp>
 
 #include "Device.hpp"
 
 namespace renderer{
 
-typedef struct {
-    VkDescriptorSetLayout layout;
-    VkDescriptorPool pool;
-    std::vector<VkDescriptorSet> sets;
-}DescriptorBatch;
-
-typedef struct {
-    uint32_t setCount;
-    VkDescriptorType descriptorType;
-}DescriptorBatchInfo;
-
-typedef struct{
-    uint32_t batchIndex;
+struct DescriptorSetLocation{
+    uint64_t key;
     uint32_t index;
-}DescriptorHandle;
+};
 
-class DescriptorManager{
+struct DescriptorSetBatchAllocateInfo{
+    std::vector<std::vector<VkDescriptorSetLayoutBinding>> descriptorLayoutBindings;    
+};
+
+class DescriptorManager {
 public:
-    static std::vector<uint32_t> CreateLayouts(std::vector<VkDescriptorSetLayoutCreateInfo>& layoutInfos);
-    static std::vector<DescriptorHandle> CreateDescriptors(std::vector<DescriptorBatchInfo> batchInfos, 
-     std::vector<uint32_t> layoutIndex); 
-    static void CreateDescriptor(uint32_t layoutIndex); //TODO implement once I figure out how to batch this mf
 
-    static VkDescriptorSet GetDescriptorSet(DescriptorHandle handles);
-
-static std::vector<VkDescriptorSetLayout>* GetLayouts();
+    static std::vector<DescriptorSetLocation> AllocateDescriptorSetBatch(DescriptorSetBatchAllocateInfo allocInfo);
+    static VkDescriptorSet RetrieveDescriptorSet(DescriptorSetLocation location);
+    
+    static std::vector<VkDescriptorSetLayout> GetLayouts();
 
     static void Cleanup();
 private:
-    static std::vector<VkDescriptorSetLayout> layouts;
-    static std::vector<DescriptorBatch> batches;
+    static std::list<VkDescriptorPool> descriptorPools;
+    static std::vector<VkDescriptorSetLayout> descriptorLayouts;
+    static boost::container::flat_map<VkDescriptorPool, std::vector<VkDescriptorSet>> descriptorSets;
 };
 
 }
