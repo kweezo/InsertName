@@ -18,10 +18,7 @@
 
 namespace renderer{
 
-struct DataBufferCreateInfo{
-    std::vector<VkVertexInputAttributeDescription> attributeDescriptions;
-    std::vector<VkVertexInputBindingDescription> bindingDescriptions; 
-
+struct __DataBufferCreateInfo{
     void* data;
     size_t size;
 
@@ -30,21 +27,22 @@ struct DataBufferCreateInfo{
     uint32_t threadIndex;
 };
 
-class DataBuffer{
+class __DataBuffer{
 public:
     static void Init();
     static void Update();
     static void Cleanup();
 
 
-    DataBuffer();
-    DataBuffer(DataBufferCreateInfo createInfo);
+    __DataBuffer();
+    __DataBuffer(__DataBufferCreateInfo createInfo);
 
-    DataBuffer(const DataBuffer& other);
-    DataBuffer operator=(const DataBuffer& other);    
+    __DataBuffer(const __DataBuffer& other);
+    __DataBuffer operator=(const __DataBuffer& other);    
 
-    ~DataBuffer();
+    ~__DataBuffer();
 
+    void UpdateData(void* data, size_t size, uint32_t threadIndex);
 
     VkBuffer GetBuffer();
 private:
@@ -53,7 +51,7 @@ private:
     static void CreateBuffer(VkBuffer& buffer, VkBufferUsageFlags usage, VkDeviceSize size);
     static void AllocateMemory(VkDeviceMemory& memory, VkBuffer buffer, size_t size, VkMemoryPropertyFlags properties);
     static void UploadDataToBuffer(VkDeviceMemory memory, void* data, size_t size);
-    static CommandBuffer RetrieveFreeStagingCommandBuffer(uint32_t threadIndex);
+    static __CommandBuffer RetrieveFreeStagingCommandBuffer(uint32_t threadIndex);
 
     static void RecordPrimaryCommandBuffer();
     static void SubmitPrimaryCommandBuffer();
@@ -61,6 +59,8 @@ private:
 
     void RecordCopyCommandBuffer(uint32_t threadIndex, size_t size);
 
+    size_t size;
+    bool transferToLocalDeviceMemory;
 
     VkBuffer buffer;
     VkDeviceMemory memory;
@@ -68,10 +68,10 @@ private:
     VkBuffer stagingBuffer;
     VkDeviceMemory stagingMemory;
 
-    static CommandBuffer primaryCommandBuffer;
-    static std::vector<std::vector<std::pair<CommandBuffer, bool>>> stagingCommandBuffers;
+    static __CommandBuffer primaryCommandBuffer;
+    static std::vector<std::vector<std::pair<__CommandBuffer, bool>>> stagingCommandBuffers;
     static std::vector<std::pair<VkBuffer, VkDeviceMemory>> stagingBufferAndMemoryDeleteQueue;
-    static Fence finishedCopyingFence;
+    static __Fence finishedCopyingFence;
 
     std::shared_ptr<uint32_t> useCount;
 };

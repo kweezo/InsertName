@@ -4,11 +4,11 @@ namespace renderer{
 
 const uint32_t DESCRIPTOR_TYPE_COUNT = 10;
 
-std::list<VkDescriptorPool> DescriptorManager::descriptorPools = {};
-std::vector<VkDescriptorSetLayout> DescriptorManager::descriptorLayouts = {};
-boost::container::flat_map<VkDescriptorPool, std::vector<VkDescriptorSet>> DescriptorManager::descriptorSets = {};
+std::list<VkDescriptorPool> __DescriptorManager::descriptorPools = {};
+std::vector<VkDescriptorSetLayout> __DescriptorManager::descriptorLayouts = {};
+boost::container::flat_map<VkDescriptorPool, std::vector<VkDescriptorSet>> __DescriptorManager::descriptorSets = {};
 
-std::vector<DescriptorSetLocation> DescriptorManager::AllocateDescriptorSetBatch(DescriptorSetBatchAllocateInfo allocInfo){
+std::vector<__DescriptorSetLocation> __DescriptorManager::AllocateDescriptorSetBatch(__DescriptorSetBatchAllocateInfo allocInfo){
 
     std::vector<VkDescriptorSetLayout> currentDescriptorLayouts(allocInfo.descriptorLayoutBindings.size());
 
@@ -20,7 +20,7 @@ std::vector<DescriptorSetLocation> DescriptorManager::AllocateDescriptorSetBatch
         layoutCreateInfo.bindingCount = allocInfo.descriptorLayoutBindings[i].size();
 
         VkDescriptorSetLayout layout;
-        if(vkCreateDescriptorSetLayout(Device::GetDevice(), &layoutCreateInfo, nullptr, &layout) != VK_SUCCESS){
+        if(vkCreateDescriptorSetLayout(__Device::GetDevice(), &layoutCreateInfo, nullptr, &layout) != VK_SUCCESS){
             throw std::runtime_error("Failed to create a descriptor layout");
         }
 
@@ -49,7 +49,7 @@ std::vector<DescriptorSetLocation> DescriptorManager::AllocateDescriptorSetBatch
     poolCreateInfo.pPoolSizes = descriptorPoolSizes.data();
 
     descriptorPools.push_front({});
-    if(vkCreateDescriptorPool(Device::GetDevice(), &poolCreateInfo, nullptr, &descriptorPools.front()) != VK_SUCCESS){
+    if(vkCreateDescriptorPool(__Device::GetDevice(), &poolCreateInfo, nullptr, &descriptorPools.front()) != VK_SUCCESS){
         throw std::runtime_error("Failed to create a descriptor pool");
     }
     descriptorSets[descriptorPools.back()].resize(allocInfo.descriptorLayoutBindings.size());
@@ -61,12 +61,12 @@ std::vector<DescriptorSetLocation> DescriptorManager::AllocateDescriptorSetBatch
     descriptorSetAllocInfo.descriptorSetCount = currentDescriptorLayouts.size();
     descriptorSetAllocInfo.pSetLayouts = currentDescriptorLayouts.data();
 
-    if(vkAllocateDescriptorSets(Device::GetDevice(), &descriptorSetAllocInfo, descriptorSets[descriptorPools.front()].data()) != VK_SUCCESS){
+    if(vkAllocateDescriptorSets(__Device::GetDevice(), &descriptorSetAllocInfo, descriptorSets[descriptorPools.front()].data()) != VK_SUCCESS){
         throw std::runtime_error("Failed to allocate descriptor sets");
     }
 
 
-    std::vector<DescriptorSetLocation> descriptorSetLocations(currentDescriptorLayouts.size());
+    std::vector<__DescriptorSetLocation> descriptorSetLocations(currentDescriptorLayouts.size());
 
     for(uint32_t i = 0; i < descriptorSetLocations.size(); i++){
         descriptorSetLocations[i].key = (uint64_t)descriptorPools.front();
@@ -76,21 +76,21 @@ std::vector<DescriptorSetLocation> DescriptorManager::AllocateDescriptorSetBatch
     return descriptorSetLocations;
 }
 
-std::vector<VkDescriptorSetLayout> DescriptorManager::GetLayouts(){
+std::vector<VkDescriptorSetLayout> __DescriptorManager::GetLayouts(){
     return descriptorLayouts;
 }
 
-VkDescriptorSet DescriptorManager::RetrieveDescriptorSet(DescriptorSetLocation location){
+VkDescriptorSet __DescriptorManager::RetrieveDescriptorSet(__DescriptorSetLocation location){
     return descriptorSets[(VkDescriptorPool)location.key][location.index];
 }
 
-void DescriptorManager::Cleanup(){
+void __DescriptorManager::Cleanup(){
     for(VkDescriptorPool descriptorPool : descriptorPools){
-        vkDestroyDescriptorPool(Device::GetDevice(), descriptorPool, nullptr);
+        vkDestroyDescriptorPool(__Device::GetDevice(), descriptorPool, nullptr);
     }
 
     for(VkDescriptorSetLayout descriptorLayout : descriptorLayouts){
-        vkDestroyDescriptorSetLayout(Device::GetDevice(), descriptorLayout, nullptr);
+        vkDestroyDescriptorSetLayout(__Device::GetDevice(), descriptorLayout, nullptr);
     }
 }
 

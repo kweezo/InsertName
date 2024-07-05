@@ -12,14 +12,14 @@
 
 namespace renderer{
 
-class Fence{
+class __Fence{
 public:
-    Fence();
-    Fence(bool signaled);
-    ~Fence();
+    __Fence();
+    __Fence(bool signaled);
+    ~__Fence();
 
-    Fence(const Fence& other);
-    Fence& operator=(const Fence& other);
+    __Fence(const __Fence& other);
+    __Fence& operator=(const __Fence& other);
 
     VkFence GetFence();
 private:

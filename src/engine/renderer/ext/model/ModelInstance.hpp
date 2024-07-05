@@ -27,29 +27,17 @@
 
 namespace renderer{
 
-class ModelInstanceImpl;
-
-class ModelInstance{
+class ModelInstance : public StaticModelInstance{
 public:
-    static void Update();
-    static ModelInstanceHandle Create(ModelHandle model, Transform transform, bool isStatic);
-    static void Free(ModelInstanceHandle handle);
-    static void DrawStatic(uint32_t imageIndex);
-    static void Cleanup();
-};
+    ModelInstance(ModelHandle model, Transform transform, bool isStatic);
 
-
-class ModelInstanceImpl : public StaticModelInstance{
-public:
-    ModelInstanceImpl(ModelHandle model, Transform transform, bool isStatic);
-
-    static void Update();
+    static void __Update();
+    static void __Draw(uint32_t imageIndex);
+    static void __Cleanup();
 
     bool GetShouldDraw() override;
     void SetShouldDraw(bool shouldDraw);
     glm::mat4 GetModelMatrix() override;
-
-    static void Cleanup();
 
 private:
     bool shouldDraw;

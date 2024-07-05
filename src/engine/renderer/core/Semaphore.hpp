@@ -13,13 +13,13 @@
 namespace renderer{
 
 
-class Semaphore{
+class __Semaphore{
 public:
-    Semaphore();
-    ~Semaphore();
+    __Semaphore();
+    ~__Semaphore();
 
-    Semaphore(const Semaphore& other);
-    Semaphore& operator=(const Semaphore& other);
+    __Semaphore(const __Semaphore& other);
+    __Semaphore& operator=(const __Semaphore& other);
 
     VkSemaphore GetSemaphore();
 private:
@@ -28,8 +28,8 @@ private:
 };
 
 typedef struct RenderSemaphores{
-    Semaphore renderFinishedSemaphore;
-    Semaphore imageAvailableSemaphore;
+    __Semaphore renderFinishedSemaphore;
+    __Semaphore imageAvailableSemaphore;
 } RenderSemaphores;
 
 }

@@ -33,10 +33,10 @@ VkResult CreateDebugUtilsMessengerEXT(VkInstance instance, const VkDebugUtilsMes
     }
 }
 
-VkInstance Instance::instance = VK_NULL_HANDLE;
-VkDebugUtilsMessengerEXT Instance::debugMessenger = VK_NULL_HANDLE;
+VkInstance __Instance::instance = VK_NULL_HANDLE;
+VkDebugUtilsMessengerEXT __Instance::debugMessenger = VK_NULL_HANDLE;
 
-void Instance::Init(){
+void __Instance::Init(){
     if (instance != VK_NULL_HANDLE) {
         throw std::runtime_error("Vulkan instance already created");
     }
@@ -83,7 +83,7 @@ void Instance::Init(){
 #endif
 }
 
-void Instance::SetupDebugMessenger() {
+void __Instance::SetupDebugMessenger() {
     VkDebugUtilsMessengerCreateInfoEXT createInfo{};
     createInfo.sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT;
     createInfo.messageSeverity = VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT |
@@ -97,14 +97,14 @@ void Instance::SetupDebugMessenger() {
     }
 }
 
-VkInstance Instance::GetInstance(){
+VkInstance __Instance::GetInstance(){
     if (instance == VK_NULL_HANDLE) {
         throw std::runtime_error("Vulkan instance not created");
     }
     return instance;
 }
 
-void Instance::Cleanup(){
+void __Instance::Cleanup(){
     if (debugMessenger != VK_NULL_HANDLE) {
         auto func = (PFN_vkDestroyDebugUtilsMessengerEXT) vkGetInstanceProcAddr(instance, "vkDestroyDebugUtilsMessengerEXT");
         if (func != nullptr) {

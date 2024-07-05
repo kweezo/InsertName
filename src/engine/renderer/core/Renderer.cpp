@@ -7,35 +7,35 @@ void Renderer::Init(){
     SoftInit();
 }
 void Renderer::HardInit(){
-    Instance::Init();
-    Device::Init();
-    Window::CreateVulkanSurface();
-    ImageImpl::Initialize();
-    Camera::Init();
+    __Instance::Init();
+    __Device::Init();
+    Window::Init();
+    __Image::Init();
+    Camera::__Init();
 }
 
 void Renderer::SoftInit(){
-    Swapchain::Init();
-    GraphicsPipeline::Init();
+    __Swapchain::Init();
+    __GraphicsPipeline::Init();
+    __DataBuffer::Init();
     ShaderManager::Init();
 }
 
 void Renderer::RenderFrame(){
-    DataBuffer::UpdateCommandBuffer();
-    Camera::Update();
+    __DataBuffer::Update();
+    Camera::__Update();
 }
 
-void Renderer::DestroyRenderer(){
-    ModelInstance::Cleanup();
-    Camera::Cleanup();
+void Renderer::Cleanup(){
+    ModelInstance::__Cleanup();
     ShaderManager::Cleanup();
-    Swapchain::Cleanup();
-    DescriptorManager::Cleanup();
-    DataBuffer::Cleanup();
-    ImageImpl::Cleanup();
-    vkDestroySurfaceKHR(Instance::GetInstance(), Window::GetVulkanSurface(), nullptr);
-    GraphicsPipeline::Cleanup();
-    Device::Cleanup();
-    Instance::Cleanup();
+    __Swapchain::Cleanup();
+    __DescriptorManager::Cleanup();
+    __DataBuffer::Cleanup();
+    __Image::Cleanup();
+    vkDestroySurfaceKHR(__Instance::GetInstance(), Window::GetVulkanSurface(), nullptr);
+    __GraphicsPipeline::Cleanup();
+    __Device::Cleanup();
+    __Instance::Cleanup();
 }
 }

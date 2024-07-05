@@ -4,8 +4,8 @@ namespace renderer{
 
 const std::string shaderPath = "client_data/shaders/bin/";
 
-std::vector<ShaderBindingInfo> Shader::shaderBindings = {};
-boost::container::flat_map<std::string, Shader> ShaderManager::shaders = {};
+std::vector<__ShaderBindingInfo> __Shader::shaderBindings = {};
+boost::container::flat_map<std::string, __Shader> ShaderManager::shaders = {};
 
 void ShaderManager::Init(){
     std::ifstream stream("client_data/shaders/shaders.json");
@@ -66,20 +66,20 @@ void ShaderManager::Init(){
         vertexPath = shaderPath + vertexPath;
         fragmentPath = shaderPath + fragmentPath;
 
-        ShaderManager::shaders.emplace(name, Shader(vertexPath, fragmentPath,
+        ShaderManager::shaders.emplace(name, __Shader(vertexPath, fragmentPath,
         name, descriptorBindings));
     }
 
-    Shader::CreateDescriptorSets();
+    __Shader::CreateDescriptorSets();
 
     stream.close();
 }
 
-Shader ShaderManager::GetShader(std::string name){
+__Shader* ShaderManager::GetShader(std::string name){
     if(shaders.find(name) == shaders.end()){
         throw std::runtime_error("Attempting to get nonexistent shader with name " + name);
     }
-    return shaders[name];
+    return &shaders[name];
 }
 
 void ShaderManager::Cleanup(){
@@ -87,7 +87,7 @@ void ShaderManager::Cleanup(){
 }
 
 
-void Shader::CreateDescriptorSets(){
+void __Shader::CreateDescriptorSets(){
     if(shaderBindings.empty()){
         std::cout << "Warning, tried to enable new shader bindings but no new shaders have been created" << std::endl;
         return;
@@ -97,7 +97,7 @@ void Shader::CreateDescriptorSets(){
 
 
 
-    DescriptorSetBatchAllocateInfo allocInfo{}; 
+    __DescriptorSetBatchAllocateInfo allocInfo{}; 
     
     allocInfo.descriptorLayoutBindings.resize(shaderBindings.size());
     for(uint32_t i = 0; i < shaderBindings.size(); i++){
@@ -105,32 +105,44 @@ void Shader::CreateDescriptorSets(){
     }
 
 
-    std::vector<DescriptorSetLocation> locations = DescriptorManager::AllocateDescriptorSetBatch(allocInfo);
+    std::vector<__DescriptorSetLocation> locations = __DescriptorManager::AllocateDescriptorSetBatch(allocInfo);
     
     for(uint32_t i = 0; i < locations.size(); i++){
-        shaderBindings[i].handle->SetDescriptorSet(DescriptorManager::RetrieveDescriptorSet(locations[i]));
+        shaderBindings[i].handle->SetDescriptorSet(__DescriptorManager::RetrieveDescriptorSet(locations[i]));
     }
 
 }
 
-void Shader::Bind(VkCommandBuffer commandBuffer, VkPipelineLayout pipelineLayout){
+void __Shader::Bind(VkCommandBuffer commandBuffer, VkPipelineLayout pipelineLayout){
     vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 0, 1, &descriptorSet, 0, nullptr);
 }
 
-void Shader::SetDescriptorSet(VkDescriptorSet descriptorSet){
+void __Shader::SetDescriptorSet(VkDescriptorSet descriptorSet){
     this->descriptorSet = descriptorSet;
 }
 
+__GraphicsPipeline* __Shader::GetGraphicsPipeline(){
+    return &graphicsPipeline;
+}
 
-VkDescriptorSet Shader::GetDescriptorSet() const{
+VkDescriptorSet __Shader::GetDescriptorSet() const{
     return descriptorSet;
 }
 
-Shader::Shader(){
+void __Shader::CreateGraphicsPipepeline(__VertexInputDescriptions vertexInputDescriptions){
+    __GraphicsPipelineCreateInfo createInfo{};
+    createInfo.shaderStageCreateInfo = GetShaderStageCreateInfo();
+    createInfo.attributeDescriptions = std::get<0>(vertexInputDescriptions);
+    createInfo.bindingDescriptions = std::get<1>(vertexInputDescriptions);
+    
+    graphicsPipeline = __GraphicsPipeline(createInfo);
+}
+
+__Shader::__Shader(){
     useCount = std::make_shared<uint32_t>(1);
 }
 
-Shader::Shader(const std::string vertexShaderPath, const std::string fragmentShaderPath, const std::string name, 
+__Shader::__Shader(const std::string vertexShaderPath, const std::string fragmentShaderPath, const std::string name, 
      std::vector<VkDescriptorSetLayoutBinding> bindings){    
 
     useCount = std::make_shared<uint32_t>(1);
@@ -143,14 +155,14 @@ Shader::Shader(const std::string vertexShaderPath, const std::string fragmentSha
     createInfo.codeSize = vertexShaderBytecode.size();
     createInfo.pCode = reinterpret_cast<const uint32_t*>(vertexShaderBytecode.data());
 
-    if(vkCreateShaderModule(Device::GetDevice(), &createInfo, nullptr, &vertexShaderModule) != VK_SUCCESS){
+    if(vkCreateShaderModule(__Device::GetDevice(), &createInfo, nullptr, &vertexShaderModule) != VK_SUCCESS){
         throw std::runtime_error("Failed to create vertex shader module");
     }
 
     createInfo.codeSize = fragmentShaderBytecode.size();
     createInfo.pCode = reinterpret_cast<const uint32_t*>(fragmentShaderBytecode.data());
 
-    if(vkCreateShaderModule(Device::GetDevice(), &createInfo, nullptr, &fragmentShaderModule) != VK_SUCCESS){
+    if(vkCreateShaderModule(__Device::GetDevice(), &createInfo, nullptr, &fragmentShaderModule) != VK_SUCCESS){
         throw std::runtime_error("Failed to create fragment shader module");
     }
 
@@ -158,7 +170,7 @@ Shader::Shader(const std::string vertexShaderPath, const std::string fragmentSha
     this->name = name;
 }
 
-std::vector<unsigned char> Shader::ReadBytecode(const std::string path){
+std::vector<unsigned char> __Shader::ReadBytecode(const std::string path){
     std::ifstream file(path, std::ios::ate | std::ios::binary);
 
     if(!file.is_open()){
@@ -176,15 +188,15 @@ std::vector<unsigned char> Shader::ReadBytecode(const std::string path){
 
 }
 
-void Shader::UpdateDescriptorSet(std::vector<VkWriteDescriptorSet> writeDescriptorSets){
-    vkUpdateDescriptorSets(Device::GetDevice(), writeDescriptorSets.size(), writeDescriptorSets.data(), 0, nullptr);
+void __Shader::UpdateDescriptorSet(std::vector<VkWriteDescriptorSet> writeDescriptorSets){
+    vkUpdateDescriptorSets(__Device::GetDevice(), writeDescriptorSets.size(), writeDescriptorSets.data(), 0, nullptr);
 }
 
-const std::string Shader::GetName(){
+const std::string __Shader::GetName(){
     return name;
 }
 
-std::array<VkPipelineShaderStageCreateInfo, 2> Shader::GetShaderStageCreateInfo() const{
+std::array<VkPipelineShaderStageCreateInfo, 2> __Shader::GetShaderStageCreateInfo() const{
     VkPipelineShaderStageCreateInfo vertexShaderStageInfo = {};
     vertexShaderStageInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
     vertexShaderStageInfo.stage = VK_SHADER_STAGE_VERTEX_BIT;
@@ -200,7 +212,7 @@ std::array<VkPipelineShaderStageCreateInfo, 2> Shader::GetShaderStageCreateInfo(
     return {vertexShaderStageInfo, fragmentShaderStageInfo};
 }
 
-Shader::Shader(const Shader& other){
+__Shader::__Shader(const __Shader& other){
     useCount = other.useCount;
     vertexShaderModule = other.vertexShaderModule;
     fragmentShaderModule = other.fragmentShaderModule;
@@ -209,7 +221,7 @@ Shader::Shader(const Shader& other){
     (*useCount.get())++;
 }
 
-Shader Shader::operator=(const Shader& other){
+__Shader __Shader::operator=(const __Shader& other){
     if(this == &other){
         return *this;
     }
@@ -224,14 +236,14 @@ Shader Shader::operator=(const Shader& other){
     return *this;
 }
 
-Shader::~Shader(){
+__Shader::~__Shader(){
     if(useCount.get() == nullptr){
         return;
     }
 
     if(*useCount.get() <= 1){
-        vkDestroyShaderModule(Device::GetDevice(), vertexShaderModule, nullptr);
-        vkDestroyShaderModule(Device::GetDevice(), fragmentShaderModule, nullptr);
+        vkDestroyShaderModule(__Device::GetDevice(), vertexShaderModule, nullptr);
+        vkDestroyShaderModule(__Device::GetDevice(), fragmentShaderModule, nullptr);
         
         useCount.reset();
 

@@ -2,12 +2,19 @@
 namespace renderer
 {
 
-CommandBuffer::CommandBuffer() : commandBuffer(VK_NULL_HANDLE){
+std::deque<std::mutex> __CommandBuffer::poolMutexes = {};
+
+void __CommandBuffer::Init(){
+    poolMutexes.resize(__CommandBufferType::size * std::thread::hardware_concurrency());
+}
+
+
+__CommandBuffer::__CommandBuffer() : commandBuffer(VK_NULL_HANDLE){
     useCount = std::make_shared<uint32_t>(1);
     flags = 0;
 }
 
-CommandBuffer::CommandBuffer(CommandBufferCreateInfo createInfo): flags(createInfo.flags), level(createInfo.level){
+__CommandBuffer::__CommandBuffer(__CommandBufferCreateInfo createInfo): flags(createInfo.flags), level(createInfo.level){
 
     poolID = createInfo.type * std::thread::hardware_concurrency() + createInfo.threadIndex; // TODO does this work?=????
 
@@ -18,7 +25,7 @@ CommandBuffer::CommandBuffer(CommandBufferCreateInfo createInfo): flags(createIn
 
     if(flags & COMMAND_BUFFER_GRAPHICS_FLAG == COMMAND_BUFFER_GRAPHICS_FLAG){
 
-        allocInfo.commandPool = CommandPool::GetGraphicsCommandPool(poolID);
+        allocInfo.commandPool = __CommandPool::GetGraphicsCommandPool(poolID);
         if(level == VK_COMMAND_BUFFER_LEVEL_PRIMARY){
             flags |= VK_SUBPASS_CONTENTS_SECONDARY_COMMAND_BUFFERS;
         }else{
@@ -26,21 +33,22 @@ CommandBuffer::CommandBuffer(CommandBufferCreateInfo createInfo): flags(createIn
         }
         
     }else{
-        allocInfo.commandPool = CommandPool::GetTransferCommandPool(poolID);
+        allocInfo.commandPool = __CommandPool::GetTransferCommandPool(poolID);
     }
 
-    if (vkAllocateCommandBuffers(Device::GetDevice(), &allocInfo, &commandBuffer) != VK_SUCCESS){
+    if (vkAllocateCommandBuffers(__Device::GetDevice(), &allocInfo, &commandBuffer) != VK_SUCCESS){
         throw std::runtime_error("Failed to allocate command buffers");
     }
 
     useCount = std::make_shared<uint32_t>(1);
 }
 
-void CommandBuffer::ResetCommandBuffer(){
+void __CommandBuffer::ResetCommandBuffer(){
     vkResetCommandBuffer(commandBuffer, 0);
 }
 
-void CommandBuffer::BeginCommandBuffer(VkCommandBufferInheritanceInfo *inheritanceInfo, bool reset){
+
+void __CommandBuffer::BeginCommandBuffer(VkCommandBufferInheritanceInfo *inheritanceInfo, bool reset){
     //    if(level == VK_COMMAND_BUFFER_LEVEL_SECONDARY){
     //        throw std::runtime_error("Tried to record a secondary command buffer, aborting!");
     //    }
@@ -48,6 +56,12 @@ void CommandBuffer::BeginCommandBuffer(VkCommandBufferInheritanceInfo *inheritan
     // it was the cause of the problem and it came back to bite me in the ass again, I have no idea how or when it reappeared but it did
     // it is a minor inconvenience but one that will probably be mentioned in my suicide note lol
     // so done with this typa bullshit
+
+
+     //actfuhasaally you can't use make_unique cause mutexes can't be moved 🤓
+    //I'm being FORCED into this by a static assert, fuck RAII all my homies *despise* RAII
+
+    lock.reset(new std::lock_guard(poolMutexes[poolID]));
 
     if (commandBuffer == VK_NULL_HANDLE){
         throw std::runtime_error("Tried to begin the recording of an uninitialized command buffer, aborting (commandBuffer = VK_NULL_HANDLE)");
@@ -68,25 +82,28 @@ void CommandBuffer::BeginCommandBuffer(VkCommandBufferInheritanceInfo *inheritan
     if (vkBeginCommandBuffer(commandBuffer, &beginInfo) != VK_SUCCESS){
         throw std::runtime_error("Failed to begin recording command buffer");
     }
+
 }
 
-void CommandBuffer::EndCommandBuffer(){
+void __CommandBuffer::EndCommandBuffer(){
     if (vkEndCommandBuffer(commandBuffer) != VK_SUCCESS){
         throw std::runtime_error("Failed to record command buffer");
     }
+
+    lock.reset();
 }
 
-void CommandBuffer::ResetPools(CommandBufferType type){
+void __CommandBuffer::ResetPools(__CommandBufferType type){
     for(uint32_t i = 0; i < std::thread::hardware_concurrency(); i++){
-        CommandPool::ResetPool(type * std::thread::hardware_concurrency() + i);
+        __CommandPool::ResetPool(type * std::thread::hardware_concurrency() + i);
     }
 }
 
-VkCommandBuffer CommandBuffer::GetCommandBuffer(){
+VkCommandBuffer __CommandBuffer::GetCommandBuffer(){
     return commandBuffer;
 }
 
-CommandBuffer::CommandBuffer(const CommandBuffer &other){
+__CommandBuffer::__CommandBuffer(const __CommandBuffer &other){
     commandBuffer = other.commandBuffer;
     useCount = other.useCount;
     flags = other.flags;
@@ -94,7 +111,7 @@ CommandBuffer::CommandBuffer(const CommandBuffer &other){
     (*useCount.get())++;
 }
 
-CommandBuffer CommandBuffer::operator=(const CommandBuffer &other){
+__CommandBuffer __CommandBuffer::operator=(const __CommandBuffer &other){
     if (this == &other){
         return *this;
     }
@@ -108,17 +125,17 @@ CommandBuffer CommandBuffer::operator=(const CommandBuffer &other){
     return *this;
 }
 
-CommandBuffer::~CommandBuffer(){
+__CommandBuffer::~__CommandBuffer(){
     if (useCount.get() == nullptr){
         return;
     }
 
     if (*useCount == 1){
         if ((flags & COMMAND_BUFFER_GRAPHICS_FLAG) == COMMAND_BUFFER_GRAPHICS_FLAG){
-            CommandPool::FreeCommandBuffer(commandBuffer, poolID, COMMAND_POOL_TYPE_GRAPHICS);
+            __CommandPool::FreeCommandBuffer(commandBuffer, poolID, COMMAND_POOL_TYPE_GRAPHICS);
         }
         else{
-            CommandPool::FreeCommandBuffer(commandBuffer, poolID, COMMAND_POOL_TYPE_TRANSFER);
+            __CommandPool::FreeCommandBuffer(commandBuffer, poolID, COMMAND_POOL_TYPE_TRANSFER);
         }
         useCount.reset();
     }

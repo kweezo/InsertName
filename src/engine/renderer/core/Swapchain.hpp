@@ -11,9 +11,11 @@
 #include "Device.hpp"
 #include "Image.hpp"
 
+#define MAX_FRAMES_IN_FLIGHT 2
+
 namespace renderer{
 
-class Swapchain{
+class __Swapchain{
 public:
     static void Init();
     static void Cleanup();
@@ -23,7 +25,7 @@ public:
     static VkFormat GetImageFormat();
     static VkFormat GetDepthFormat();
     static uint32_t GetImageCount();
-    static Image GetDepthImage();
+    static __Image GetDepthImage();
 
 
     static std::vector<VkImageView> GetSwapchainImageViews();
@@ -31,7 +33,7 @@ private:
     static VkSwapchainKHR swapchain;
     static std::vector<VkImageView> swapchainImageViews;
 
-    static Image depthImage;
+    static __Image depthImage;
     static VkFormat depthFormat;
 
     static void CreateDepthImage();

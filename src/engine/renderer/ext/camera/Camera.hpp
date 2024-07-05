@@ -12,19 +12,18 @@ namespace renderer{
 
 class Camera{
 public:
-    static void Init();
-    static void Update();
-    static void Cleanup();
+    static void __Init();
+    static void __Update();
 
-    static VkWriteDescriptorSet GetWriteDescriptorSetPerspective(uint32_t binding);
-    static VkWriteDescriptorSet GetWriteDescriptorSetOrtho(uint32_t binding);
+    static VkWriteDescriptorSet __GetWriteDescriptorSetPerspective(uint32_t binding);
+    static VkWriteDescriptorSet __GetWriteDescriptorSetOrtho(uint32_t binding);
 private:
     static glm::mat4 view;
     static glm::mat4 perspectiveProjection;
     static glm::mat4 orthoProjection;
 
-    static UniformBufferHandle orthoCamera;
-    static UniformBufferHandle perspectiveCamera;
+    static __UniformBuffer orthoCamera;
+    static __UniformBuffer perspectiveCamera;
 };
 
 }

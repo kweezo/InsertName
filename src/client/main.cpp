@@ -124,7 +124,7 @@ int main(){
     Renderer::Init();
 {
 
-    Shader shader = ShaderManager::GetShader("triangle");
+    __Shader* shader = ShaderManager::GetShader("triangle");
 
     std::vector<VkVertexInputAttributeDescription> attributeDescriptions(2);
 
@@ -156,148 +156,9 @@ int main(){
         2, 3, 0
     };
 
-    DataBuffer vertexBuffer = DataBuffer({attributeDescriptions, {bindingDescription}}, sizeof(vertices),
-     vertices, true, DATA_BUFFER_VERTEX_BIT);
-
-    DataBuffer indexBuffer = DataBuffer({}, sizeof(indices), indices, true, DATA_BUFFER_INDEX_BIT);
-
-    BufferDescriptions buffDescription = vertexBuffer.GetDescriptions();
-
-    ModelDat modelDat;
-    modelDat.model = glm::mat4(1.0f);
-    modelDat.view = glm::lookAt(glm::vec3(0.0f, 0.0f, 2.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
-    modelDat.proj = glm::perspective(glm::radians(45.0f), (float)Settings::GetInstance().windowWidth / Settings::GetInstance().windowHeight, 0.1f, 10.0f);
-    UniformBufferHandle uniformBuffer = UniformBuffer::Create(reinterpret_cast<void*>(&modelDat), sizeof(modelDat), 0,
-    shader->GetDescriptorSet()); 
-
-    GraphicsPipeline pipeline = GraphicsPipeline(shader, buffDescription);
-
-    CommandBuffer buffer = CommandBuffer(VK_COMMAND_BUFFER_LEVEL_PRIMARY, COMMAND_BUFFER_GRAPHICS_FLAG, 0); //TODO, idk
-
-    uint32_t imageIndex = 0;
-
-    VkSemaphore imageAvailableSemaphore;
-    VkSemaphore renderFinishedSemaphore;
-    VkFence inFlightFence;
-
-    VkSemaphoreCreateInfo semaphoreInfo = {};
-    semaphoreInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
-
-    //all temp code, not gonna bother implementing the fence wrapper haha
-    VkFenceCreateInfo fenceInfo{};
-    fenceInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
-    fenceInfo.flags = VK_FENCE_CREATE_SIGNALED_BIT;
-
-
-
-    if(vkCreateSemaphore(Device::GetDevice(), &semaphoreInfo, nullptr, &imageAvailableSemaphore) != VK_SUCCESS ||
-       vkCreateSemaphore(Device::GetDevice(), &semaphoreInfo, nullptr, &renderFinishedSemaphore) != VK_SUCCESS ||
-       vkCreateFence(Device::GetDevice(), &fenceInfo, nullptr, &inFlightFence) != VK_SUCCESS){ //cleanup is for losers anyways (ill do it later maybe lol)
-        throw std::runtime_error("Failed to create semaphores");
-    }
-
-
-    TextureHandle texture = Texture::CreateTexture(dir + "res/textures/test.jpeg", 1, shader->GetDescriptorSet());
-    Texture::EnableTextures();
-
-    
-    std::vector<ModelInstanceHandle> m2;
-    for(uint32_t i = 0; i < 100; i++){
-        ModelHandle tipot = Model::CreateModel(dir + "res/models/teapot/teapot.fbx",
-         ShaderManager::GetShader("basicMesh"), {}, {});
-        m2.push_back(ModelInstance::Create(tipot, {{},{},{}}, true));
-    }
-
-    ModelInstance::Update();
-
-    while(!glfwWindowShouldClose(Window::GetGLFWwindow())){
-        glfwPollEvents();
-
-        int width;
-        glfwGetWindowSize(Window::GetGLFWwindow(), &width, nullptr);
-        if(!width){
-            continue;
-        }
-
-        vkWaitForFences(Device::GetDevice(), 1, &inFlightFence, VK_TRUE, UINT64_MAX);
-        vkResetFences(Device::GetDevice(), 1, &inFlightFence);
-
-        vkAcquireNextImageKHR(Device::GetDevice(), Swapchain::GetSwapchain(), UINT64_MAX, imageAvailableSemaphore,
-         VK_NULL_HANDLE, &imageIndex);
-
-
-        VkDeviceSize offsets[] = {0};
-
-        modelDat.model = glm::rotate(glm::mat4(1.0f), (float)cos(glfwGetTime()), glm::vec3(0.0f, 0.0f, 1.0f));
-        uniformBuffer->UpdateData(reinterpret_cast<void*>(&modelDat), sizeof(modelDat));
-
-        std::vector<VkWriteDescriptorSet> descriptorWrite = {
-            texture->GetWriteDescriptorSet(),
-            uniformBuffer->GetWriteDescriptorSet(),
-        };
-
-
-        buffer.BeginCommandBuffer(nullptr);
-        pipeline.BeginRenderPassAndBindPipeline(imageIndex, buffer.GetCommandBuffer());
-        shader->UpdateDescriptorSet(descriptorWrite);
-        shader->Bind(buffer.GetCommandBuffer(), pipeline.GetPipelineLayout());
-        VkBuffer buff = vertexBuffer.GetBuffer();
-        vkCmdBindVertexBuffers(buffer.GetCommandBuffer(), 0, 1, &buff, offsets);
-        vkCmdBindIndexBuffer(buffer.GetCommandBuffer(), indexBuffer.GetBuffer(), 0, VK_INDEX_TYPE_UINT32);
-        vkCmdDrawIndexed(buffer.GetCommandBuffer(), 6, 1, 0, 0, 0);
-        pipeline.EndRenderPass(buffer.GetCommandBuffer());
-        buffer.EndCommandBuffer();
-
-        VkSubmitInfo submitInfo = {};
-        submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
-
-        VkPipelineStageFlags waitStages[] = {VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT};
-        submitInfo.waitSemaphoreCount = 1;
-        submitInfo.pWaitSemaphores = &imageAvailableSemaphore;
-        submitInfo.pWaitDstStageMask = waitStages;
-
-        submitInfo.commandBufferCount = 1;
-        VkCommandBuffer commandBuffer = buffer.GetCommandBuffer();
-        submitInfo.pCommandBuffers = &commandBuffer;
-
-        submitInfo.signalSemaphoreCount = 1;
-        submitInfo.pSignalSemaphores = &renderFinishedSemaphore;
-
-        if(vkQueueSubmit(Device::GetGraphicsQueue(), 1, &submitInfo, inFlightFence) != VK_SUCCESS){
-            throw std::runtime_error("Failed to submit draw command buffer");
-        }
-
-        VkPresentInfoKHR presentInfo = {};
-        presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
-        presentInfo.waitSemaphoreCount = 1;
-        presentInfo.pWaitSemaphores = &renderFinishedSemaphore;
-
-
-        VkSwapchainKHR swapchain = Swapchain::GetSwapchain();
-        presentInfo.pSwapchains = &swapchain;
-        presentInfo.pImageIndices = &imageIndex;
-        presentInfo.swapchainCount = 1;
-
-        vkQueuePresentKHR(Device::GetGraphicsQueue(), &presentInfo);
-        
-
-        Renderer::RenderFrame();
-
-        imageIndex = (imageIndex + 1) % std::min((uint32_t)MAX_FRAMES_IN_FLIGHT, Swapchain::GetImageCount());
-    }
-
-
-    vkDeviceWaitIdle(Device::GetDevice());
-
-    UniformBuffer::Free(uniformBuffer);
-    Texture::Free(texture);
-
-    vkDestroySemaphore(Device::GetDevice(), renderFinishedSemaphore, nullptr);
-    vkDestroySemaphore(Device::GetDevice(), imageAvailableSemaphore, nullptr);
-    vkDestroyFence(Device::GetDevice(), inFlightFence, nullptr);
-    
+  
 }
-    Renderer::DestroyRenderer();
+    Renderer::Cleanup();
     Window::DestroyWindowContext();
 
     userManager->closeConnection();

@@ -9,30 +9,30 @@
 
 #include "../window/Window.hpp"
 #include "Device.hpp"
-#include "Shader.hpp"
 #include "Swapchain.hpp"
 #include "DataBuffer.hpp"
+#include "DescriptorManager.hpp"
 
 namespace renderer{
 
-struct GraphicsPipelineCreateInfo{
-    Shader* shader;
+struct __GraphicsPipelineCreateInfo{
+    std::array<VkPipelineShaderStageCreateInfo, 2> shaderStageCreateInfo;
     std::vector<VkVertexInputAttributeDescription> attributeDescriptions;
     std::vector<VkVertexInputBindingDescription> bindingDescriptions;
 };
 
-class GraphicsPipeline{
+class __GraphicsPipeline{
 public:
     static void Init();
     static void Cleanup();
 
-    GraphicsPipeline();
-    GraphicsPipeline(GraphicsPipelineCreateInfo createInfo);
+    __GraphicsPipeline();
+    __GraphicsPipeline(__GraphicsPipelineCreateInfo createInfo);
     
-    ~GraphicsPipeline();
+    ~__GraphicsPipeline();
 
-    GraphicsPipeline(const GraphicsPipeline& other);
-    GraphicsPipeline operator=(const GraphicsPipeline& other);
+    __GraphicsPipeline(const __GraphicsPipeline& other);
+    __GraphicsPipeline operator=(const __GraphicsPipeline& other);
 
     void BeginRenderPassAndBindPipeline(uint32_t imageIndex, VkCommandBuffer commandBuffer);
     void EndRenderPass(VkCommandBuffer commandBuffer);

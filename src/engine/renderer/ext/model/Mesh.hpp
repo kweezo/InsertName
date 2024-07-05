@@ -29,19 +29,20 @@ typedef struct BasicMeshVertex{
 }BasicMeshVertex;
 
 typedef struct TextureMaps{
-    TextureHandle diffuseMap = nullptr;
-    TextureHandle specularMap = nullptr;
-    TextureHandle normalMap = nullptr;
-    TextureHandle albedoMap = nullptr;
+    std::shared_ptr<__Texture> diffuseMap{};
+    std::shared_ptr<__Texture> specularMap{};
+    std::shared_ptr<__Texture> normalMap{};
+    std::shared_ptr<__Texture> albedoMap{};
 }TextureMaps;
 
-class Mesh{
+class __Mesh{
 public:
-    Mesh(std::vector<BasicMeshVertex>& vertices, std::vector<uint32_t>& indices, TextureMaps textureMaps);
-    void RecordDrawCommands(CommandBuffer& commandBuffer, uint32_t instanceCount);
+    __Mesh(std::vector<BasicMeshVertex>& vertices, std::vector<uint32_t>& indices, TextureMaps textureMaps);
+
+    void RecordDrawCommands(__CommandBuffer& commandBuffer, uint32_t instanceCount);
 private:
-    DataBuffer vtnBuffer;
-    DataBuffer indexBuffer;
+    __DataBuffer vtnBuffer;
+    __DataBuffer indexBuffer;
 
     TextureMaps textureMaps;
 

@@ -2,29 +2,7 @@
 
 namespace renderer{
 
-ModelInstanceHandle ModelInstance::Create(ModelHandle model, Transform transform, bool isStatic){
-    return new ModelInstanceImpl(model, transform, isStatic);
-}
-
-void ModelInstance::Cleanup(){
-    ModelInstanceImpl::Cleanup();
-}
-
-void ModelInstance::Update(){
-    ModelInstanceImpl::Update();
-}
-
-void ModelInstance::Free(ModelInstanceHandle handle){
-    delete handle;
-}
-
-void ModelInstanceImpl::Update(){
-//TODO: clean this shit up somehow
-
-    StaticModelInstance::Update();
-}
-
-ModelInstanceImpl::ModelInstanceImpl(ModelHandle model, Transform transform, bool isStatic){
+ModelInstance::ModelInstance(ModelHandle model, Transform transform, bool isStatic){
     this->model = glm::mat4(1.0f);
     this->model = glm::translate(this->model, transform.pos);
     this->model = glm::scale(this->model, transform.scale);
@@ -32,25 +10,25 @@ ModelInstanceImpl::ModelInstanceImpl(ModelHandle model, Transform transform, boo
 
     if(isStatic){
         staticModelInstanceMap[model].instanceList.push_back(this);
-        staticModelInstanceMap[model].model = model;
+        staticModelInstanceMap[model].model = static_cast<__Model*>(model);
     }
 
     shouldDraw = true;
 }
 
-void ModelInstanceImpl::Cleanup(){
-    StaticInstanceCleanup();
+void ModelInstance::__Cleanup(){
+    StaticModelInstance::Cleanup();
 }
 
-glm::mat4 ModelInstanceImpl::GetModelMatrix(){
+glm::mat4 ModelInstance::GetModelMatrix(){
     return model;
 }
 
-bool ModelInstanceImpl::GetShouldDraw(){
+bool ModelInstance::GetShouldDraw(){
     return shouldDraw;
 }
 
-void ModelInstanceImpl::SetShouldDraw(bool shouldDraw){
+void ModelInstance::SetShouldDraw(bool shouldDraw){
     this->shouldDraw = shouldDraw;
 }
 

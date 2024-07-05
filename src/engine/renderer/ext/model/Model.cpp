@@ -2,23 +2,30 @@
 
 namespace renderer{
 
-std::unordered_map<Shader, std::vector<ModelHandle>> ModelImpl::modelList = {};
+boost::container::flat_map<ModelHandle, std::shared_ptr<__Model>> ModelManager::models;
 
-ModelHandle Model::CreateModel(std::string path, Shader shader, BufferDescriptions extraDescriptions, std::function<void(void)> extraDrawCommands){
-    return new ModelImpl(path, shader, extraDescriptions, extraDrawCommands);
+ModelHandle ModelManager::Create(__ModelCreateInfo createInfo){
+    std::shared_ptr<__Model> model = std::make_shared<__Model>(__Model(createInfo));
+    models[static_cast<ModelHandle>(model.get())] = model;
+
+    return static_cast<ModelHandle>(model);
 }
 
-void Model::Free(ModelHandle model){
-    delete model;
+void ModelManager::Destoy(ModelHandle handle){
+    models.erase(handle);
 }
 
-ModelImpl::ModelImpl(std::string path, Shader shader, BufferDescriptions extraDescriptions, std::function<void(void)> extraDrawCommands){
+void ModelManager::Cleanup(){
+    models.clear();
+}
+
+__Model::__Model(__ModelCreateInfo createInfo){
     Assimp::Importer importer;
-    const aiScene* scene = importer.ReadFile(path, aiProcess_Triangulate | aiProcess_FlipUVs |
+    const aiScene* scene = importer.ReadFile(createInfo.path, aiProcess_Triangulate | aiProcess_FlipUVs |
      aiProcess_GenNormals);
 
     if(!scene || scene->mFlags & AI_SCENE_FLAGS_INCOMPLETE || !scene->mRootNode){
-        throw std::runtime_error("Failed to load model at path: " + path);
+        throw std::runtime_error("Failed to load model at path: " + createInfo.path);
     }
 
     ProcessNode(scene->mRootNode, scene);
@@ -26,10 +33,9 @@ ModelImpl::ModelImpl(std::string path, Shader shader, BufferDescriptions extraDe
     this->shader = shader;
     this->extraDescriptions = extraDescriptions;
     this->extraDrawCommands = extraDrawCommands;
-    modelList[shader].push_back(this);
 }
 
-void ModelImpl::ProcessNode(aiNode* node, const aiScene* scene){
+void __Model::ProcessNode(aiNode* node, const aiScene* scene){
     for(uint32_t i = 0; i < node->mNumMeshes; i++){
         aiMesh* mesh = scene->mMeshes[node->mMeshes[i]];
         std::vector<BasicMeshVertex> vertices;
@@ -59,9 +65,13 @@ void ModelImpl::ProcessNode(aiNode* node, const aiScene* scene){
             if(material->GetTextureCount(aiTextureType_BASE_COLOR) == 1){
                 aiString path;
                 material->GetTexture(aiTextureType_BASE_COLOR, 0, &path);
-                std::string texturePath = path.C_Str();
-                TextureHandle texture = Texture::CreateTexture(texturePath, 0, shader->GetDescriptorSet());
-                textureMaps.albedoMap = texture;
+
+                __TextureCreateInfo createInfo;
+                createInfo.binding = 0;
+                createInfo.path = std::string(path.C_Str());
+                createInfo.descriptorSet = shader->GetDescriptorSet();
+
+                textureMaps.albedoMap = std::make_shared<__Texture>(__Texture(createInfo));
             }
             else{
                 std::runtime_error("No texture found for mesh or there is more than one, neither is supported");
@@ -69,7 +79,7 @@ void ModelImpl::ProcessNode(aiNode* node, const aiScene* scene){
             //TODO: add support for other maps
         }
 
-        Mesh meshObj = Mesh(vertices, indices, textureMaps);
+        __Mesh meshObj = __Mesh(vertices, indices, textureMaps);
     }
 
     for(uint32_t i = 0; i < node->mNumChildren; i++){
@@ -78,27 +88,22 @@ void ModelImpl::ProcessNode(aiNode* node, const aiScene* scene){
 
 }
 
-void ModelImpl::RecordDrawCommands(CommandBuffer& commandBuffer, uint32_t instanceCount){
-    for(Mesh& mesh : meshes){
+void __Model::RecordDrawCommands(__CommandBuffer& commandBuffer, uint32_t instanceCount){
+    for(__Mesh& mesh : meshes){
         mesh.RecordDrawCommands(commandBuffer, instanceCount);
     }
 }
 
-std::function<void(void)> ModelImpl::GetExtraDrawCommands(){
+std::function<void(void)> __Model::GetExtraDrawCommands(){
     return extraDrawCommands;
 }
 
-Shader ModelImpl::GetShader(){
+__Shader* __Model::GetShader(){
     return shader;
 }
 
-BufferDescriptions ModelImpl::GetExtraDescriptions(){
+__VertexInputDescriptions __Model::GetExtraDescriptions(){
     return extraDescriptions;
 }
-
-std::unordered_map<Shader, std::vector<ModelHandle>> ModelImpl::GetModelList(){
-    return modelList;
-}
-
 
 }

@@ -6,14 +6,14 @@ namespace renderer{
 
 const uint32_t PREFERRED_IMAGE_COUNT = 3;
 
-VkSwapchainKHR Swapchain::swapchain = VK_NULL_HANDLE;
-std::vector<VkImageView> Swapchain::swapchainImageViews = {};
-Image Swapchain::depthImage = {};
-VkFormat Swapchain::depthFormat = {};
+VkSwapchainKHR __Swapchain::swapchain = VK_NULL_HANDLE;
+std::vector<VkImageView> __Swapchain::swapchainImageViews = {};
+__Image __Swapchain::depthImage = {};
+VkFormat __Swapchain::depthFormat = {};
 
-void Swapchain::Init(){
+void __Swapchain::Init(){
     VkSurfaceCapabilitiesKHR surfaceCapabilities;
-    vkGetPhysicalDeviceSurfaceCapabilitiesKHR(Device::GetPhysicalDevice(), Window::GetVulkanSurface(),
+    vkGetPhysicalDeviceSurfaceCapabilitiesKHR(__Device::GetPhysicalDevice(), Window::GetVulkanSurface(),
      &surfaceCapabilities);
 
    
@@ -38,10 +38,10 @@ void Swapchain::Init(){
     createInfo.imageArrayLayers = 1;
     createInfo.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
 
-    if(Device::GetQueueFamilyInfo().transferFamilyFound){
+    if(__Device::GetQueueFamilyInfo().transferFamilyFound){
         createInfo.imageSharingMode = VK_SHARING_MODE_CONCURRENT;
-        uint32_t indices[] = {Device::GetQueueFamilyInfo().graphicsQueueCreateInfo.queueFamilyIndex,
-         Device::GetQueueFamilyInfo().transferQueueCreateInfo.queueFamilyIndex};
+        uint32_t indices[] = {__Device::GetQueueFamilyInfo().graphicsQueueCreateInfo.queueFamilyIndex,
+         __Device::GetQueueFamilyInfo().transferQueueCreateInfo.queueFamilyIndex};
 
         createInfo.queueFamilyIndexCount = 2;
         createInfo.pQueueFamilyIndices = indices;
@@ -57,7 +57,7 @@ void Swapchain::Init(){
     createInfo.clipped = VK_TRUE;
     createInfo.oldSwapchain = swapchain;
 
-    if(vkCreateSwapchainKHR(Device::GetDevice(), &createInfo, nullptr, &swapchain) != VK_SUCCESS){
+    if(vkCreateSwapchainKHR(__Device::GetDevice(), &createInfo, nullptr, &swapchain) != VK_SUCCESS){
         throw std::runtime_error("Failed to create swapchain!");
     }
 
@@ -65,11 +65,11 @@ void Swapchain::Init(){
     CreateDepthImage();
 }
 
-VkFormat Swapchain::ChooseSwapchainImageFormat(){
+VkFormat __Swapchain::ChooseSwapchainImageFormat(){
     uint32_t formatCount;
-    vkGetPhysicalDeviceSurfaceFormatsKHR(Device::GetPhysicalDevice(), Window::GetVulkanSurface(), &formatCount, nullptr);
+    vkGetPhysicalDeviceSurfaceFormatsKHR(__Device::GetPhysicalDevice(), Window::GetVulkanSurface(), &formatCount, nullptr);
     std::vector<VkSurfaceFormatKHR> formats(formatCount);
-    vkGetPhysicalDeviceSurfaceFormatsKHR(Device::GetPhysicalDevice(), Window::GetVulkanSurface(), &formatCount, formats.data());
+    vkGetPhysicalDeviceSurfaceFormatsKHR(__Device::GetPhysicalDevice(), Window::GetVulkanSurface(), &formatCount, formats.data());
     for(const auto& format : formats){
         if(format.format == VK_FORMAT_B8G8R8A8_SRGB && format.colorSpace == VK_COLOR_SPACE_SRGB_NONLINEAR_KHR){
             return format.format;
@@ -78,11 +78,11 @@ VkFormat Swapchain::ChooseSwapchainImageFormat(){
     return formats[0].format;
 }
 
-void Swapchain::CreateSwapchainImageViews(){
+void __Swapchain::CreateSwapchainImageViews(){
     uint32_t imageCount;
-    vkGetSwapchainImagesKHR(Device::GetDevice(), swapchain, &imageCount, nullptr);
+    vkGetSwapchainImagesKHR(__Device::GetDevice(), swapchain, &imageCount, nullptr);
     std::vector<VkImage> swapchainImages(imageCount);
-    vkGetSwapchainImagesKHR(Device::GetDevice(), swapchain, &imageCount, swapchainImages.data());
+    vkGetSwapchainImagesKHR(__Device::GetDevice(), swapchain, &imageCount, swapchainImages.data());
 
     swapchainImageViews.resize(imageCount);
     for(size_t i = 0; i < imageCount; i++){
@@ -101,30 +101,30 @@ void Swapchain::CreateSwapchainImageViews(){
         createInfo.subresourceRange.baseArrayLayer = 0;
         createInfo.subresourceRange.layerCount = 1;
 
-        if(vkCreateImageView(Device::GetDevice(), &createInfo, nullptr, &swapchainImageViews[i]) != VK_SUCCESS){
+        if(vkCreateImageView(__Device::GetDevice(), &createInfo, nullptr, &swapchainImageViews[i]) != VK_SUCCESS){
             throw std::runtime_error("Failed to create image views!");
         }
     }
 }
 
-VkFormat Swapchain::GetDepthFormat(){
+VkFormat __Swapchain::GetDepthFormat(){
     return depthFormat;
 }
 
-Image Swapchain::GetDepthImage(){
+__Image __Swapchain::GetDepthImage(){
     return depthImage;
 }
 
-void Swapchain::CreateDepthImage(){
+void __Swapchain::CreateDepthImage(){
     VkSurfaceCapabilitiesKHR surfaceCapabilites{};
-    vkGetPhysicalDeviceSurfaceCapabilitiesKHR(Device::GetPhysicalDevice(), Window::GetVulkanSurface(), &surfaceCapabilites);
+    vkGetPhysicalDeviceSurfaceCapabilitiesKHR(__Device::GetPhysicalDevice(), Window::GetVulkanSurface(), &surfaceCapabilites);
 
 
-    depthFormat = Image::GetSupportedFormat({VK_FORMAT_D32_SFLOAT, VK_FORMAT_D32_SFLOAT_S8_UINT, VK_FORMAT_D24_UNORM_S8_UINT},
+    depthFormat = __Image::GetSupportedFormat({VK_FORMAT_D32_SFLOAT, VK_FORMAT_D32_SFLOAT_S8_UINT, VK_FORMAT_D24_UNORM_S8_UINT},
      VK_IMAGE_TILING_OPTIMAL, VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT);
 
 
-    ImageCreateInfo imageCreateInfo{};
+    __ImageCreateInfo imageCreateInfo{};
     imageCreateInfo.format = depthFormat;
     imageCreateInfo.layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
     imageCreateInfo.aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT;
@@ -140,36 +140,36 @@ void Swapchain::CreateDepthImage(){
     depthImage.TransitionLayout(VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL);
 }
 
-VkSwapchainKHR Swapchain::GetSwapchain(){
+VkSwapchainKHR __Swapchain::GetSwapchain(){
     return swapchain;
 }
 
-VkExtent2D Swapchain::GetExtent(){
+VkExtent2D __Swapchain::GetExtent(){
     VkSurfaceCapabilitiesKHR surfaceCapabilities;
-    vkGetPhysicalDeviceSurfaceCapabilitiesKHR(Device::GetPhysicalDevice(), Window::GetVulkanSurface(),
+    vkGetPhysicalDeviceSurfaceCapabilitiesKHR(__Device::GetPhysicalDevice(), Window::GetVulkanSurface(),
      &surfaceCapabilities);
     return surfaceCapabilities.currentExtent;
 }
 
-uint32_t Swapchain::GetImageCount(){
+uint32_t __Swapchain::GetImageCount(){
     uint32_t imageCount;
-    vkGetSwapchainImagesKHR(Device::GetDevice(), swapchain, &imageCount, nullptr);
+    vkGetSwapchainImagesKHR(__Device::GetDevice(), swapchain, &imageCount, nullptr);
     return imageCount;
 }
 
-std::vector<VkImageView> Swapchain::GetSwapchainImageViews(){
+std::vector<VkImageView> __Swapchain::GetSwapchainImageViews(){
     return swapchainImageViews;
 }
 
-VkFormat Swapchain::GetImageFormat(){
+VkFormat __Swapchain::GetImageFormat(){
     return ChooseSwapchainImageFormat();
 }
 
-void Swapchain::Cleanup(){
+void __Swapchain::Cleanup(){
     for(auto imageView : swapchainImageViews){
-        vkDestroyImageView(Device::GetDevice(), imageView, nullptr);
+        vkDestroyImageView(__Device::GetDevice(), imageView, nullptr);
     }
-    vkDestroySwapchainKHR(Device::GetDevice(), swapchain, nullptr);
+    vkDestroySwapchainKHR(__Device::GetDevice(), swapchain, nullptr);
 }
 
 }

@@ -13,13 +13,13 @@
 
 namespace renderer{
 
-typedef struct CommandPoolSet{
+typedef struct __CommandPoolSet{
     VkCommandPool transferCommandPool;
     VkCommandPool graphicsCommandPool;
     uint32_t commandBufferCount = 0;
-}CommandPoolSet;
+}__CommandPoolSet;
 
-class CommandPool{
+class __CommandPool{
 public:
     static void CreateCommandPools(uint32_t poolID);
 
@@ -29,7 +29,7 @@ public:
 
     static VkCommandPool ResetPool(uint32_t poolID);// TODO implement lol
 private:
-    static std::unordered_map<uint32_t, CommandPoolSet> commandPools;
+    static std::unordered_map<uint32_t, __CommandPoolSet> commandPools;
 };
 
 }

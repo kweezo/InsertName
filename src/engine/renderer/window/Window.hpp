@@ -29,7 +29,7 @@ public:
 
     static VkExtent2D GetExtent();
 
-    static void CreateVulkanSurface();
+    static void Init();
 
 private:
     static GLFWwindow* window;

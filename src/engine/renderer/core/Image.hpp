@@ -14,7 +14,7 @@
 
 namespace renderer{
 
-struct ImageCreateInfo{
+struct __ImageCreateInfo{
     VkImageLayout layout;
     VkFormat format;
     VkImageAspectFlags aspectMask;
@@ -27,17 +27,17 @@ struct ImageCreateInfo{
     uint32_t threadIndex;
 };
 
-class Image{
+class __Image{
 public:
     static void Init();
     static void Update();
     static void Cleanup();
 
-    Image();
-    Image(ImageCreateInfo createInfo);
-    Image operator=(const Image& other);
-    Image(const Image& other);
-    ~Image();
+    __Image();
+    __Image(__ImageCreateInfo createInfo);
+    __Image operator=(const __Image& other);
+    __Image(const __Image& other);
+    ~__Image();
 
     static VkFormat GetSupportedFormat(std::vector<VkFormat> candidates, VkImageTiling tiling, VkFormatFeatureFlags features);
     static inline bool HasStencilComponent(VkFormat format);
@@ -53,8 +53,8 @@ private:
     void AllocateMemory();
 
 
-    static CommandBuffer GetFreeCommandBuffer(uint32_t threadIndex);
-    static std::vector<std::vector<std::pair<CommandBuffer, bool>>> secondaryCommandBuffers;
+    static __CommandBuffer GetFreeCommandBuffer(uint32_t threadIndex);
+    static std::vector<std::vector<std::pair<__CommandBuffer, bool>>> secondaryCommandBuffers;
 
     static void RecordPrimaryCommandBuffer();
     static void SubmitPrimaryCommandBuffer();
@@ -62,14 +62,14 @@ private:
 
     static void CreateCommmandBuffers();
 
-    static CommandBuffer primaryCommandBuffer;
-    static Fence finishedPrimaryCommandBufferExecutionFence;
+    static __CommandBuffer primaryCommandBuffer;
+    static __Fence finishedPrimaryCommandBufferExecutionFence;
 
     VkImage image;
     VkImageView imageView;
     VkDeviceMemory memory;
 
-    ImageCreateInfo createInfo;
+    __ImageCreateInfo createInfo;
 
 
     std::shared_ptr<uint32_t> useCount;

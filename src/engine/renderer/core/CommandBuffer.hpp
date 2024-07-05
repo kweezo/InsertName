@@ -7,6 +7,8 @@
 #include <thread>
 #include <array>
 #include <thread>
+#include <mutex>
+#include <deque>
 
 #include <vulkan/vulkan.h>
 
@@ -18,33 +20,37 @@
 
 namespace renderer{
 
-enum CommandBufferType{
+enum __CommandBufferType{
     GENERIC = 1,
     IMAGE = 2,
     DATA = 3,
     UNIFORM = 4,
-    size = 4
+    INSTANCE = 5,
+    size = 5
 };
 
-struct CommandBufferCreateInfo{
+struct __CommandBufferCreateInfo{
     VkCommandBufferLevel level;
     uint32_t flags;
-    CommandBufferType type;
+    __CommandBufferType type;
     uint32_t threadIndex;
 };
 
-class CommandBuffer{
+class __CommandBuffer{
 public:
     //You can ONLY pass the pipeline as nullptr if its a transfer command buffer
-    CommandBuffer(CommandBufferCreateInfo createInfo);
-    CommandBuffer();
-    ~CommandBuffer();
 
-    CommandBuffer(const CommandBuffer& other);
-    CommandBuffer operator=(const CommandBuffer& other);
+    void Init();
+
+    __CommandBuffer(__CommandBufferCreateInfo createInfo);
+    __CommandBuffer();
+    ~__CommandBuffer();
+
+    __CommandBuffer(const __CommandBuffer& other);
+    __CommandBuffer operator=(const __CommandBuffer& other);
 
     void ResetCommandBuffer();
-    static void ResetPools(CommandBufferType type);
+    static void ResetPools(__CommandBufferType type);
 
     void BeginCommandBuffer(VkCommandBufferInheritanceInfo* inheritanceInfo, bool reset);
     void EndCommandBuffer();
@@ -55,6 +61,9 @@ private:
     VkCommandBufferLevel level;
     uint32_t flags;
     uint32_t poolID;
+
+    static std::deque<std::mutex> poolMutexes;
+    std::unique_ptr<std::lock_guard<std::mutex>> lock;
 
     std::shared_ptr<uint32_t> useCount;
 
