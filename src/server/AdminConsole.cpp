@@ -116,36 +116,36 @@ int AdminConsole::filterKey(int key) {
     // For ANSI escape sequences
 
     int sequenceLength = 0;
-    
-    if (cursorPos < 4) {
+
+    if (cursorPos < 3) {
         return key;
     }
-    std::string sequence = line.substr(cursorPos - 4, 4);
+    std::string sequence = line.substr(cursorPos - 3, 3) + (char)key;
 
     if (sequence == "27[D") {
         sequenceLength = 4;
-        return 443; // Ctrl+KEY_LEFT
+        key = 443; // Ctrl+KEY_LEFT
     } else if (sequence == "27[C") {
         sequenceLength = 4;
-        return 444; // Ctrl+KEY_RIGHT
+        key = 444; // Ctrl+KEY_RIGHT
     }
 
-    if (cursorPos < 5) {
+    if (cursorPos < 4) {
         return key;
     }
-    sequence = line.substr(cursorPos - 5, 5);
+    sequence = line.substr(cursorPos - 4, 4) + (char)key;
 
     if (sequence == "27[1~") {
         sequenceLength = 5;
-        return KEY_HOME;
+        key = KEY_HOME;
     } else if (sequence == "27[4~") {
         sequenceLength = 5;
-        return KEY_END;
+        key = KEY_END;
     }
 
     if (sequenceLength > 0) {
-        line.erase(cursorPos - sequenceLength, sequenceLength);
-        cursorPos -= sequenceLength;
+        line.erase(cursorPos - sequenceLength + 1, sequenceLength - 1);
+        cursorPos -= sequenceLength - 1;
     }
 
     return key;
@@ -264,12 +264,22 @@ void AdminConsole::processKey(int key) {
             break;
 
         case KEY_LEFT:
-            if (cursorPos > 0) cursorPos--;
+            if (selectionStart != std::string::npos) {
+                cursorPos = selectionStart;
+                selectionStart = std::string::npos;
+            } else if (cursorPos > 0) {
+                cursorPos--;
+            }
             selectionStart = std::string::npos;
             break;
 
         case KEY_RIGHT:
-            if (cursorPos < line.length()) cursorPos++;
+            if (selectionStart != std::string::npos) {
+                cursorPos = selectionEndOrdered;
+                selectionStart = std::string::npos;
+            } else if (cursorPos < line.length()) {
+                cursorPos++;
+            }
             selectionStart = std::string::npos;
             break;
 
