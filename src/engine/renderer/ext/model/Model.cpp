@@ -8,7 +8,7 @@ ModelHandle ModelManager::Create(__ModelCreateInfo createInfo){
     std::shared_ptr<__Model> model = std::make_shared<__Model>(__Model(createInfo));
     models[static_cast<ModelHandle>(model.get())] = model;
 
-    return static_cast<ModelHandle>(model);
+    return static_cast<ModelHandle>(model.get());
 }
 
 void ModelManager::Destoy(ModelHandle handle){

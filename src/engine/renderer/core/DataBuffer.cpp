@@ -105,6 +105,10 @@ void __DataBuffer::UpdateData(void* data, size_t size, uint32_t threadIndex){
     
 }
 
+VkBuffer __DataBuffer::GetBuffer(){
+    return buffer;
+}
+
 __DataBuffer::__DataBuffer(const __DataBuffer& other){
     buffer = other.buffer;
     memory = other.memory;

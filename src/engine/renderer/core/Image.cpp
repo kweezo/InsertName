@@ -6,6 +6,7 @@ const uint32_t TARGET_SECONDARY_BUFFER_COUNT_PER_THREAD = 5;
     
 std::vector<std::vector<std::pair<__CommandBuffer, bool>>> __Image::secondaryCommandBuffers = {};
 __CommandBuffer __Image::primaryCommandBuffer = {};
+__Fence __Image::finishedPrimaryCommandBufferExecutionFence = {};
 
 
 void __Image::Init(){
@@ -283,6 +284,8 @@ __Image __Image::operator=(const __Image& other){
     useCount = other.useCount;
 
     (*useCount.get())++;
+
+    return *this;
 }
 
 __Image::__Image(const __Image& other){

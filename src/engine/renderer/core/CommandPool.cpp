@@ -48,6 +48,17 @@ VkCommandPool __CommandPool::GetTransferCommandPool(uint32_t poolID){
     return set.transferCommandPool;
 }
 
+VkCommandPool __CommandPool::ResetPool(uint32_t poolID){ 
+    __CommandPoolSet& set = commandPools[poolID];
+    vkResetCommandPool(__Device::GetDevice(), set.graphicsCommandPool, 0);
+
+    if(set.graphicsCommandPool != set.transferCommandPool){
+        vkResetCommandPool(__Device::GetDevice(), set.transferCommandPool, 0);
+    }
+
+    return set.graphicsCommandPool;
+}
+
 void __CommandPool::FreeCommandBuffer(VkCommandBuffer commandBuffer, uint32_t poolID, uint32_t commandPoolType){
     __CommandPoolSet& set = commandPools[poolID];
     VkCommandPool commandPool = (commandPoolType == COMMAND_POOL_TYPE_GRAPHICS) ? set.graphicsCommandPool : set.transferCommandPool;
