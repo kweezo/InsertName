@@ -7,6 +7,7 @@ const uint32_t TARGET_SECONDARY_BUFFER_COUNT_PER_THREAD = 5;
 std::vector<std::vector<std::pair<__CommandBuffer, bool>>> __Image::secondaryCommandBuffers = {};
 __CommandBuffer __Image::primaryCommandBuffer = {};
 __Fence __Image::finishedPrimaryCommandBufferExecutionFence = {};
+std::set<uint32_t> __Image::commandPoolResetIndexes = {};
 
 
 void __Image::Init(){
@@ -25,17 +26,21 @@ void __Image::Cleanup(){
     secondaryCommandBuffers.clear();
     primaryCommandBuffer.~__CommandBuffer();
 }
-
 void __Image::RecordPrimaryCommandBuffer(){
     
     std::vector<VkCommandBuffer> usedSecondaryCommandBuffers;
 
+    uint32_t i = 0;
     for(std::vector<std::pair<__CommandBuffer, bool>>& commandBuffers : secondaryCommandBuffers){
         for(std::pair<__CommandBuffer, bool>& commandBuffer : commandBuffers){
             if(!std::get<bool>(commandBuffer)){
                 usedSecondaryCommandBuffers.push_back(std::get<__CommandBuffer>(commandBuffer).GetCommandBuffer());
+                std::get<bool>(commandBuffer) = true;
+
+                commandPoolResetIndexes.emplace(i);
             }
         }
+        i++;
     }
 
     primaryCommandBuffer.BeginCommandBuffer(nullptr, false);
@@ -81,7 +86,10 @@ void __Image::SubmitPrimaryCommandBuffer(){
 }
 
 void __Image::UpdateCleanup(){
-    __CommandBuffer::ResetPools(__CommandBufferType::IMAGE); 
+    for(uint32_t i : commandPoolResetIndexes){
+        __CommandBuffer::ResetPools(__CommandBufferType::IMAGE, i); 
+    }
+
 }
 
 __CommandBuffer __Image::GetFreeCommandBuffer(uint32_t threadIndex){
@@ -121,7 +129,12 @@ void __Image::CreateCommmandBuffers(){
         stagingCommandBufferInfo.flags = COMMAND_POOL_TYPE_TRANSFER | COMMAND_BUFFER_ONE_TIME_SUBMIT_FLAG;
         stagingCommandBufferInfo.threadIndex = i;
 
-        commandBuffers = std::vector<std::pair<__CommandBuffer, bool>>(TARGET_SECONDARY_BUFFER_COUNT_PER_THREAD, {__CommandBuffer(stagingCommandBufferInfo), false});
+        commandBuffers = std::vector<std::pair<__CommandBuffer, bool>>(TARGET_SECONDARY_BUFFER_COUNT_PER_THREAD);
+
+        for(std::pair<__CommandBuffer, bool>& commandBuffer : commandBuffers){
+            std::get<bool>(commandBuffer) = true;
+            std::get<__CommandBuffer>(commandBuffer) = __CommandBuffer(stagingCommandBufferInfo);
+        }
 
         i = (i + 1) % std::thread::hardware_concurrency();
     }

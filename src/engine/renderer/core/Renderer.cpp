@@ -10,9 +10,9 @@ void Renderer::HardInit(){
     __Instance::Init();
     __Device::Init();
     Window::Init();
+    __CommandBuffer::Init();
     __Image::Init();
     __DataBuffer::Init();
-    __CommandBuffer::Init();
     Camera::__Init();
 }
 
@@ -36,6 +36,7 @@ void Renderer::Cleanup(){
     __Image::Cleanup();
     vkDestroySurfaceKHR(__Instance::GetInstance(), Window::GetVulkanSurface(), nullptr);
     __GraphicsPipeline::Cleanup();
+    __CommandPool::Cleanup();
     __Device::Cleanup();
     __Instance::Cleanup();
 }

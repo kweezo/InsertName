@@ -8,6 +8,7 @@ __CommandBuffer __DataBuffer::primaryCommandBuffer = {};
 std::vector<std::vector<std::pair<__CommandBuffer, bool>>> __DataBuffer::stagingCommandBuffers = {};
 std::vector<std::pair<VkBuffer, VkDeviceMemory>> __DataBuffer::stagingBufferAndMemoryDeleteQueue = {};
 __Fence __DataBuffer::finishedCopyingFence = {};
+std::set<uint32_t> __DataBuffer::resetPoolIndexes = {};
 
 void __DataBuffer::Init(){
     CreateCommandBuffers();
@@ -251,12 +252,15 @@ void __DataBuffer::RecordCopyCommandBuffer(uint32_t threadIndex, size_t size){
 void __DataBuffer::RecordPrimaryCommandBuffer(){
     std::vector<VkCommandBuffer> usedSecondaryCommandBuffers;
 
+    uint32_t i = 0;
     for(std::vector<std::pair<__CommandBuffer, bool>>& commandBuffers : stagingCommandBuffers){
         for(std::pair<__CommandBuffer, bool>& commandBuffer : commandBuffers){
             if(!std::get<bool>(commandBuffer)){
                 usedSecondaryCommandBuffers.push_back(std::get<__CommandBuffer>(commandBuffer).GetCommandBuffer());
+                resetPoolIndexes.emplace(i);
             }
         }
+        i++;
     }
 
     primaryCommandBuffer.BeginCommandBuffer(nullptr, false);
@@ -282,7 +286,9 @@ void __DataBuffer::SubmitPrimaryCommandBuffer(){
 
 
 void __DataBuffer::UpdateCleanup(){
-   __CommandBuffer::ResetPools(__CommandBufferType::DATA); 
+    for(uint32_t i : resetPoolIndexes){
+        __CommandBuffer::ResetPools(__CommandBufferType::DATA, i); 
+    }
 
    for(std::pair<VkBuffer, VkDeviceMemory>& stagingBufferAndMemory : stagingBufferAndMemoryDeleteQueue){
         vkFreeMemory(__Device::GetDevice(), std::get<VkDeviceMemory>(stagingBufferAndMemory), nullptr);

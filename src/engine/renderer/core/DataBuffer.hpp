@@ -7,6 +7,7 @@
 #include <utility>
 #include <thread>
 #include <limits>
+#include <set>
 
 #include <vulkan/vulkan.h>
 
@@ -71,6 +72,7 @@ private:
     static __CommandBuffer primaryCommandBuffer;
     static std::vector<std::vector<std::pair<__CommandBuffer, bool>>> stagingCommandBuffers;
     static std::vector<std::pair<VkBuffer, VkDeviceMemory>> stagingBufferAndMemoryDeleteQueue;
+    static std::set<uint32_t> resetPoolIndexes;
     static __Fence finishedCopyingFence;
 
     std::shared_ptr<uint32_t> useCount;

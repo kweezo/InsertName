@@ -74,5 +74,8 @@ void __CommandPool::FreeCommandBuffer(VkCommandBuffer commandBuffer, uint32_t po
 
 }
 
+void __CommandPool::Cleanup(){
+    commandPools.clear();
+}
 
 }

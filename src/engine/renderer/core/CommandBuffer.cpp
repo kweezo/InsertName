@@ -6,6 +6,10 @@ std::deque<std::mutex> __CommandBuffer::poolMutexes = {};
 
 void __CommandBuffer::Init(){
     poolMutexes.resize(__CommandBufferType::size * std::thread::hardware_concurrency());
+
+    for(uint32_t i = 0; i < __CommandBufferType::size * std::thread::hardware_concurrency(); i++){
+        __CommandPool::CreateCommandPools(i);
+    }
 }
 
 
@@ -93,10 +97,8 @@ void __CommandBuffer::EndCommandBuffer(){
     lock.reset();
 }
 
-void __CommandBuffer::ResetPools(__CommandBufferType type){
-    for(uint32_t i = 0; i < std::thread::hardware_concurrency(); i++){
-        __CommandPool::ResetPool(type * std::thread::hardware_concurrency() + i);
-    }
+void __CommandBuffer::ResetPools(__CommandBufferType type, uint32_t threadIndex){
+    __CommandPool::ResetPool(type * std::thread::hardware_concurrency() + threadIndex);
 }
 
 VkCommandBuffer __CommandBuffer::GetCommandBuffer(){

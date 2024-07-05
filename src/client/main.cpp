@@ -186,9 +186,9 @@ int main(){
 
     __CommandBuffer commandBuffer(createInfo);
 
-    __Semaphore imageAvailableSemaphore;
-    __Semaphore renderFinishedSemaphore;
-    __Fence inFlightFence;
+    __Semaphore imageAvailableSemaphore = __Semaphore();
+    __Semaphore renderFinishedSemaphore = __Semaphore();
+    __Fence inFlightFence = __Fence(true);
 
     __TextureCreateInfo textureCreateInfo{};
     textureCreateInfo.path = dir + "res/textures/test.jpeg";

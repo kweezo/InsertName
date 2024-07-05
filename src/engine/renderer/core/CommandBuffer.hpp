@@ -50,7 +50,7 @@ public:
     __CommandBuffer operator=(const __CommandBuffer& other);
 
     void ResetCommandBuffer();
-    static void ResetPools(__CommandBufferType type);
+    static void ResetPools(__CommandBufferType type, uint32_t threadIndex);
 
     void BeginCommandBuffer(VkCommandBufferInheritanceInfo* inheritanceInfo, bool reset);
     void EndCommandBuffer();

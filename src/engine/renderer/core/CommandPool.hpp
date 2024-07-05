@@ -21,6 +21,8 @@ typedef struct __CommandPoolSet{
 
 class __CommandPool{
 public:
+    static void Cleanup();
+
     static void CreateCommandPools(uint32_t poolID);
 
     static void FreeCommandBuffer(VkCommandBuffer commandBuffer, uint32_t poolID, uint32_t commandPoolType);

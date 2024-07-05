@@ -4,6 +4,7 @@
 #include <vector>
 #include <memory>
 #include <utility>
+#include <set>
 
 #include <vulkan/vulkan.h>
 
@@ -64,12 +65,14 @@ private:
 
     static __CommandBuffer primaryCommandBuffer;
     static __Fence finishedPrimaryCommandBufferExecutionFence;
+    static std::set<uint32_t> commandPoolResetIndexes;
 
     VkImage image;
     VkImageView imageView;
     VkDeviceMemory memory;
 
     __ImageCreateInfo createInfo;
+
 
 
     std::shared_ptr<uint32_t> useCount;

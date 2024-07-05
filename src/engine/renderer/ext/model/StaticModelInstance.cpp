@@ -89,7 +89,7 @@ void StaticModelInstance::RecordPrimaryCommandBuffer(){
 
 void StaticModelInstance::UpdateCleanup(){
     for(uint32_t i = 0; i < std::thread::hardware_concurrency(); i++){
-        __CommandBuffer::ResetPools(__CommandBufferType::INSTANCE);
+        __CommandBuffer::ResetPools(__CommandBufferType::INSTANCE, i);
     }
 }
 
