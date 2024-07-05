@@ -134,7 +134,13 @@ __Image::__Image(){
 __Image::__Image(__ImageCreateInfo createInfo): createInfo(createInfo) {
     CreateImage();
     AllocateMemory();
+
+    vkBindImageMemory(__Device::GetDevice(), image, memory, 0);
+
+    CreateImageView();
     TransitionLayout(VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
+
+
 
     useCount = std::make_shared<uint32_t>(1);
 }
@@ -229,6 +235,7 @@ void __Image::CreateImageView(){
 }
 
 void __Image::TransitionLayout(VkImageLayout oldLayout, VkImageLayout newLayout){
+
     VkImageMemoryBarrier imageMemoryBarrier = {};
     imageMemoryBarrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
     imageMemoryBarrier.oldLayout = oldLayout;
@@ -256,6 +263,7 @@ void __Image::TransitionLayout(VkImageLayout oldLayout, VkImageLayout newLayout)
     __CommandBuffer commandBuffer = GetFreeCommandBuffer(createInfo.threadIndex);
 
     commandBuffer.BeginCommandBuffer(&inheritanceInfo, false); 
+
 
     vkCmdPipelineBarrier(commandBuffer.GetCommandBuffer(), VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
     VK_PIPELINE_STAGE_TRANSFER_BIT, 0, 0, nullptr, 0, nullptr, 1, &imageMemoryBarrier);

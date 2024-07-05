@@ -114,6 +114,7 @@ __DataBuffer::__DataBuffer(const __DataBuffer& other){
     memory = other.memory;
     stagingBuffer = other.stagingBuffer;
     stagingMemory = other.stagingMemory;
+    useCount = other.useCount;
 
     (*useCount.get())++;
 }
@@ -128,6 +129,7 @@ __DataBuffer __DataBuffer::operator=(const __DataBuffer& other) {
     memory = other.memory;
     stagingBuffer = other.stagingBuffer;
     stagingMemory = other.stagingMemory;
+    useCount = other.useCount;
 
     (*useCount.get())++;
 

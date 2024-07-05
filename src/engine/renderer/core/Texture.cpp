@@ -9,7 +9,7 @@ __Texture::__Texture(){
     useCount = std::make_shared<uint32_t>(1);
 }
 
-__Texture::__Texture(__TextureCreateInfo createInfo): descriptorSet(createInfo.descriptorSet){
+__Texture::__Texture(__TextureCreateInfo createInfo): descriptorSet(createInfo.descriptorSet), binding(createInfo.binding) {
     LoadImageFile(createInfo.path);
     CreateImage();
     CreateSampler();
@@ -60,6 +60,28 @@ void __Texture::CreateSampler(){
     if(vkCreateSampler(__Device::GetDevice(), &samplerInfo, nullptr, &sampler) != VK_SUCCESS){
         throw std::runtime_error("Failed to create texture sampler");
     }
+}
+
+VkWriteDescriptorSet __Texture::GetWriteDescriptorSet(){
+    VkDescriptorImageInfo imageInfo{};
+    imageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+    imageInfo.imageView = image.GetImageView();
+    imageInfo.sampler = sampler;
+
+    VkWriteDescriptorSet writeDescriptorSet{};
+    writeDescriptorSet.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+    writeDescriptorSet.dstSet = descriptorSet;
+    writeDescriptorSet.dstBinding = binding;
+    writeDescriptorSet.dstArrayElement = 0;
+    writeDescriptorSet.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+    writeDescriptorSet.descriptorCount = 1;
+    writeDescriptorSet.pImageInfo = &imageInfo;
+
+    return writeDescriptorSet;
+}
+
+void __Texture::Update(){
+    __Image::Update();
 }
 
 __Texture::__Texture(const __Texture& other){

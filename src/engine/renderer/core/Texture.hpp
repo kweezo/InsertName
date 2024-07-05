@@ -30,6 +30,8 @@ public:
     __Texture operator=(const __Texture& other);
     ~__Texture();
 
+    VkWriteDescriptorSet GetWriteDescriptorSet();
+
 private:
     void LoadImageFile(const std::string path);
     void CreateImage();
@@ -43,6 +45,8 @@ private:
     int height;
     int channels;
     void* data;
+
+    uint32_t binding;
 
     std::shared_ptr<uint32_t> useCount;
 };

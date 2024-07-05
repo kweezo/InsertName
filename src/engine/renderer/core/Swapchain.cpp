@@ -136,6 +136,7 @@ void __Swapchain::CreateDepthImage(){
     imageCreateInfo.size = 0;
     imageCreateInfo.threadIndex = 0;
 
+    depthImage = __Image(imageCreateInfo);
 
     depthImage.TransitionLayout(VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL);
 }

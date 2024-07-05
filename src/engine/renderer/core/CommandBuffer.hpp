@@ -40,7 +40,7 @@ class __CommandBuffer{
 public:
     //You can ONLY pass the pipeline as nullptr if its a transfer command buffer
 
-    void Init();
+    static void Init();
 
     __CommandBuffer(__CommandBufferCreateInfo createInfo);
     __CommandBuffer();

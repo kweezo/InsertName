@@ -11,13 +11,14 @@ void Renderer::HardInit(){
     __Device::Init();
     Window::Init();
     __Image::Init();
+    __DataBuffer::Init();
+    __CommandBuffer::Init();
     Camera::__Init();
 }
 
 void Renderer::SoftInit(){
     __Swapchain::Init();
     __GraphicsPipeline::Init();
-    __DataBuffer::Init();
     ShaderManager::Init();
 }
 

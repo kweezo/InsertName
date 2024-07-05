@@ -29,7 +29,6 @@ std::vector<__DescriptorSetLocation> __DescriptorManager::AllocateDescriptorSetB
     }
 
 
-
     std::vector<VkDescriptorPoolSize> descriptorPoolSizes(DESCRIPTOR_TYPE_COUNT);
     for(uint32_t i = 0; i < DESCRIPTOR_TYPE_COUNT; i++){
         descriptorPoolSizes[i].type = (VkDescriptorType)i;
@@ -39,6 +38,13 @@ std::vector<__DescriptorSetLocation> __DescriptorManager::AllocateDescriptorSetB
     for(std::vector<VkDescriptorSetLayoutBinding>& bindings : allocInfo.descriptorLayoutBindings){
         for(VkDescriptorSetLayoutBinding& binding : bindings){
             descriptorPoolSizes[binding.descriptorType].descriptorCount++;
+        }
+    }
+
+    for(uint32_t i = 0; i < descriptorPoolSizes.size(); i++){
+        if(descriptorPoolSizes[i].descriptorCount == 0){
+            descriptorPoolSizes.erase(descriptorPoolSizes.begin() + i);
+            i--;
         }
     }
 
