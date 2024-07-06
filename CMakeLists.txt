@@ -5,12 +5,9 @@ project(InsertName)
 include_directories("src")
 
 if(WIN32)
-    set(LIB_DIR "lib\\win\\lib\\")
     set(BOOST_LIB_SUFFIX "-mgw13-mt-x64-1_85.a")
 
     include_directories("lib\\win\\include")
-
-    link_directories(${LIB_DIR})
 
     link_directories(lib\\win\\github_repos\\GLFW\\lib-mingw-w64)
     link_directories(lib\\win\\github_repos\\VulkanSDK\\1.3.275.0\\Lib)
@@ -48,6 +45,7 @@ option(BUILD_SERVER_AUTH "Build the server authentication executable" OFF)
 option(BUILD_SERVER_WORLD "Build the server world executable" OFF)
 option(BUILD_SERVER_CHAT "Build the server chat executable" OFF)
 option(BUILD_SERVER_VOICE "Build the server voice executable" OFF)
+option(BUILD_SERVER_CONTROL "Build the server control executable" OFF)
 
 option(BUILD_CLIENT "Build the client executable" OFF)
 option(BUILD_INSTALLER "Build the installer executable" OFF)
@@ -61,6 +59,7 @@ if(BUILD_SERVER)
     set(BUILD_SERVER_WORLD ON)
     set(BUILD_SERVER_CHAT ON)
     set(BUILD_SERVER_VOICE ON)
+    set(BUILD_SERVER_CONTROL ON)
 endif()
 
 if(DEBUG)
@@ -135,6 +134,21 @@ if(BUILD_SERVER_VOICE)
         )
     else()
         target_link_libraries(servervoice PUBLIC
+
+        )
+    endif()
+endif()
+
+if(BUILD_SERVER_CONTROL)
+    file(GLOB servercontrolsrc src/server/control/*.cpp)
+    add_executable(servercontrol ${servercontrolsrc} src/server/control/main.cpp)
+
+    if(WIN32)
+        target_link_libraries(servercontrol PUBLIC
+            
+        )
+    else()
+        target_link_libraries(servercontrol PUBLIC
 
         )
     endif()
