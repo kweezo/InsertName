@@ -5,12 +5,15 @@ namespace renderer{
 
 std::unordered_map<uint32_t, __CommandPoolSet> __CommandPool::commandPools = {};
 
-void __CommandPool::CreateCommandPools(uint32_t poolID){
+void __CommandPool::CreateCommandPools(uint32_t poolID, uint32_t commandPoolType){
     __CommandPoolSet& set = commandPools[poolID];
 
     VkCommandPoolCreateInfo poolInfo = {};
     poolInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
-    poolInfo.queueFamilyIndex = __Device::GetQueueFamilyInfo().graphicsQueueCreateInfo.queueFamilyIndex;
+    poolInfo.queueFamilyIndex = (commandPoolType == COMMAND_POOL_TYPE_GRAPHICS) ?
+     __Device::GetQueueFamilyInfo().graphicsQueueCreateInfo.queueFamilyIndex :
+     __Device::GetQueueFamilyInfo().transferQueueCreateInfo.queueFamilyIndex;
+    
     poolInfo.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
 
     if(vkCreateCommandPool(__Device::GetDevice(), &poolInfo, nullptr, &set.graphicsCommandPool) != VK_SUCCESS){
@@ -29,20 +32,12 @@ void __CommandPool::CreateCommandPools(uint32_t poolID){
 }
 
 VkCommandPool __CommandPool::GetGraphicsCommandPool(uint32_t poolID){
-    if(commandPools.find(poolID) == commandPools.end()){
-        CreateCommandPools(poolID);
-    }
-
     __CommandPoolSet& set = commandPools[poolID];
     set.commandBufferCount++;
     return set.graphicsCommandPool;
 }
 
 VkCommandPool __CommandPool::GetTransferCommandPool(uint32_t poolID){
-    if(commandPools.find(poolID) == commandPools.end()){
-        CreateCommandPools(poolID);
-    }
-
     __CommandPoolSet& set = commandPools[poolID];
     set.commandBufferCount++;
     return set.transferCommandPool;

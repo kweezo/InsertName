@@ -8,7 +8,7 @@ void __CommandBuffer::Init(){
     poolMutexes.resize(__CommandBufferType::size * std::thread::hardware_concurrency());
 
     for(uint32_t i = 0; i < __CommandBufferType::size * std::thread::hardware_concurrency(); i++){
-        __CommandPool::CreateCommandPools(i);
+        __CommandPool::CreateCommandPools(i, 1);
     }
 }
 
@@ -79,7 +79,7 @@ void __CommandBuffer::BeginCommandBuffer(VkCommandBufferInheritanceInfo *inherit
     beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
     beginInfo.flags = 0;
     beginInfo.pInheritanceInfo = inheritanceInfo;
-    beginInfo.flags = ((flags & COMMAND_BUFFER_ONE_TIME_SUBMIT_FLAG) == COMMAND_BUFFER_TRANSFER_FLAG)
+    beginInfo.flags = ((flags & COMMAND_BUFFER_ONE_TIME_SUBMIT_FLAG) == COMMAND_BUFFER_ONE_TIME_SUBMIT_FLAG)
                           ? VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT
                           : 0;
 

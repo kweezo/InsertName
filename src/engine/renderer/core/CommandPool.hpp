@@ -8,8 +8,8 @@
 
 #include "Device.hpp"
 
-#define COMMAND_POOL_TYPE_GRAPHICS 0
-#define COMMAND_POOL_TYPE_TRANSFER 1
+#define COMMAND_POOL_TYPE_GRAPHICS 1
+#define COMMAND_POOL_TYPE_TRANSFER 2
 
 namespace renderer{
 
@@ -23,7 +23,7 @@ class __CommandPool{
 public:
     static void Cleanup();
 
-    static void CreateCommandPools(uint32_t poolID);
+    static void CreateCommandPools(uint32_t poolID, uint32_t commandPoolType);
 
     static void FreeCommandBuffer(VkCommandBuffer commandBuffer, uint32_t poolID, uint32_t commandPoolType);
     static VkCommandPool GetTransferCommandPool(uint32_t poolID);
