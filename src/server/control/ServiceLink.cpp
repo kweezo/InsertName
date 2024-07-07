@@ -14,6 +14,7 @@ void ServiceLink::SendMessage(int socket, const std::string& message) {
 
 void ServiceLink::HandleConnection(int socket) {
     char buffer[1024];
+    int serviceId;
 
     {
         std::lock_guard<std::mutex> lock(connectionMutex);
@@ -27,12 +28,19 @@ void ServiceLink::HandleConnection(int socket) {
             break;
         }
 
+        std::string receivedMessage(buffer, bytesReceived);
+        serviceId = stoi(GetFirstParameter(receivedMessage));
+
         {
             std::lock_guard<std::mutex> bufferLock(bufferMutex);
-            messageBuffer.push_back({socket, std::string(buffer, bytesReceived)});
+            messageBuffer.push_back({serviceId, std::string(buffer, bytesReceived)});
         }
     }
 
+    {
+        std::lock_guard<std::mutex> bufferLock(bufferMutex);
+        messageBuffer.push_back({serviceId, "DISCONNECT"});
+    }
     {
         std::lock_guard<std::mutex> lock(connectionMutex);
         activeConnections--;
@@ -111,4 +119,20 @@ void ServiceLink::StartTcpServer(int port) {
     #else
         close(server_fd);
     #endif
+}
+
+std::string ServiceLink::GetFirstParameter(std::string& message) {
+    size_t pos = message.find(static_cast<char>(30));
+    
+    if (pos == std::string::npos) {
+        std::string result = message;
+        message.clear();
+        return result;
+    }
+    
+    std::string firstParam = message.substr(0, pos);
+    
+    message.erase(0, pos + 1);
+    
+    return firstParam;
 }

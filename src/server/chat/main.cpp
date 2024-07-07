@@ -1,12 +1,10 @@
-#include "ClientServiceLink.hpp"
+#include "shared/ClientServiceLink.hpp"
 
 #include <thread>
 
 
 int main() {
-    ClientServiceLink::ConnectToTcpServer("127.0.0.1", 8080);
-
-    std::thread connectionThread(&ClientServiceLink::HandleConnection);
+    std::thread connectionThread(&ClientServiceLink::StartClient);
 
     connectionThread.join();
 

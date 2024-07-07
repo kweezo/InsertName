@@ -1,6 +1,6 @@
 #pragma once
 
-#include "structs.hpp"
+#include "shared/structs.hpp"
 
 #include <iostream>
 #include <thread>
@@ -18,11 +18,12 @@
 	#include <unistd.h>
 #endif
 
-class ServiceLink{
+class ServiceLink {
 public:
 	static void StartTcpServer(int port);
 	static void HandleConnection(int socket);
 	static void SendMessage(int socket, const std::string& message);
+	static std::string GetFirstParameter(std::string& message);
 
 private:
 	static std::mutex connectionMutex;

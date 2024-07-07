@@ -5,7 +5,7 @@ std::vector<std::string> ClientServiceLink::messageBuffer;
 std::mutex ClientServiceLink::bufferMutex;
 
 
-void ClientServiceLink::ConnectToTcpServer(const std::string& ip, int port) {
+bool ClientServiceLink::ConnectToTcpServer(const std::string& ip, int port) {
     #ifdef _WIN32
         WSADATA wsaData;
         if (WSAStartup(MAKEWORD(2,2), &wsaData) != 0) {
@@ -24,8 +24,11 @@ void ClientServiceLink::ConnectToTcpServer(const std::string& ip, int port) {
     inet_pton(AF_INET, ip.c_str(), &serverAddress.sin_addr);
 
     if (connect(sock, (struct sockaddr*)&serverAddress, sizeof(serverAddress)) < 0) {
-        throw std::runtime_error("Error connecting to server");
+        std::cerr << "Connection failed\n";
+        return false;
     }
+
+    return true;
 }
 
 void ClientServiceLink::DisconnectFromTcpServer() {
@@ -43,24 +46,38 @@ void ClientServiceLink::HandleConnection() {
     int socket = sock;
 
     while (true) {
-        memset(buffer, 0, bufferSize); // Počisti buffer pred vsakim prejemom
+        memset(buffer, 0, bufferSize);
         int bytesReceived = recv(socket, buffer, bufferSize, 0);
 
         if (bytesReceived == 0) {
-            // Povezava je bila zaprta
             break;
         } else if (bytesReceived < 0) {
-            // Prišlo je do napake pri prejemanju
-            throw std::runtime_error("Error receiving data from server");
+            std::cerr << "Error receiving message from server\n";
+            return;
         }
 
-        // Zakleni mutex pred dostopom do bufferja
         std::lock_guard<std::mutex> lock(bufferMutex);
-        // Shrani prejeto sporočilo v buffer
         messageBuffer.push_back(std::string(buffer, bytesReceived));
     }
 }
 
-void ClientServiceLink::SendMessage(int socket, const std::string& message) {
+void ClientServiceLink::Send(const std::string& message) {
     send(sock, message.c_str(), message.length(), 0);
+}
+
+void ClientServiceLink::StartClient() {
+    while (true) {
+        if (!ConnectToTcpServer("127.0.0.1", 8080)) {  //TODO: Read ip and port from config
+            std::cerr << "Can not connect to server. Retrying in 5 seconds...\n";
+            std::this_thread::sleep_for(std::chrono::seconds(5));
+            continue;
+        }
+
+        SendMessage(1, "JOIN"); //TODO: Read service id from config
+
+        HandleConnection();
+
+        DisconnectFromTcpServer();
+        std::cerr << "Disconnected from server.\n";
+    }
 }
