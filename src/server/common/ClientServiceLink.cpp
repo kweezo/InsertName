@@ -37,9 +37,10 @@ void ClientServiceLink::DisconnectFromTcpServer() {
     #endif
 }
 
-void ClientServiceLink::HandleConnection(int socket) {
+void ClientServiceLink::HandleConnection() {
     const int bufferSize = 1024;
     char buffer[bufferSize];
+    int socket = sock;
 
     while (true) {
         memset(buffer, 0, bufferSize); // Počisti buffer pred vsakim prejemom

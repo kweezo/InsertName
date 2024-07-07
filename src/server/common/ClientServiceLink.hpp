@@ -20,7 +20,7 @@ public:
     static void ConnectToTcpServer(const std::string& ip, int port);
     static void DisconnectFromTcpServer();
 
-    static void HandleConnection(int socket);
+    static void HandleConnection();
     static void SendMessage(int socket, const std::string& message);
 
 private:
