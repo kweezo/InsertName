@@ -85,11 +85,13 @@ if(BUILD_SERVER_AUTH)
 
     if(WIN32)
         target_link_libraries(serverauth PUBLIC
-
+            pqxx
+            ${PQ_LIBRARY}
+            ws2_32
         )
     else()
         target_link_libraries(serverauth PUBLIC
-        
+            pqxx
         )
     endif()
 endif()
@@ -155,8 +157,8 @@ if(BUILD_SERVER_CONTROL)
 endif()
 
 # if(BUILD_SERVER)
-#     file(GLOB serversrc src/server/*.cpp)
-#     add_executable(server ${serversrc} src/server/main.cpp)
+#     file(GLOB serversrc src/server/.old/*.cpp)
+#     add_executable(server ${serversrc} src/server/.old/main.cpp)
 
 #     if(WIN32)
 #         target_link_libraries(server PUBLIC
