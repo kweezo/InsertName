@@ -35,11 +35,11 @@ public:
     static void Init();
     static void Cleanup();
 
-    static __Shader* GetShader(std::string name);
+    static std::shared_ptr<__Shader> GetShader(std::string name);
 
 private:
 
-    static boost::container::flat_map<std::string, __Shader> shaders;
+    static boost::container::flat_map<std::string, std::shared_ptr<__Shader>> shaders;
 };
 
 

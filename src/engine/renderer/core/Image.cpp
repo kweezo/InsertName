@@ -8,6 +8,7 @@ std::vector<std::vector<std::pair<__CommandBuffer, bool>>> __Image::secondaryCom
 __CommandBuffer __Image::primaryCommandBuffer = {};
 __Fence __Image::finishedPrimaryCommandBufferExecutionFence = {};
 std::set<uint32_t> __Image::commandPoolResetIndexes = {};
+std::list<std::pair<VkBuffer, VkDeviceMemory>> __Image::bufferAndMemoryCleanupQueue = { };
 
 
 void __Image::Init(){
@@ -154,6 +155,17 @@ __Image::__Image(__ImageCreateInfo createInfo): createInfo(createInfo) {
     TransitionLayout(VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
 
 
+    if(__Device::DeviceMemoryFree()){
+        __DataBuffer::CreateBuffer(stagingBuffer, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, createInfo.size);
+        __DataBuffer::AllocateMemory(stagingMemory, stagingBuffer, createInfo.size, VK_MEMORY_PROPERTY_HOST_COHERENT_BIT | VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT);
+
+        __DataBuffer::UploadDataToMemory(stagingMemory, createInfo.data, createInfo.size);
+
+        CopyDataToDevice();
+    }else{
+        __DataBuffer::UploadDataToMemory(memory, createInfo.data, createInfo.size);
+    }
+
 
     useCount = std::make_shared<uint32_t>(1);
 }
@@ -245,6 +257,23 @@ void __Image::CreateImageView(){
     if(vkCreateImageView(__Device::GetDevice(), &createInfo, nullptr, &imageView) != VK_SUCCESS){
         throw std::runtime_error("Failed to create image view");
     }
+}
+
+void __Image::CopyDataToDevice(){
+    __CommandBuffer commandBuffer = GetFreeCommandBuffer(createInfo.threadIndex);
+
+    VkCommandBufferInheritanceInfo inheritanceInfo{};
+    inheritanceInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_INFO;
+
+    VkBufferImageCopy copyRegion{};
+    copyRegion.imageExtent = {createInfo.imageExtent.width, createInfo.imageExtent.height, 1};
+    copyRegion.imageSubresource = {createInfo.aspectMask, 0, 0, 1};
+
+    commandBuffer.BeginCommandBuffer(&inheritanceInfo, false);
+    vkCmdCopyBufferToImage(commandBuffer.GetCommandBuffer(), stagingBuffer, image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &copyRegion);
+    commandBuffer.EndCommandBuffer();
+
+    bufferAndMemoryCleanupQueue.push_front({stagingBuffer, stagingMemory});
 }
 
 void __Image::TransitionLayout(VkImageLayout oldLayout, VkImageLayout newLayout){

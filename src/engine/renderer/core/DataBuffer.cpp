@@ -35,7 +35,10 @@ void __DataBuffer::CreateCommandBuffers(){
         stagingCommandBufferInfo.flags = COMMAND_POOL_TYPE_TRANSFER | COMMAND_BUFFER_ONE_TIME_SUBMIT_FLAG;
         stagingCommandBufferInfo.threadIndex = i;
 
-        commandBuffers = std::vector<std::pair<__CommandBuffer, bool>>(TARGET_STAGING_BUFFER_COUNT_PER_THREAD, {__CommandBuffer(stagingCommandBufferInfo), false});
+        commandBuffers.resize(TARGET_STAGING_BUFFER_COUNT_PER_THREAD);
+        for(uint32_t y = 0; y < TARGET_STAGING_BUFFER_COUNT_PER_THREAD; y++){
+            commandBuffers[y] = {__CommandBuffer(stagingCommandBufferInfo), true};
+        }
 
         i = (i + 1) % std::thread::hardware_concurrency();
     }
@@ -58,7 +61,7 @@ __DataBuffer::__DataBuffer(){
 }
 
 __DataBuffer::__DataBuffer(__DataBufferCreateInfo createInfo) : transferToLocalDeviceMemory(createInfo.transferToLocalDeviceMemory),
- size(createInfo.size){
+ size(createInfo.size), stagingBuffer(VK_NULL_HANDLE), stagingMemory(VK_NULL_HANDLE){
 
     if(!__Device::DeviceMemoryFree()){
         createInfo.transferToLocalDeviceMemory = false;
@@ -71,7 +74,7 @@ __DataBuffer::__DataBuffer(__DataBufferCreateInfo createInfo) : transferToLocalD
         CreateBuffer(stagingBuffer, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, size);
         AllocateMemory(stagingMemory, stagingBuffer, size, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
 
-        UploadDataToBuffer(stagingMemory, createInfo.data, createInfo.size);
+        UploadDataToMemory(stagingMemory, createInfo.data, createInfo.size);
 
         RecordCopyCommandBuffer(createInfo.threadIndex, size);
 
@@ -79,10 +82,9 @@ __DataBuffer::__DataBuffer(__DataBufferCreateInfo createInfo) : transferToLocalD
         CreateBuffer(buffer, createInfo.usage, size);
         AllocateMemory(memory, buffer, size, VK_MEMORY_PROPERTY_HOST_COHERENT_BIT | VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT);
 
-        UploadDataToBuffer(memory, createInfo.data, createInfo.size);
+        UploadDataToMemory(memory, createInfo.data, createInfo.size);
     }
     
-   
     useCount = std::make_shared<uint32_t>(1);
 }
 
@@ -96,12 +98,12 @@ void __DataBuffer::UpdateData(void* data, size_t size, uint32_t threadIndex){
     }
 
     if(transferToLocalDeviceMemory){
-        UploadDataToBuffer(stagingMemory, data, size);
+        UploadDataToMemory(stagingMemory, data, size);
 
         RecordCopyCommandBuffer(threadIndex, size);
 
     }else{
-        UploadDataToBuffer(memory, data, size);
+        UploadDataToMemory(memory, data, size);
     }
     
 }
@@ -115,6 +117,8 @@ __DataBuffer::__DataBuffer(const __DataBuffer& other){
     memory = other.memory;
     stagingBuffer = other.stagingBuffer;
     stagingMemory = other.stagingMemory;
+    size = other.size;
+    transferToLocalDeviceMemory = other.transferToLocalDeviceMemory;
     useCount = other.useCount;
 
     (*useCount.get())++;
@@ -130,6 +134,8 @@ __DataBuffer __DataBuffer::operator=(const __DataBuffer& other) {
     memory = other.memory;
     stagingBuffer = other.stagingBuffer;
     stagingMemory = other.stagingMemory;
+    size = other.size;
+    transferToLocalDeviceMemory = other.transferToLocalDeviceMemory;
     useCount = other.useCount;
 
     (*useCount.get())++;
@@ -145,6 +151,12 @@ __DataBuffer::~__DataBuffer(){
     if(*useCount.get() == 1){
         vkFreeMemory(__Device::GetDevice(), memory, nullptr);
         vkDestroyBuffer(__Device::GetDevice(), buffer, nullptr); 
+
+        if(stagingBuffer != VK_NULL_HANDLE){
+            vkFreeMemory(__Device::GetDevice(), stagingMemory, nullptr);
+            vkDestroyBuffer(__Device::GetDevice(), stagingBuffer, nullptr);
+        }
+
         useCount.reset();
         return;
     }
@@ -201,7 +213,7 @@ void __DataBuffer::AllocateMemory(VkDeviceMemory& memory, VkBuffer buffer, size_
     vkBindBufferMemory(__Device::GetDevice(), buffer, memory, 0);
 }
 
-void __DataBuffer::UploadDataToBuffer(VkDeviceMemory memory, void* data, size_t size){
+void __DataBuffer::UploadDataToMemory(VkDeviceMemory memory, void* data, size_t size){
     void* mappedMem;
 
     if(vkMapMemory(__Device::GetDevice(), memory, 0, size, 0, &mappedMem) != VK_SUCCESS){
@@ -270,7 +282,9 @@ void __DataBuffer::RecordPrimaryCommandBuffer(){
 
 void __DataBuffer::SubmitPrimaryCommandBuffer(){
     VkCommandBuffer primaryCommandBufferRaw = primaryCommandBuffer.GetCommandBuffer();
-    VkFence finishedCopyingFenceRaw = finishedCopyingFence.GetFence();
+    VkFence finishedCopyingFenceHandle = finishedCopyingFence.GetFence();
+
+    vkResetFences(__Device::GetDevice(), 1, &finishedCopyingFenceHandle);
 
     VkSubmitInfo submitInfo{};
     submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
@@ -281,7 +295,7 @@ void __DataBuffer::SubmitPrimaryCommandBuffer(){
         throw std::runtime_error("Failed to submit data buffer command buffer");
     }
 
-    vkWaitForFences(__Device::GetDevice(), 1, &finishedCopyingFenceRaw, VK_TRUE, std::numeric_limits<uint64_t>::max());
+    vkWaitForFences(__Device::GetDevice(), 1, &finishedCopyingFenceHandle, VK_TRUE, std::numeric_limits<uint64_t>::max());
 }
 
 
@@ -290,10 +304,6 @@ void __DataBuffer::UpdateCleanup(){
         __CommandBuffer::ResetPools(__CommandBufferType::DATA, i); 
     }
 
-   for(std::pair<VkBuffer, VkDeviceMemory>& stagingBufferAndMemory : stagingBufferAndMemoryDeleteQueue){
-        vkFreeMemory(__Device::GetDevice(), std::get<VkDeviceMemory>(stagingBufferAndMemory), nullptr);
-        vkDestroyBuffer(__Device::GetDevice(), std::get<VkBuffer>(stagingBufferAndMemory), nullptr);
-   }
    stagingBufferAndMemoryDeleteQueue.clear();
 
     for(std::vector<std::pair<__CommandBuffer, bool>>& commandBuffers : stagingCommandBuffers){

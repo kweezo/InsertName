@@ -223,7 +223,7 @@ void __GraphicsPipeline::BeginRenderPassAndBindPipeline(uint32_t imageIndex, VkC
         glfwGetWindowSize(Window::GetGLFWwindow(), (int*)&renderPassInfo.renderArea.extent.width, (int*)&renderPassInfo.renderArea.extent.height);
     }
 
-    std::vector<VkClearValue> clearValues = {VkClearValue{0.0f, 0.0f, 0.0f, 1.0f}, VkClearValue{1.0f, 0}};
+    std::vector<VkClearValue> clearValues = {VkClearValue{1.0f, 0.0f, 0.0f, 1.0f}, VkClearValue{1.0f, 0}};
 
     renderPassInfo.clearValueCount = clearValues.size();
     renderPassInfo.pClearValues = clearValues.data();

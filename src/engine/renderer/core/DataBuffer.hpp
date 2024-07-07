@@ -46,12 +46,14 @@ public:
     void UpdateData(void* data, size_t size, uint32_t threadIndex);
 
     VkBuffer GetBuffer();
+
+
+    static void CreateBuffer(VkBuffer& buffer, VkBufferUsageFlags usage, VkDeviceSize size);
+    static void AllocateMemory(VkDeviceMemory& memory, VkBuffer buffer, size_t size, VkMemoryPropertyFlags properties);
+    static void UploadDataToMemory(VkDeviceMemory memory, void* data, size_t size);
 private:
 
     static void CreateCommandBuffers();
-    static void CreateBuffer(VkBuffer& buffer, VkBufferUsageFlags usage, VkDeviceSize size);
-    static void AllocateMemory(VkDeviceMemory& memory, VkBuffer buffer, size_t size, VkMemoryPropertyFlags properties);
-    static void UploadDataToBuffer(VkDeviceMemory memory, void* data, size_t size);
     static __CommandBuffer RetrieveFreeStagingCommandBuffer(uint32_t threadIndex);
 
     static void RecordPrimaryCommandBuffer();

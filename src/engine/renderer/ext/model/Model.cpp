@@ -71,7 +71,7 @@ void __Model::ProcessNode(aiNode* node, const aiScene* scene){
                 createInfo.path = std::string(path.C_Str());
                 createInfo.descriptorSet = shader->GetDescriptorSet();
 
-                textureMaps.albedoMap = std::make_shared<__Texture>(__Texture(createInfo));
+                textureMaps.albedoMap = std::make_shared<__Texture>(createInfo);
             }
             else{
                 std::runtime_error("No texture found for mesh or there is more than one, neither is supported");

@@ -5,6 +5,7 @@
 #include <memory>
 #include <utility>
 #include <set>
+#include <list>
 
 #include <vulkan/vulkan.h>
 
@@ -53,6 +54,7 @@ private:
     void CreateImageView();
     void AllocateMemory();
 
+    void CopyDataToDevice();
 
     static __CommandBuffer GetFreeCommandBuffer(uint32_t threadIndex);
     static std::vector<std::vector<std::pair<__CommandBuffer, bool>>> secondaryCommandBuffers;
@@ -71,8 +73,12 @@ private:
     VkImageView imageView;
     VkDeviceMemory memory;
 
+    VkBuffer stagingBuffer;
+    VkDeviceMemory stagingMemory;
+
     __ImageCreateInfo createInfo;
 
+    static std::list<std::pair<VkBuffer, VkDeviceMemory>> bufferAndMemoryCleanupQueue;
 
 
     std::shared_ptr<uint32_t> useCount;

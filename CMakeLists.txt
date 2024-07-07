@@ -33,6 +33,10 @@ if(WIN32)
     )
 endif()
 
+if(UNIX)
+    set(CMAKE_CXX_COMPILER "/usr/bin/g++-14")
+endif()
+
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY bin)

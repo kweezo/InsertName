@@ -5,6 +5,9 @@
 
 namespace renderer{
 
+
+//TODO delete image contents
+
 __Texture::__Texture(){
     useCount = std::make_shared<uint32_t>(1);
 }
@@ -13,6 +16,8 @@ __Texture::__Texture(__TextureCreateInfo createInfo): descriptorSet(createInfo.d
     LoadImageFile(createInfo.path);
     CreateImage();
     CreateSampler();
+
+    image.TransitionLayout(VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 
     useCount = std::make_shared<uint32_t>(1);
 }

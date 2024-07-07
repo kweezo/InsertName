@@ -71,7 +71,6 @@ std::vector<__DescriptorSetLocation> __DescriptorManager::AllocateDescriptorSetB
         throw std::runtime_error("Failed to allocate descriptor sets");
     }
 
-
     std::vector<__DescriptorSetLocation> descriptorSetLocations(currentDescriptorLayouts.size());
 
     for(uint32_t i = 0; i < descriptorSetLocations.size(); i++){

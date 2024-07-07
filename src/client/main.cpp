@@ -124,7 +124,7 @@ int main(){
     Renderer::Init();
 
 
-    __Shader* shader = ShaderManager::GetShader("triangle");
+    std::shared_ptr<__Shader> shader = ShaderManager::GetShader("triangle");
 
     std::vector<VkVertexInputAttributeDescription> attributeDescriptions(2);
 
@@ -167,7 +167,7 @@ int main(){
     iCreateInfo.size = sizeof(indices);
     iCreateInfo.usage = VK_BUFFER_USAGE_INDEX_BUFFER_BIT;
     iCreateInfo.transferToLocalDeviceMemory = true;
-
+{
     __DataBuffer vertexBuffer(vCreateInfo);
     __DataBuffer indexBuffer(iCreateInfo);
 
@@ -176,7 +176,7 @@ int main(){
     modelDat.view = glm::mat4(1.0f);
     modelDat.proj = glm::perspective(glm::radians(45.0f), (float)Window::GetExtent().width / (float)Window::GetExtent().height, 0.1f, 100.0f);
 
-    shader->CreateGraphicsPipepeline({attributeDescriptions, {bindingDescription}});
+    shader.get()->CreateGraphicsPipepeline({attributeDescriptions, {bindingDescription}});
 
     __CommandBufferCreateInfo createInfo{};
     createInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
@@ -193,7 +193,7 @@ int main(){
     __TextureCreateInfo textureCreateInfo{};
     textureCreateInfo.path = dir + "res/textures/test.jpeg";
     textureCreateInfo.binding = 1;
-    textureCreateInfo.descriptorSet = shader->GetDescriptorSet();
+    textureCreateInfo.descriptorSet = shader.get()->GetDescriptorSet();
 
     __Texture texture = __Texture(textureCreateInfo);
 
@@ -205,7 +205,7 @@ int main(){
     uCreateInfo.data = &modelDat;
     uCreateInfo.size = sizeof(ModelDat);
     uCreateInfo.binding = 0;
-    uCreateInfo.descriptorSet = shader->GetDescriptorSet();
+    uCreateInfo.descriptorSet = shader.get()->GetDescriptorSet();
 
     __UniformBuffer* uniformb = new __UniformBuffer(uCreateInfo);
 
@@ -219,10 +219,13 @@ int main(){
         }
 
         VkFence inFlightFenceHandle = inFlightFence.GetFence();
+
+
         VkSemaphore imageAvailableSemaphoreHandle = imageAvailableSemaphore.GetSemaphore();
         VkSemaphore renderFinishedSemaphoreHandle = renderFinishedSemaphore.GetSemaphore();
         vkWaitForFences(__Device::GetDevice(), 1, &inFlightFenceHandle, VK_TRUE, UINT64_MAX);
         vkResetFences(__Device::GetDevice(), 1, &inFlightFenceHandle);
+
 
         vkAcquireNextImageKHR(__Device::GetDevice(), __Swapchain::GetSwapchain(), UINT64_MAX, imageAvailableSemaphore.GetSemaphore(), VK_NULL_HANDLE, &imageIndex);
 
@@ -234,15 +237,18 @@ int main(){
         };
 
         commandBuffer.BeginCommandBuffer(nullptr, true);
-        shader->GetGraphicsPipeline()->BeginRenderPassAndBindPipeline(imageIndex, commandBuffer.GetCommandBuffer());
-        shader->UpdateDescriptorSet(descriptorWrite);
+        shader.get()->GetGraphicsPipeline()->BeginRenderPassAndBindPipeline(imageIndex, commandBuffer.GetCommandBuffer());
+        shader.get()->UpdateDescriptorSet(descriptorWrite);
 
         VkBuffer vBuffer = vertexBuffer.GetBuffer();
+
+        VkDescriptorSet set = shader->GetDescriptorSet();
+        vkCmdBindDescriptorSets(commandBuffer.GetCommandBuffer(), VK_PIPELINE_BIND_POINT_GRAPHICS, shader->GetGraphicsPipeline()->GetPipelineLayout(), 0, 1, &set, 0, nullptr);
 
         vkCmdBindVertexBuffers(commandBuffer.GetCommandBuffer(), 0, 1, &vBuffer, offsets);
         vkCmdBindIndexBuffer(commandBuffer.GetCommandBuffer(), indexBuffer.GetBuffer(), 0, VK_INDEX_TYPE_UINT32);
         vkCmdDrawIndexed(commandBuffer.GetCommandBuffer(), 6, 1, 0, 0, 0);
-        shader->GetGraphicsPipeline()->EndRenderPass(commandBuffer.GetCommandBuffer());
+        shader.get()->GetGraphicsPipeline()->EndRenderPass(commandBuffer.GetCommandBuffer());
         commandBuffer.EndCommandBuffer();
 
         VkSubmitInfo submitInfo = {};
@@ -271,11 +277,18 @@ int main(){
         presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
         presentInfo.pImageIndices = &imageIndex;
         presentInfo.swapchainCount = 1;
+        presentInfo.waitSemaphoreCount = 1;
+        presentInfo.pWaitSemaphores = signalSemaphores;
+
+        VkSwapchainKHR swapchain = __Swapchain::GetSwapchain(); 
+        presentInfo.pSwapchains = &swapchain;
 
         vkQueuePresentKHR(__Device::GetGraphicsQueue(), &presentInfo);
 
         Renderer::RenderFrame();
     }
+    vkDeviceWaitIdle(__Device::GetDevice());
+}
 
     Renderer::Cleanup();
     Window::DestroyWindowContext();

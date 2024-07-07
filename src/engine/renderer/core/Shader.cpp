@@ -5,7 +5,7 @@ namespace renderer{
 const std::string shaderPath = "client_data/shaders/bin/";
 
 std::vector<__ShaderBindingInfo> __Shader::shaderBindings = {};
-boost::container::flat_map<std::string, __Shader> ShaderManager::shaders = {};
+boost::container::flat_map<std::string, std::shared_ptr<__Shader>> ShaderManager::shaders = {};
 
 void ShaderManager::Init(){
     std::ifstream stream("client_data/shaders/shaders.json");
@@ -66,7 +66,7 @@ void ShaderManager::Init(){
         vertexPath = shaderPath + vertexPath;
         fragmentPath = shaderPath + fragmentPath;
 
-        ShaderManager::shaders.emplace(name, __Shader(vertexPath, fragmentPath,
+        ShaderManager::shaders.emplace(name, std::make_shared<__Shader>(vertexPath, fragmentPath,
         name, descriptorBindings));
     }
 
@@ -75,11 +75,11 @@ void ShaderManager::Init(){
     stream.close();
 }
 
-__Shader* ShaderManager::GetShader(std::string name){
+std::shared_ptr<__Shader> ShaderManager::GetShader(std::string name){
     if(shaders.find(name) == shaders.end()){
         throw std::runtime_error("Attempting to get nonexistent shader with name " + name);
     }
-    return &shaders[name];
+    return shaders[name];
 }
 
 void ShaderManager::Cleanup(){
@@ -107,6 +107,7 @@ void __Shader::CreateDescriptorSets(){
 
     std::vector<__DescriptorSetLocation> locations = __DescriptorManager::AllocateDescriptorSetBatch(allocInfo);
     
+
     for(uint32_t i = 0; i < locations.size(); i++){
         shaderBindings[i].handle->SetDescriptorSet(__DescriptorManager::RetrieveDescriptorSet(locations[i]));
     }
@@ -217,6 +218,7 @@ __Shader::__Shader(const __Shader& other){
     vertexShaderModule = other.vertexShaderModule;
     fragmentShaderModule = other.fragmentShaderModule;
     descriptorSet = other.descriptorSet;
+    name = other.name;
 
     (*useCount.get())++;
 }
@@ -230,6 +232,7 @@ __Shader __Shader::operator=(const __Shader& other){
     vertexShaderModule = other.vertexShaderModule;
     fragmentShaderModule = other.fragmentShaderModule;
     descriptorSet = other.descriptorSet;
+    name = other.name;
 
     (*useCount.get())++;
 
