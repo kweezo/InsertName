@@ -3,6 +3,7 @@ cmake_minimum_required(VERSION 3.20)
 project(InsertName)
 
 include_directories("src")
+include_directories("src/server/common")
 
 if(WIN32)
     set(BOOST_LIB_SUFFIX "-mgw13-mt-x64-1_85.a")
@@ -79,8 +80,23 @@ if(BUILD_INSTALLER)
     add_executable(installer ${installersrc} src/installer/main.cpp)
 endif()
 
+if(BUILD_SERVER_CONTROL)
+    file(GLOB servercontrolsrc src/server/control/*.cpp src/server/common/*.cpp)
+    add_executable(servercontrol ${servercontrolsrc} src/server/control/main.cpp)
+
+    if(WIN32)
+        target_link_libraries(servercontrol PUBLIC
+            ws2_32
+        )
+    else()
+        target_link_libraries(servercontrol PUBLIC
+
+        )
+    endif()
+endif()
+
 if(BUILD_SERVER_AUTH)
-    file(GLOB serverauthsrc src/server/auth/*.cpp)
+    file(GLOB serverauthsrc src/server/auth/*.cpp src/server/common/*.cpp)
     add_executable(serverauth ${serverauthsrc} src/server/auth/main.cpp)
 
     if(WIN32)
@@ -97,12 +113,12 @@ if(BUILD_SERVER_AUTH)
 endif()
 
 if(BUILD_SERVER_WORLD)
-    file(GLOB serverworldsrc src/server/world/*.cpp)
+    file(GLOB serverworldsrc src/server/world/*.cpp src/server/common/*.cpp)
     add_executable(serverworld ${serverworldsrc} src/server/world/main.cpp)
 
     if(WIN32)
         target_link_libraries(serverworld PUBLIC
-            
+            ws2_32
         )
     else()
         target_link_libraries(serverworld PUBLIC
@@ -112,12 +128,12 @@ if(BUILD_SERVER_WORLD)
 endif()
 
 if(BUILD_SERVER_CHAT)
-    file(GLOB serverchatsrc src/server/chat/*.cpp)
+    file(GLOB serverchatsrc src/server/chat/*.cpp src/server/common/*.cpp)
     add_executable(serverchat ${serverchatsrc} src/server/chat/main.cpp)
 
     if(WIN32)
         target_link_libraries(serverchat PUBLIC
-            
+            ws2_32
         )
     else()
         target_link_libraries(serverchat PUBLIC
@@ -127,30 +143,15 @@ if(BUILD_SERVER_CHAT)
 endif()
 
 if(BUILD_SERVER_VOICE)
-    file(GLOB servervoicesrc src/server/voice/*.cpp)
+    file(GLOB servervoicesrc src/server/voice/*.cpp src/server/common/*.cpp)
     add_executable(servervoice ${servervoicesrc} src/server/voice/main.cpp)
 
     if(WIN32)
         target_link_libraries(servervoice PUBLIC
-            
+            ws2_32
         )
     else()
         target_link_libraries(servervoice PUBLIC
-
-        )
-    endif()
-endif()
-
-if(BUILD_SERVER_CONTROL)
-    file(GLOB servercontrolsrc src/server/control/*.cpp)
-    add_executable(servercontrol ${servercontrolsrc} src/server/control/main.cpp)
-
-    if(WIN32)
-        target_link_libraries(servercontrol PUBLIC
-            
-        )
-    else()
-        target_link_libraries(servercontrol PUBLIC
 
         )
     endif()

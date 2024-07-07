@@ -33,7 +33,7 @@ int Auth::RegisterUser(const std::string& username, const std::string& password,
         double days = static_cast<double>(microseconds) / 86400000000.0; // Total days with maximum precision
         double creationDate = days;
 
-        std::string sql = "INSERT INTO Users (UID, Username, PasswordHash, Salt, CreationDate) VALUES (DEFAULT, $1, $2, $3, $4) RETURNING UID;";
+        sql = "INSERT INTO Users (UID, Username, PasswordHash, Salt, CreationDate) VALUES (DEFAULT, $1, $2, $3, $4) RETURNING UID;";
         R = W.exec_params(sql, username, passwordHash, salt, creationDate);
         W.commit();
 
