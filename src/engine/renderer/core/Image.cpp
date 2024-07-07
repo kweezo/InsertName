@@ -91,6 +91,11 @@ void __Image::UpdateCleanup(){
         __CommandBuffer::ResetPools(__CommandBufferType::IMAGE, i); 
     }
 
+    for(std::pair<VkBuffer, VkDeviceMemory>& bufferAndMemory : bufferAndMemoryCleanupQueue){
+        vkFreeMemory(__Device::GetDevice(), std::get<1>(bufferAndMemory), nullptr);
+        vkDestroyBuffer(__Device::GetDevice(), std::get<0>(bufferAndMemory), nullptr);
+    }
+
 }
 
 __CommandBuffer __Image::GetFreeCommandBuffer(uint32_t threadIndex){
@@ -155,7 +160,7 @@ __Image::__Image(__ImageCreateInfo createInfo): createInfo(createInfo) {
     TransitionLayout(VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
 
 
-    if(__Device::DeviceMemoryFree()){
+    if(__Device::DeviceMemoryFree() && createInfo.copyToLocalDeviceMemory){
         __DataBuffer::CreateBuffer(stagingBuffer, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, createInfo.size);
         __DataBuffer::AllocateMemory(stagingMemory, stagingBuffer, createInfo.size, VK_MEMORY_PROPERTY_HOST_COHERENT_BIT | VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT);
 
@@ -196,7 +201,7 @@ void __Image::CreateImage(){
     imageInfo.arrayLayers = 1;
     imageInfo.format = createInfo.format;
     imageInfo.tiling = VK_IMAGE_TILING_OPTIMAL;
-    imageInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+    imageInfo.initialLayout = VK_IMAGE_LAYOUT_PREINITIALIZED;
     imageInfo.usage = VK_IMAGE_USAGE_TRANSFER_DST_BIT | createInfo.usage;
     imageInfo.samples = VK_SAMPLE_COUNT_1_BIT;
 
@@ -212,25 +217,24 @@ void __Image::AllocateMemory(){
     VkPhysicalDeviceMemoryProperties memProperties;
     vkGetPhysicalDeviceMemoryProperties(__Device::GetPhysicalDevice(), &memProperties);
 
-    VkMemoryPropertyFlagBits memoryProperties = __Device::DeviceMemoryFree() ? (VkMemoryPropertyFlagBits)
-    (VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT) : (VkMemoryPropertyFlagBits)
-    (VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+    VkMemoryPropertyFlags memoryProperties = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
 
     for(uint32_t i = 0; i < memProperties.memoryTypeCount; i++){
         if((memRequirements.memoryTypeBits & (1 << i)) && (memProperties.memoryTypes[i].propertyFlags & memoryProperties)
          == memoryProperties){
             VkMemoryAllocateInfo allocInfo{};
             allocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
-            allocInfo.allocationSize = memRequirements.size ;
+            allocInfo.allocationSize = memRequirements.size;
             allocInfo.memoryTypeIndex = i;
 
             if(vkAllocateMemory(__Device::GetDevice(), &allocInfo, nullptr, &memory) != VK_SUCCESS){
                 throw std::runtime_error("Failed to allocate vertex buffer memory");
             }
-
-            break;
+            return;
         }
     }
+
+    throw std::runtime_error("Failed to find a suitable memory type for VkImage");
 }
 
 void __Image::CreateImageView(){

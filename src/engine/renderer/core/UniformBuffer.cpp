@@ -13,6 +13,7 @@ descriptorSet(createInfo.descriptorSet) {
     dataBufferCreateInfo.data = createInfo.data;
     dataBufferCreateInfo.transferToLocalDeviceMemory = true;
     dataBufferCreateInfo.usage = VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT;
+    dataBufferCreateInfo.isDynamic = true;
 
     dataBuffer = __DataBuffer(dataBufferCreateInfo);
 

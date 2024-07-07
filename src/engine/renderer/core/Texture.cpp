@@ -39,6 +39,9 @@ void __Texture::CreateImage(){
     createInfo.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
     createInfo.usage = VK_IMAGE_USAGE_SAMPLED_BIT;
     createInfo.imageExtent = {(unsigned int)width, (unsigned int)height};
+    createInfo.size = width * height * 4;
+    createInfo.data = data;
+    createInfo.copyToLocalDeviceMemory = true;
 
     image = __Image(createInfo);
 }
