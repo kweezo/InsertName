@@ -1,10 +1,9 @@
 #pragma once
 
-#include "shared/structs.hpp"
-
 #include <iostream>
 #include <thread>
 #include <vector>
+#include <array>
 #include <chrono>
 #include <mutex>
 #include <condition_variable>
@@ -18,19 +17,30 @@
 	#include <unistd.h>
 #endif
 
+#define MAX_CONNECTIONS 4
+
+
+struct Message {
+    int serviceId;
+    std::string content;
+};
+
 class ServiceLink {
 public:
 	static void StartTcpServer(int port);
-	static void HandleConnection(int socket);
 	static void SendMessage(int socket, const std::string& message);
 	static std::string GetFirstParameter(std::string& message);
+	static void ProcessMessages();
 
 private:
+	static void HandleConnection(int socket);
+	static void HandleMessageContent(Message msg);
+
 	static std::mutex connectionMutex;
 	static std::condition_variable connectionCond;
 	static int activeConnections;
-	static const int maxConnections;
 
+	static std::array<int, MAX_CONNECTIONS> serviceSockets;
 	static std::vector<Message> messageBuffer;
 	static std::mutex bufferMutex;
 };

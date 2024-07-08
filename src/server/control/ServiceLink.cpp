@@ -3,12 +3,17 @@
 std::mutex ServiceLink::connectionMutex;
 std::condition_variable ServiceLink::connectionCond;
 int ServiceLink::activeConnections = 0;
-const int ServiceLink::maxConnections = 4;
 std::vector<Message> ServiceLink::messageBuffer;
 std::mutex ServiceLink::bufferMutex;
+std::array<int, MAX_CONNECTIONS> ServiceLink::serviceSockets;
 
 
-void ServiceLink::SendMessage(int socket, const std::string& message) {
+void ServiceLink::SendMessage(int serviceId, const std::string& message) {
+    int socket = serviceSockets[serviceId];
+    if (socket <= 0) {
+        std::cerr << "Service with id " << serviceId << " is not connected." << std::endl;
+        return;
+    }
     send(socket, message.c_str(), message.length(), 0);
 }
 
@@ -101,14 +106,13 @@ void ServiceLink::StartTcpServer(int port) {
 
     while (true) {
         std::unique_lock<std::mutex> lock(connectionMutex);
-        connectionCond.wait(lock, []{ return activeConnections < maxConnections; });
+        connectionCond.wait(lock, []{ return activeConnections < MAX_CONNECTIONS; });
 
         if ((new_socket = accept(server_fd, (struct sockaddr*)&address, (socklen_t*)&addrlen)) < 0) {
             perror("accept");
             exit(EXIT_FAILURE);
         }
 
-        std::cout << "Connection accepted" << std::endl;
         std::thread t(HandleConnection, new_socket);
         t.detach();
     }
@@ -135,4 +139,38 @@ std::string ServiceLink::GetFirstParameter(std::string& message) {
     message.erase(0, pos + 1);
     
     return firstParam;
+}
+
+void ServiceLink::ProcessMessages() {
+    while (true) {
+        std::unique_lock<std::mutex> lock(bufferMutex);
+        if (!messageBuffer.empty()) {
+            Message msg = messageBuffer.front();
+            messageBuffer.erase(messageBuffer.begin());
+            lock.unlock();
+
+            HandleMessageContent(msg);
+        } else {
+            lock.unlock();
+            std::this_thread::sleep_for(std::chrono::milliseconds(100));
+        }
+    }
+}
+
+void ServiceLink::HandleMessageContent(Message msg) {
+    int serviceId = msg.serviceId;
+    std::string action = GetFirstParameter(msg.content);
+    std::string content = msg.content;
+
+    if (action == "CONNECT") {
+        std::cout << "Service " << serviceId << " connected" << std::endl;
+        serviceSockets[serviceId] = stoi(GetFirstParameter(content));
+
+    } else if (action == "DISCONNECT") {
+        std::cout << "Service " << serviceId << " disconnected" << std::endl;
+        serviceSockets[serviceId] = 0;
+        
+    } else {
+        std::cerr << "Unknown action: " << action << std::endl;
+    }
 }

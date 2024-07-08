@@ -3,6 +3,7 @@
 int ClientServiceLink::sock = 0;
 std::vector<std::string> ClientServiceLink::messageBuffer;
 std::mutex ClientServiceLink::bufferMutex;
+int ClientServiceLink::serviceId = 0;
 
 
 bool ClientServiceLink::ConnectToTcpServer(const std::string& ip, int port) {
@@ -66,6 +67,8 @@ void ClientServiceLink::Send(const std::string& message) {
 }
 
 void ClientServiceLink::StartClient() {
+    serviceId = 1;  //TODO: Read service id from config
+
     while (true) {
         if (!ConnectToTcpServer("127.0.0.1", 8080)) {  //TODO: Read ip and port from config
             std::cerr << "Can not connect to server. Retrying in 5 seconds...\n";
@@ -73,11 +76,31 @@ void ClientServiceLink::StartClient() {
             continue;
         }
 
-        SendMessage(1, "JOIN"); //TODO: Read service id from config
-
+        SendMessage("CONNECT");
         HandleConnection();
+        ProcessMessages();
 
         DisconnectFromTcpServer();
         std::cerr << "Disconnected from server.\n";
     }
+}
+
+void ClientServiceLink::ProcessMessages() {
+    while (true) {
+        std::unique_lock<std::mutex> lock(bufferMutex);
+        if (!messageBuffer.empty()) {
+            std::string msg = messageBuffer.front();
+            messageBuffer.erase(messageBuffer.begin());
+            lock.unlock();
+
+            HandleMessageContent(msg);
+        } else {
+            lock.unlock();
+            std::this_thread::sleep_for(std::chrono::milliseconds(100));
+        }
+    }
+}
+
+void ClientServiceLink::HandleMessageContent(const std::string& message) {
+
 }
