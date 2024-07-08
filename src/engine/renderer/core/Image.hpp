@@ -23,6 +23,8 @@ struct __ImageCreateInfo{
     VkImageUsageFlags usage;
     VkExtent2D imageExtent;
 
+    bool copyToLocalDeviceMemory;
+
     size_t size;
     void* data;
 

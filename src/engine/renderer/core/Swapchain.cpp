@@ -135,6 +135,7 @@ void __Swapchain::CreateDepthImage(){
     imageCreateInfo.data = (void*)0;
     imageCreateInfo.size = 0;
     imageCreateInfo.threadIndex = 0;
+    imageCreateInfo.copyToLocalDeviceMemory = false;
 
     depthImage = __Image(imageCreateInfo);
 

@@ -8,6 +8,7 @@
 #include <thread>
 #include <limits>
 #include <set>
+#include <list>
 
 #include <vulkan/vulkan.h>
 
@@ -24,6 +25,7 @@ struct __DataBufferCreateInfo{
     size_t size;
 
     VkBufferUsageFlags usage;
+    bool isDynamic;
     bool transferToLocalDeviceMemory;
     uint32_t threadIndex;
 };
@@ -64,6 +66,7 @@ private:
 
     size_t size;
     bool transferToLocalDeviceMemory;
+    bool isDynamic;
 
     VkBuffer buffer;
     VkDeviceMemory memory;
@@ -73,7 +76,7 @@ private:
 
     static __CommandBuffer primaryCommandBuffer;
     static std::vector<std::vector<std::pair<__CommandBuffer, bool>>> stagingCommandBuffers;
-    static std::vector<std::pair<VkBuffer, VkDeviceMemory>> stagingBufferAndMemoryDeleteQueue;
+    static std::list<VkDeviceMemory> stagingMemoryDeleteQueue;
     static std::set<uint32_t> resetPoolIndexes;
     static __Fence finishedCopyingFence;
 

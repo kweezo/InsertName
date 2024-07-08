@@ -4,9 +4,11 @@ namespace renderer{
 
 const uint32_t TARGET_STAGING_BUFFER_COUNT_PER_THREAD = 5;
 
+const size_t FREE_STAGING_MEMORY_TRESHOLD = 1024;
+
 __CommandBuffer __DataBuffer::primaryCommandBuffer = {};
 std::vector<std::vector<std::pair<__CommandBuffer, bool>>> __DataBuffer::stagingCommandBuffers = {};
-std::vector<std::pair<VkBuffer, VkDeviceMemory>> __DataBuffer::stagingBufferAndMemoryDeleteQueue = {};
+std::list<VkDeviceMemory> __DataBuffer::stagingMemoryDeleteQueue = {};
 __Fence __DataBuffer::finishedCopyingFence = {};
 std::set<uint32_t> __DataBuffer::resetPoolIndexes = {};
 
@@ -61,7 +63,7 @@ __DataBuffer::__DataBuffer(){
 }
 
 __DataBuffer::__DataBuffer(__DataBufferCreateInfo createInfo) : transferToLocalDeviceMemory(createInfo.transferToLocalDeviceMemory),
- size(createInfo.size), stagingBuffer(VK_NULL_HANDLE), stagingMemory(VK_NULL_HANDLE){
+ size(createInfo.size), stagingBuffer(VK_NULL_HANDLE), stagingMemory(VK_NULL_HANDLE), isDynamic(createInfo.isDynamic){
 
     if(!__Device::DeviceMemoryFree()){
         createInfo.transferToLocalDeviceMemory = false;
@@ -93,6 +95,10 @@ void __DataBuffer::UpdateData(void* data, size_t size, uint32_t threadIndex){
         throw std::runtime_error("Size of data does not match size of buffer, you need to create a new buffer for this");
     }
 
+    if(!isDynamic){
+        throw std::runtime_error("This buffer isn't dynamic, so it can't be changed");
+    }
+
     if(!__Device::DeviceMemoryFree()){
         transferToLocalDeviceMemory = false;
     }
@@ -119,6 +125,7 @@ __DataBuffer::__DataBuffer(const __DataBuffer& other){
     stagingMemory = other.stagingMemory;
     size = other.size;
     transferToLocalDeviceMemory = other.transferToLocalDeviceMemory;
+    isDynamic = other.isDynamic;
     useCount = other.useCount;
 
     (*useCount.get())++;
@@ -136,6 +143,7 @@ __DataBuffer __DataBuffer::operator=(const __DataBuffer& other) {
     stagingMemory = other.stagingMemory;
     size = other.size;
     transferToLocalDeviceMemory = other.transferToLocalDeviceMemory;
+    isDynamic = other.isDynamic;
     useCount = other.useCount;
 
     (*useCount.get())++;
@@ -153,8 +161,10 @@ __DataBuffer::~__DataBuffer(){
         vkDestroyBuffer(__Device::GetDevice(), buffer, nullptr); 
 
         if(stagingBuffer != VK_NULL_HANDLE){
-            vkFreeMemory(__Device::GetDevice(), stagingMemory, nullptr);
             vkDestroyBuffer(__Device::GetDevice(), stagingBuffer, nullptr);
+        }
+        if(stagingMemory != VK_NULL_HANDLE){
+            vkFreeMemory(__Device::GetDevice(), stagingMemory, nullptr);
         }
 
         useCount.reset();
@@ -257,8 +267,10 @@ void __DataBuffer::RecordCopyCommandBuffer(uint32_t threadIndex, size_t size){
 
     commandBuffer.EndCommandBuffer();
 
-
-    stagingBufferAndMemoryDeleteQueue.push_back({stagingBuffer, stagingMemory});
+    if(isDynamic && size < FREE_STAGING_MEMORY_TRESHOLD){
+        stagingMemoryDeleteQueue.push_front(stagingMemory);
+        stagingMemory = VK_NULL_HANDLE;
+    }
 }
 
 void __DataBuffer::RecordPrimaryCommandBuffer(){
@@ -304,13 +316,17 @@ void __DataBuffer::UpdateCleanup(){
         __CommandBuffer::ResetPools(__CommandBufferType::DATA, i); 
     }
 
-   stagingBufferAndMemoryDeleteQueue.clear();
+   stagingMemoryDeleteQueue.clear();
 
     for(std::vector<std::pair<__CommandBuffer, bool>>& commandBuffers : stagingCommandBuffers){
         commandBuffers.resize(TARGET_STAGING_BUFFER_COUNT_PER_THREAD);
         for(std::pair<__CommandBuffer, bool>& commandBuffer : commandBuffers){
             std::get<bool>(commandBuffer) = true;
         }
+    }
+
+    for(VkDeviceMemory stagingMemory : stagingMemoryDeleteQueue){
+        vkFreeMemory(__Device::GetDevice(), stagingMemory, nullptr);
     }
 }
 
