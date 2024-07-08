@@ -44,11 +44,10 @@ void ClientServiceLink::DisconnectFromTcpServer() {
 void ClientServiceLink::HandleConnection() {
     const int bufferSize = 1024;
     char buffer[bufferSize];
-    int socket = sock;
 
     while (true) {
         memset(buffer, 0, bufferSize);
-        int bytesReceived = recv(socket, buffer, bufferSize, 0);
+        int bytesReceived = recv(sock, buffer, bufferSize, 0);
 
         if (bytesReceived == 0) {
             break;
@@ -66,23 +65,30 @@ void ClientServiceLink::Send(const std::string& message) {
     send(sock, message.c_str(), message.length(), 0);
 }
 
-void ClientServiceLink::StartClient() {
-    serviceId = 1;  //TODO: Read service id from config
+void ClientServiceLink::StartClient(const std::string& dir) {
+    SettingsManager::LoadSettings(dir + "/config.json");
+
+    serviceId = SettingsManager::GetSettings().serviceId;
+
+    std::thread messageThread(ProcessMessages);
+
+    std::cout << "Service link client started\n";
 
     while (true) {
-        if (!ConnectToTcpServer("127.0.0.1", 8080)) {  //TODO: Read ip and port from config
+        if (!ConnectToTcpServer(SettingsManager::GetSettings().ip, SettingsManager::GetSettings().port)) {
             std::cerr << "Can not connect to server. Retrying in 5 seconds...\n";
             std::this_thread::sleep_for(std::chrono::seconds(5));
             continue;
         }
 
-        SendMessage("CONNECT");
+        SendData("CONNECT");
         HandleConnection();
-        ProcessMessages();
 
         DisconnectFromTcpServer();
-        std::cerr << "Disconnected from server.\n";
+        std::cerr << "Disconnected from serice link server.\n";
     }
+
+    messageThread.join();
 }
 
 void ClientServiceLink::ProcessMessages() {
@@ -102,5 +108,5 @@ void ClientServiceLink::ProcessMessages() {
 }
 
 void ClientServiceLink::HandleMessageContent(const std::string& message) {
-
+    return;
 }

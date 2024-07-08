@@ -28,13 +28,13 @@ struct Message {
 class ServiceLink {
 public:
 	static void StartTcpServer(int port);
-	static void SendMessage(int socket, const std::string& message);
-	static std::string GetFirstParameter(std::string& message);
+	static void SendData(int socket, const std::string& message);
 	static void ProcessMessages();
 
 private:
 	static void HandleConnection(int socket);
 	static void HandleMessageContent(Message msg);
+	static std::string GetFirstParameter(std::string& message);
 
 	static std::mutex connectionMutex;
 	static std::condition_variable connectionCond;

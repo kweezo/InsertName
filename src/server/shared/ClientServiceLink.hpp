@@ -18,14 +18,16 @@
     #include <unistd.h>
 #endif
 
+#include "SettingsManager.hpp"
+
 
 class ClientServiceLink{
 public:
-    static void StartClient();
+    static void StartClient(const std::string& dir);
     static void DisconnectFromTcpServer();
 
     template<typename... Args>
-    static void SendMessage(const Args&... args);
+    static void SendData(const Args&... args);
 
 private:
     static void ProcessMessages();
@@ -51,7 +53,7 @@ private:
 // ---------------------------- Template functions ----------------------------
 
 template<typename... Args>
-void ClientServiceLink::SendMessage(const Args&... args) {
+void ClientServiceLink::SendData(const Args&... args) {
     std::string msg = CreateMessage(serviceId, args...);
     Send(msg);
 }

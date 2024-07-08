@@ -8,7 +8,7 @@ std::mutex ServiceLink::bufferMutex;
 std::array<int, MAX_CONNECTIONS> ServiceLink::serviceSockets;
 
 
-void ServiceLink::SendMessage(int serviceId, const std::string& message) {
+void ServiceLink::SendData(int serviceId, const std::string& message) {
     int socket = serviceSockets[serviceId];
     if (socket <= 0) {
         std::cerr << "Service with id " << serviceId << " is not connected." << std::endl;
@@ -36,9 +36,13 @@ void ServiceLink::HandleConnection(int socket) {
         std::string receivedMessage(buffer, bytesReceived);
         serviceId = stoi(GetFirstParameter(receivedMessage));
 
+        if (receivedMessage == "CONNECT") {
+            receivedMessage += static_cast<char>(30) + std::to_string(socket);
+        }
+
         {
             std::lock_guard<std::mutex> bufferLock(bufferMutex);
-            messageBuffer.push_back({serviceId, std::string(buffer, bytesReceived)});
+            messageBuffer.push_back({serviceId, receivedMessage});
         }
     }
 
@@ -105,8 +109,10 @@ void ServiceLink::StartTcpServer(int port) {
     std::cout << "ServiceLink server is listening on port " << port << std::endl;
 
     while (true) {
-        std::unique_lock<std::mutex> lock(connectionMutex);
-        connectionCond.wait(lock, []{ return activeConnections < MAX_CONNECTIONS; });
+        {
+            std::unique_lock<std::mutex> lock(connectionMutex);
+            connectionCond.wait(lock, []{ return activeConnections < MAX_CONNECTIONS; });
+        }
 
         if ((new_socket = accept(server_fd, (struct sockaddr*)&address, (socklen_t*)&addrlen)) < 0) {
             perror("accept");
@@ -169,7 +175,7 @@ void ServiceLink::HandleMessageContent(Message msg) {
     } else if (action == "DISCONNECT") {
         std::cout << "Service " << serviceId << " disconnected" << std::endl;
         serviceSockets[serviceId] = 0;
-        
+
     } else {
         std::cerr << "Unknown action: " << action << std::endl;
     }

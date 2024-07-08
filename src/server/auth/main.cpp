@@ -4,7 +4,7 @@
 
 
 int main() {
-    std::thread connectionThread(&ClientServiceLink::StartClient);
+    std::thread connectionThread(&ClientServiceLink::StartClient, "server_data/auth");
 
     connectionThread.join();
 

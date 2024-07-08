@@ -91,10 +91,11 @@ if(BUILD_SERVER_CONTROL OR BUILD_SERVER_AUTH OR BUILD_SERVER_WORLD OR BUILD_SERV
     if(WIN32)
         target_link_libraries(servershared PUBLIC
             ws2_32
+            jsoncpp
         )
     else()
         target_link_libraries(servershared PUBLIC
-
+            jsoncpp
         )
     endif()
 endif()
@@ -109,7 +110,7 @@ if(BUILD_SERVER_CONTROL)
         )
     else()
         target_link_libraries(servercontrol PUBLIC
-
+            servershared
         )
     endif()
 endif()
@@ -128,6 +129,7 @@ if(BUILD_SERVER_AUTH)
     else()
         target_link_libraries(serverauth PUBLIC
             pqxx
+            servershared
         )
     endif()
 endif()
@@ -142,7 +144,7 @@ if(BUILD_SERVER_WORLD)
         )
     else()
         target_link_libraries(serverworld PUBLIC
-
+            servershared
         )
     endif()
 endif()
@@ -157,7 +159,7 @@ if(BUILD_SERVER_CHAT)
         )
     else()
         target_link_libraries(serverchat PUBLIC
-        
+            servershared
         )
     endif()
 endif()
@@ -172,7 +174,7 @@ if(BUILD_SERVER_VOICE)
         )
     else()
         target_link_libraries(servervoice PUBLIC
-
+            servershared
         )
     endif()
 endif()
