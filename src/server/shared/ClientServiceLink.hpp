@@ -31,9 +31,10 @@ public:
 
 private:
     static void ProcessMessages();
+    static void ProcessSendBuffer();
     static bool ConnectToTcpServer(const std::string& ip, int port);
     static void HandleConnection();
-    static void Send(const std::string& message);
+    static bool SendDataFromBuffer(const std::string& message);
 
     static void HandleMessageContent(const std::string& message);
 
@@ -45,17 +46,21 @@ private:
     static std::string CreateMessage(const Args&... args);
 
     static int sock;
+    static std::mutex sockMutex;
     static std::vector<std::string> messageBuffer;
     static std::mutex bufferMutex;
+    static std::vector<std::string> sendBuffer;
+    static std::mutex sendBufferMutex;
     static int serviceId;
 };
 
-// ---------------------------- Template functions ----------------------------
+// ---------------------------- Template functions ---------------------------- //
 
 template<typename... Args>
 void ClientServiceLink::SendData(const Args&... args) {
     std::string msg = CreateMessage(serviceId, args...);
-    Send(msg);
+    std::lock_guard<std::mutex> lock(sendBufferMutex);
+    sendBuffer.push_back(msg);
 }
 
 template<typename T>

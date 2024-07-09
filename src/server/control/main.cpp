@@ -9,7 +9,13 @@ int main() {
 
     std::thread connectionThread(&ServiceLink::StartTcpServer, AdvancedSettingsManager::GetSettings().port);
     std::thread messageProcessingThread(&ServiceLink::ProcessMessages);
+    std::thread messageSendingThread(&ServiceLink::ProcessSendBuffer);
 
+
+    // ----------------- Add here some other code ----------------- //
+
+
+    messageSendingThread.join();
     connectionThread.join();
     messageProcessingThread.join();
 

@@ -1,13 +1,17 @@
 #include "SettingsManager.hpp"
 
 DefaultSettings SettingsManager::settings;
+std::mutex SettingsManager::mutex;
 
 
 DefaultSettings SettingsManager::GetSettings() {
+    std::lock_guard<std::mutex> lock(mutex);
     return settings;
 }
 
 bool SettingsManager::LoadSettings(const std::string& configFile) {
+    std::lock_guard<std::mutex> lock(mutex);
+
     std::ifstream file(configFile);
     if (!file.is_open()) {
         CreateDefaultSettings();

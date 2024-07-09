@@ -6,7 +6,7 @@ std::mutex AdvancedSettingsManager::mutex;
 
 
 void AdvancedSettingsManager::LoadSettings(const std::string& file_) {
-    std::unique_lock<std::mutex> lock(mutex);
+    std::lock_guard<std::mutex> lock(mutex);
     file = file_;
 
     std::ifstream configFile(file, std::ifstream::binary);
@@ -25,7 +25,7 @@ void AdvancedSettingsManager::LoadSettings(const std::string& file_) {
 }
 
 void AdvancedSettingsManager::SaveSettings() {
-    std::unique_lock<std::mutex> lock(mutex);
+    std::lock_guard<std::mutex> lock(mutex);
 
     Json::Value root;
     root["serviceId"] = config.serviceId;
@@ -38,12 +38,12 @@ void AdvancedSettingsManager::SaveSettings() {
 }
 
 Config AdvancedSettingsManager::GetSettings() {
-    std::unique_lock<std::mutex> lock(mutex);
+    std::lock_guard<std::mutex> lock(mutex);
     return config;
 }
 
 void AdvancedSettingsManager::SetSettings(std::optional<int> serviceId, std::optional<int> port) {
-    std::unique_lock<std::mutex> lock(mutex);
+    std::lock_guard<std::mutex> lock(mutex);
 
     if (serviceId.has_value()) {
         config.serviceId = serviceId.value();

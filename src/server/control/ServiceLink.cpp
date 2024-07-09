@@ -3,18 +3,56 @@
 std::mutex ServiceLink::connectionMutex;
 std::condition_variable ServiceLink::connectionCond;
 int ServiceLink::activeConnections = 0;
+std::array<int, MAX_CONNECTIONS> ServiceLink::serviceSockets;
+std::mutex ServiceLink::socketMutex;
 std::vector<Message> ServiceLink::messageBuffer;
 std::mutex ServiceLink::bufferMutex;
-std::array<int, MAX_CONNECTIONS> ServiceLink::serviceSockets;
+std::array<std::vector<std::string>, MAX_CONNECTIONS> ServiceLink::sendBuffer;
+std::mutex ServiceLink::sendBufferMutex;
 
 
-void ServiceLink::SendData(int serviceId, const std::string& message) {
-    int socket = serviceSockets[serviceId];
-    if (socket <= 0) {
-        std::cerr << "Service with id " << serviceId << " is not connected." << std::endl;
-        return;
+bool ServiceLink::SendDataFromBuffer(int serviceId, const std::string& message) {
+    int socket;
+    {
+        std::lock_guard<std::mutex> lock(socketMutex);
+        socket = serviceSockets[serviceId];
     }
-    send(socket, message.c_str(), message.length(), 0);
+
+    if (socket <= 0) {
+        return false;
+    }
+    ssize_t bytesSent = send(socket, message.c_str(), message.length(), 0);
+    if (bytesSent == -1) {
+        std::cerr << "Failed to send message to service with id " << serviceId << "." << std::endl;
+        return false;
+    }
+    return true;
+}
+
+void ServiceLink::ProcessSendBuffer() {
+    while (true) {
+        bool wasNewMessage = false;
+        std::unique_lock<std::mutex> bufferLock(sendBufferMutex);
+        for (int i = 0; i < MAX_CONNECTIONS; i++) {
+            std::unique_lock<std::mutex> socketLock(socketMutex);
+            if (!sendBuffer[i].empty() && serviceSockets[i] > 0) {
+                socketLock.unlock();
+                wasNewMessage = true;
+                std::string message = sendBuffer[i].front();
+                bufferLock.unlock();
+
+                if (SendDataFromBuffer(i, message)) {
+                    bufferLock.lock();
+                    sendBuffer[i].erase(sendBuffer[i].begin());
+                    bufferLock.unlock();
+                }
+            }
+        }
+        bufferLock.unlock();
+        if (!wasNewMessage) {
+            std::this_thread::sleep_for(std::chrono::milliseconds(100));
+        }
+    }
 }
 
 void ServiceLink::HandleConnection(int socket) {
@@ -170,11 +208,13 @@ void ServiceLink::HandleMessageContent(Message msg) {
 
     if (action == "CONNECT") {
         std::cout << "Service " << serviceId << " connected" << std::endl;
+        std::lock_guard<std::mutex> lock(socketMutex);
         serviceSockets[serviceId] = stoi(GetFirstParameter(content));
 
     } else if (action == "DISCONNECT") {
         std::cout << "Service " << serviceId << " disconnected" << std::endl;
-        serviceSockets[serviceId] = 0;
+        std::lock_guard<std::mutex> lock(socketMutex);
+        serviceSockets[serviceId] = -1;
 
     } else {
         std::cerr << "Unknown action: " << action << std::endl;
