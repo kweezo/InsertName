@@ -1,14 +1,19 @@
 #include "ServiceLink.hpp"
+#include "AdvancedSettingsManager.hpp"
 
 #include <thread>
 
 
 int main() {
-    std::thread connectionThread(&ServiceLink::StartTcpServer, 8080);
+    AdvancedSettingsManager::LoadSettings("server_data/control/config.json");
+
+    std::thread connectionThread(&ServiceLink::StartTcpServer, AdvancedSettingsManager::GetSettings().port);
     std::thread messageProcessingThread(&ServiceLink::ProcessMessages);
 
     connectionThread.join();
     messageProcessingThread.join();
+
+    AdvancedSettingsManager::SaveSettings();
 
     return 0;
 }
