@@ -55,6 +55,7 @@ void __DataBuffer::Update(){
 void __DataBuffer::Cleanup(){
     primaryCommandBuffer.~__CommandBuffer();
     stagingCommandBuffers.clear();
+    finishedCopyingFence.~__Fence();
 }
 
 
@@ -86,7 +87,7 @@ __DataBuffer::__DataBuffer(__DataBufferCreateInfo createInfo) : transferToLocalD
 
         UploadDataToMemory(memory, createInfo.data, createInfo.size);
     }
-    
+
     useCount = std::make_shared<uint32_t>(1);
 }
 
@@ -104,6 +105,10 @@ void __DataBuffer::UpdateData(void* data, size_t size, uint32_t threadIndex){
     }
 
     if(transferToLocalDeviceMemory){
+        if(stagingMemory == VK_NULL_HANDLE){
+            AllocateMemory(stagingMemory, stagingBuffer, size, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+        }
+
         UploadDataToMemory(stagingMemory, data, size);
 
         RecordCopyCommandBuffer(threadIndex, size);
@@ -267,7 +272,7 @@ void __DataBuffer::RecordCopyCommandBuffer(uint32_t threadIndex, size_t size){
 
     commandBuffer.EndCommandBuffer();
 
-    if(isDynamic && size < FREE_STAGING_MEMORY_TRESHOLD){
+    if(isDynamic && size > FREE_STAGING_MEMORY_TRESHOLD){
         stagingMemoryDeleteQueue.push_front(stagingMemory);
         stagingMemory = VK_NULL_HANDLE;
     }

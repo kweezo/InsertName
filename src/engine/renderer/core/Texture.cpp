@@ -34,7 +34,7 @@ void __Texture::LoadImageFile(const std::string path){
 void __Texture::CreateImage(){
     __ImageCreateInfo createInfo{};
 
-    createInfo.layout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
+    createInfo.layout = VK_IMAGE_LAYOUT_UNDEFINED;
     createInfo.format = VK_FORMAT_R8G8B8A8_SRGB; 
     createInfo.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
     createInfo.usage = VK_IMAGE_USAGE_SAMPLED_BIT;
@@ -44,6 +44,8 @@ void __Texture::CreateImage(){
     createInfo.copyToLocalDeviceMemory = true;
 
     image = __Image(createInfo);
+
+    image.TransitionLayout(VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
 }
 
 void __Texture::CreateSampler(){

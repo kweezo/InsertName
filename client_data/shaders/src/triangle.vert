@@ -12,7 +12,7 @@ layout(binding = 0) uniform UniformBufferObject {
 } ubo;
 
 void main() {
-    gl_Position =  ubo.proj * ubo.view * ubo.model * vec4(aPos, 0.0, 1.0);
+    gl_Position =  ubo.proj * ubo.view * vec4(aPos, 0.0, 1.0);
 
     oTexCoord = aPos+vec2(0.5, 0.5);
 }

@@ -3,7 +3,9 @@
 
 namespace renderer{
 
-__UniformBuffer::__UniformBuffer(){}
+__UniformBuffer::__UniformBuffer(){
+    useCount = std::make_shared<uint32_t>(1);
+}
 
 __UniformBuffer::__UniformBuffer(__UniformBufferCreateInfo createInfo): size(createInfo.size), binding(createInfo.binding), 
 descriptorSet(createInfo.descriptorSet) {
@@ -17,6 +19,7 @@ descriptorSet(createInfo.descriptorSet) {
 
     dataBuffer = __DataBuffer(dataBufferCreateInfo);
 
+    useCount = std::make_shared<uint32_t>(1);
 }
 
 void __UniformBuffer::SetDescriptorSet(VkDescriptorSet descriptorSet){
@@ -53,6 +56,47 @@ VkWriteDescriptorSet __UniformBuffer::GetWriteDescriptorSet(){
     writeDescriptorSet.pBufferInfo = &bufferInfo;
 
     return writeDescriptorSet;
+}
+
+__UniformBuffer::__UniformBuffer(const __UniformBuffer& other){
+    dataBuffer = other.dataBuffer;
+    size = other.size;
+    binding = other.binding;
+    descriptorSet = other.descriptorSet;
+
+    useCount = other.useCount;
+    (*useCount.get())++;
+}
+
+__UniformBuffer  __UniformBuffer::operator=(const __UniformBuffer& other){
+    if(this == &other){
+        return *this;
+    }
+
+    dataBuffer = other.dataBuffer;
+    size = other.size;
+    binding = other.binding;
+    descriptorSet = other.descriptorSet;
+
+    useCount = other.useCount;
+    (*useCount.get())++;
+
+    return *this;
+}
+__UniformBuffer::~__UniformBuffer(){
+    if(useCount.get() == nullptr){
+        return;
+    }
+
+    if(*useCount.get() == 1){
+        dataBuffer.~__DataBuffer();
+
+        useCount.reset();
+
+        return;
+    }
+
+    (*useCount.get())--;
 }
 
 

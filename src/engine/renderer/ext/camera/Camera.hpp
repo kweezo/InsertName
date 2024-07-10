@@ -14,6 +14,7 @@ class Camera{
 public:
     static void __Init();
     static void __Update();
+    static void __Cleanup();
 
     static VkWriteDescriptorSet __GetWriteDescriptorSetPerspective(uint32_t binding);
     static VkWriteDescriptorSet __GetWriteDescriptorSetOrtho(uint32_t binding);
