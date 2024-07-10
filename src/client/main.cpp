@@ -124,91 +124,6 @@ int main(){
     Renderer::Init();
 
 
-    std::shared_ptr<__Shader> shader = ShaderManager::GetShader("triangle");
-
-    std::vector<VkVertexInputAttributeDescription> attributeDescriptions(2);
-
-    attributeDescriptions[0].binding = 0;
-    attributeDescriptions[0].location = 0;
-    attributeDescriptions[0].format = VK_FORMAT_R32G32_SFLOAT;
-    attributeDescriptions[0].offset = 0;
-
-    attributeDescriptions[1].binding = 0;
-    attributeDescriptions[1].location = 1;
-    attributeDescriptions[1].format = VK_FORMAT_R32G32B32_SFLOAT;
-    attributeDescriptions[1].offset = sizeof(float)* 2;
-    
-
-    VkVertexInputBindingDescription bindingDescription = {};
-    bindingDescription.binding = 0;
-    bindingDescription.stride = 5 * sizeof(float);
-    bindingDescription.inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
-
-    float vertices[] = {
-        -0.5f, -0.5f, 1.0f, 1.0f, 1.0f,
-        0.5f, -0.5f, 1.0f, 0.0f, 1.0f,
-        0.5f, 0.5f, 0.0f, 1.0f, 1.0f,
-        -0.5f, 0.5f, 0.0f, 1.0f, 1.0f
-    };
-
-    uint32_t indices[] = {
-        0, 1, 2,
-        2, 3, 0
-    };
-
-    __DataBufferCreateInfo vCreateInfo{};
-    vCreateInfo.data = vertices;
-    vCreateInfo.size = sizeof(vertices);
-    vCreateInfo.usage = VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
-    vCreateInfo.transferToLocalDeviceMemory = true;
-
-    __DataBufferCreateInfo iCreateInfo{};
-    iCreateInfo.data = indices;
-    iCreateInfo.size = sizeof(indices);
-    iCreateInfo.usage = VK_BUFFER_USAGE_INDEX_BUFFER_BIT;
-    iCreateInfo.transferToLocalDeviceMemory = true;
-{
-    __DataBuffer vertexBuffer(vCreateInfo);
-    __DataBuffer indexBuffer(iCreateInfo);
-
-    ModelDat modelDat{};
-    modelDat.model = glm::mat4(1.0f);
-    modelDat.view = glm::mat4(1.0f);
-    modelDat.proj = glm::perspective(glm::radians(45.0f), (float)Window::GetExtent().width / (float)Window::GetExtent().height, 0.1f, 100.0f);
-
-    shader.get()->CreateGraphicsPipepeline({attributeDescriptions, {bindingDescription}});
-
-    __CommandBufferCreateInfo createInfo{};
-    createInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-    createInfo.flags = COMMAND_BUFFER_GRAPHICS_FLAG;
-    createInfo.threadIndex = 0;
-    createInfo.type = __CommandBufferType::GENERIC;
-
-    __CommandBuffer commandBuffer(createInfo);
-
-    __Semaphore imageAvailableSemaphore = __Semaphore();
-    __Semaphore renderFinishedSemaphore = __Semaphore();
-    __Fence inFlightFence = __Fence(true);
-
-    __TextureCreateInfo textureCreateInfo{};
-    textureCreateInfo.path = dir + "res/textures/test.jpeg";
-    textureCreateInfo.binding = 1;
-    textureCreateInfo.descriptorSet = shader.get()->GetDescriptorSet();
-
-    __Texture texture = __Texture(textureCreateInfo);
-
-    __Texture::Update();
-
-    uint32_t imageIndex;
-
-    __UniformBufferCreateInfo uCreateInfo{};
-    uCreateInfo.data = &modelDat;
-    uCreateInfo.size = sizeof(ModelDat);
-    uCreateInfo.binding = 0;
-    uCreateInfo.descriptorSet = shader.get()->GetDescriptorSet();
-
-    __UniformBuffer* uniformb = new __UniformBuffer(uCreateInfo);
-
     while(!glfwWindowShouldClose(Window::GetGLFWwindow())){
         glfwPollEvents();
 
@@ -218,77 +133,11 @@ int main(){
             continue;
         }
 
-        VkFence inFlightFenceHandle = inFlightFence.GetFence();
-
-
-        VkSemaphore imageAvailableSemaphoreHandle = imageAvailableSemaphore.GetSemaphore();
-        VkSemaphore renderFinishedSemaphoreHandle = renderFinishedSemaphore.GetSemaphore();
-        vkWaitForFences(__Device::GetDevice(), 1, &inFlightFenceHandle, VK_TRUE, UINT64_MAX);
-        vkResetFences(__Device::GetDevice(), 1, &inFlightFenceHandle);
-
-
-        vkAcquireNextImageKHR(__Device::GetDevice(), __Swapchain::GetSwapchain(), UINT64_MAX, imageAvailableSemaphore.GetSemaphore(), VK_NULL_HANDLE, &imageIndex);
-
-        VkDeviceSize offsets[] = {0};
-
-        std::vector<VkWriteDescriptorSet> descriptorWrite = {
-            texture.GetWriteDescriptorSet(),
-            uniformb->GetWriteDescriptorSet()
-        };
-
-        commandBuffer.BeginCommandBuffer(nullptr, true);
-        shader.get()->GetGraphicsPipeline()->BeginRenderPassAndBindPipeline(imageIndex, commandBuffer.GetCommandBuffer());
-        shader.get()->UpdateDescriptorSet(descriptorWrite);
-
-        VkBuffer vBuffer = vertexBuffer.GetBuffer();
-
-        VkDescriptorSet set = shader->GetDescriptorSet();
-        vkCmdBindDescriptorSets(commandBuffer.GetCommandBuffer(), VK_PIPELINE_BIND_POINT_GRAPHICS, shader->GetGraphicsPipeline()->GetPipelineLayout(), 0, 1, &set, 0, nullptr);
-
-        vkCmdBindVertexBuffers(commandBuffer.GetCommandBuffer(), 0, 1, &vBuffer, offsets);
-        vkCmdBindIndexBuffer(commandBuffer.GetCommandBuffer(), indexBuffer.GetBuffer(), 0, VK_INDEX_TYPE_UINT32);
-        vkCmdDrawIndexed(commandBuffer.GetCommandBuffer(), 6, 1, 0, 0, 0);
-        shader.get()->GetGraphicsPipeline()->EndRenderPass(commandBuffer.GetCommandBuffer());
-        commandBuffer.EndCommandBuffer();
-
-        VkSubmitInfo submitInfo = {};
-        submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
-
-        VkSemaphore waitSemaphores[] = {imageAvailableSemaphoreHandle};
-        VkPipelineStageFlags waitStages[] = {VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT};
-        submitInfo.waitSemaphoreCount = 1;
-        submitInfo.pWaitSemaphores = waitSemaphores;
-        submitInfo.pWaitDstStageMask = waitStages;
-
-        VkCommandBuffer commandBuffers[] = {commandBuffer.GetCommandBuffer()};
-
-        submitInfo.commandBufferCount = 1;
-        submitInfo.pCommandBuffers = commandBuffers;
-
-        VkSemaphore signalSemaphores[] = {renderFinishedSemaphoreHandle};
-        submitInfo.signalSemaphoreCount = 1;
-        submitInfo.pSignalSemaphores = signalSemaphores;
-
-        if(vkQueueSubmit(__Device::GetGraphicsQueue(), 1, &submitInfo, inFlightFenceHandle) != VK_SUCCESS){
-            throw std::runtime_error("Failed to submit draw command buffer");
-        }
-
-        VkPresentInfoKHR presentInfo = {};
-        presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
-        presentInfo.pImageIndices = &imageIndex;
-        presentInfo.swapchainCount = 1;
-        presentInfo.waitSemaphoreCount = 1;
-        presentInfo.pWaitSemaphores = signalSemaphores;
-
-        VkSwapchainKHR swapchain = __Swapchain::GetSwapchain(); 
-        presentInfo.pSwapchains = &swapchain;
-
-        vkQueuePresentKHR(__Device::GetGraphicsQueue(), &presentInfo);
 
         Renderer::RenderFrame();
     }
     vkDeviceWaitIdle(__Device::GetDevice());
-}
+
 
     Renderer::Cleanup();
     Window::DestroyWindowContext();

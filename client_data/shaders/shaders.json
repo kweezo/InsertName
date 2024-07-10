@@ -1,8 +1,8 @@
 {
     "shaders": [
         {
-        "vertexPath": "triangleVert.spv",
-        "fragmentPath": "triangleFrag.spv",
+        "vertexPath": "triangle.vert.spv",
+        "fragmentPath": "triangle.frag.spv",
         "name": "triangle",
         "bindings": [
             {
@@ -18,8 +18,8 @@
         ]
         }, 
         {
-        "vertexPath": "basicMeshVert.spv",
-        "fragmentPath": "basicMeshFrag.spv",
+        "vertexPath": "basicMesh.vert.spv",
+        "fragmentPath": "basicMesh.frag.spv",
         "name": "basicMesh",
         "bindings": [
         ] 

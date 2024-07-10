@@ -70,7 +70,12 @@ void __CommandPool::FreeCommandBuffer(VkCommandBuffer commandBuffer, uint32_t po
 }
 
 void __CommandPool::Cleanup(){
-    commandPools.clear();
+    for(auto& [index, commandPoolSet] : commandPools){
+        if(commandPoolSet.graphicsCommandPool != commandPoolSet.transferCommandPool){
+            vkDestroyCommandPool(__Device::GetDevice(), commandPoolSet.transferCommandPool, nullptr);
+        }
+        vkDestroyCommandPool(__Device::GetDevice(), commandPoolSet.graphicsCommandPool, nullptr);
+    }
 }
 
 }

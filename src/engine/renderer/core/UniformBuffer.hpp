@@ -29,6 +29,11 @@ public:
     __UniformBuffer();
     __UniformBuffer(__UniformBufferCreateInfo createInfo);
 
+    __UniformBuffer(const __UniformBuffer& other);
+    __UniformBuffer operator=(const __UniformBuffer& other);
+    ~__UniformBuffer();
+
+
     void UpdateData(void* data, size_t size, uint32_t threadIndex);
     void SetDescriptorSet(VkDescriptorSet descriptorSet);
     void SetBinding(uint32_t binding);
@@ -41,6 +46,8 @@ private:
     size_t size;
     uint32_t binding;
     VkDescriptorSet descriptorSet;
+
+    std::shared_ptr<uint32_t> useCount;
 };
 
 }

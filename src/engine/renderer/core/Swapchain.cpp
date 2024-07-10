@@ -126,7 +126,7 @@ void __Swapchain::CreateDepthImage(){
 
     __ImageCreateInfo imageCreateInfo{};
     imageCreateInfo.format = depthFormat;
-    imageCreateInfo.layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+    imageCreateInfo.layout = VK_IMAGE_LAYOUT_UNDEFINED;
     imageCreateInfo.aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT;
     imageCreateInfo.usage = VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
     imageCreateInfo.imageExtent =
@@ -135,7 +135,7 @@ void __Swapchain::CreateDepthImage(){
     imageCreateInfo.data = (void*)0;
     imageCreateInfo.size = 0;
     imageCreateInfo.threadIndex = 0;
-    imageCreateInfo.copyToLocalDeviceMemory = false;
+    imageCreateInfo.copyToLocalDeviceMemory = true;
 
     depthImage = __Image(imageCreateInfo);
 
@@ -172,6 +172,8 @@ void __Swapchain::Cleanup(){
         vkDestroyImageView(__Device::GetDevice(), imageView, nullptr);
     }
     vkDestroySwapchainKHR(__Device::GetDevice(), swapchain, nullptr);
+
+    depthImage.~__Image();
 }
 
 }

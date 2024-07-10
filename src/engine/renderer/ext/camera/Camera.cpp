@@ -53,4 +53,9 @@ VkWriteDescriptorSet Camera::__GetWriteDescriptorSetOrtho(uint32_t binding){
     return orthoCamera.GetWriteDescriptorSet();
 }
 
+void Camera::__Cleanup(){
+    orthoCamera.~__UniformBuffer();
+    perspectiveCamera.~__UniformBuffer();
+}
+
 }
