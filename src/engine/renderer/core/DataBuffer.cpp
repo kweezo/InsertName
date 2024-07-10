@@ -11,6 +11,7 @@ std::vector<std::vector<std::pair<__CommandBuffer, bool>>> __DataBuffer::staging
 std::list<VkDeviceMemory> __DataBuffer::stagingMemoryDeleteQueue = {};
 __Fence __DataBuffer::finishedCopyingFence = {};
 std::set<uint32_t> __DataBuffer::resetPoolIndexes = {};
+bool __DataBuffer::primaryCommandBufferRecorded = false;
 
 void __DataBuffer::Init(){
     CreateCommandBuffers();
@@ -292,12 +293,23 @@ void __DataBuffer::RecordPrimaryCommandBuffer(){
         i++;
     }
 
+    if(usedSecondaryCommandBuffers.size() == 0){
+        return;
+    }
+
     primaryCommandBuffer.BeginCommandBuffer(nullptr, false);
     vkCmdExecuteCommands(primaryCommandBuffer.GetCommandBuffer(), usedSecondaryCommandBuffers.size(), usedSecondaryCommandBuffers.data());
     primaryCommandBuffer.EndCommandBuffer();
+
+    primaryCommandBufferRecorded = true;
 }
 
 void __DataBuffer::SubmitPrimaryCommandBuffer(){
+    if(!primaryCommandBufferRecorded){
+        return;
+    }
+
+
     VkCommandBuffer primaryCommandBufferRaw = primaryCommandBuffer.GetCommandBuffer();
     VkFence finishedCopyingFenceHandle = finishedCopyingFence.GetFence();
 
@@ -307,6 +319,7 @@ void __DataBuffer::SubmitPrimaryCommandBuffer(){
     submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
     submitInfo.commandBufferCount = 1;
     submitInfo.pCommandBuffers = &primaryCommandBufferRaw;
+
 
     if(vkQueueSubmit(__Device::GetTransferQueue(), 1, &submitInfo, finishedCopyingFence.GetFence()) != VK_SUCCESS){
         throw std::runtime_error("Failed to submit data buffer command buffer");
@@ -320,6 +333,7 @@ void __DataBuffer::UpdateCleanup(){
     for(uint32_t i : resetPoolIndexes){
         __CommandBuffer::ResetPools(__CommandBufferType::DATA, i); 
     }
+    primaryCommandBufferRecorded = false;
 
    stagingMemoryDeleteQueue.clear();
 

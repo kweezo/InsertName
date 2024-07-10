@@ -79,6 +79,7 @@ private:
     static std::list<VkDeviceMemory> stagingMemoryDeleteQueue;
     static std::set<uint32_t> resetPoolIndexes;
     static __Fence finishedCopyingFence;
+    static bool primaryCommandBufferRecorded;
 
     std::shared_ptr<uint32_t> useCount;
 };
