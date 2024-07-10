@@ -2,6 +2,7 @@
 
 #include <stdexcept>
 #include <algorithm>
+#include <limits>
 
 #include <vulkan/vulkan.h>
 
@@ -10,6 +11,7 @@
 #include "../window/Window.hpp"
 #include "Device.hpp"
 #include "Image.hpp"
+#include "Semaphore.hpp"
 
 #define MAX_FRAMES_IN_FLIGHT 2
 
@@ -27,6 +29,11 @@ public:
     static uint32_t GetImageCount();
     static __Image GetDepthImage();
 
+    static void IncrementCurrentFrameInFlight();
+    static void IncrementCurrentFrameIndex(__Semaphore semaphore);
+
+    static uint32_t GetFrameInFlight();
+    static uint32_t GetImageIndex();
 
     static std::vector<VkImageView> GetSwapchainImageViews();
 private:
@@ -40,6 +47,9 @@ private:
 
     static VkFormat ChooseSwapchainImageFormat();
     static void CreateSwapchainImageViews();
+
+    static uint32_t currentImageIndex;
+    static uint32_t currentFrameInFlight;
 };
 
 }
