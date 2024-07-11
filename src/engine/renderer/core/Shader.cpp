@@ -99,6 +99,10 @@ void __ShaderManager::Init(){
 
     __Shader::CreateDescriptorSets();
 
+    for(auto& [name, shader] : __ShaderManager::shaders){
+        shader->CreateGraphicsPipepeline();
+    }
+
     stream.close();
 }
 
@@ -157,7 +161,7 @@ VkDescriptorSet __Shader::GetDescriptorSet() const{
     return descriptorSet;
 }
 
-void __Shader::CreateGraphicsPipepeline(__VertexInputDescriptions vertexInputDescriptions){
+void __Shader::CreateGraphicsPipepeline(){
     __GraphicsPipelineCreateInfo createInfo{};
     createInfo.shaderStageCreateInfo = GetShaderStageCreateInfo();
     createInfo.attributeDescriptions = std::get<0>(vertexInputDescriptions);
@@ -194,7 +198,7 @@ __Shader::__Shader(const std::string vertexShaderPath, const std::string fragmen
         throw std::runtime_error("Failed to create fragment shader module");
     }
 
-    CreateGraphicsPipepeline(vertexInputDescriptions);
+    this->vertexInputDescriptions = vertexInputDescriptions;
 
     shaderBindings.push_back({this, bindings});
     this->name = name;

@@ -26,7 +26,7 @@ void Renderer::SoftInit(){
     __ShaderManager::Init();
 
     for(__Fence& fence : inFlightFences){
-        fence = __Fence(false);
+        fence = __Fence(true);
     }
 
     for(__Semaphore& semaphore : renderSemaphores){
@@ -44,6 +44,7 @@ void Renderer::SoftInit(){
 void Renderer::Update(){
     std::array<VkFence, 1> waitFences = {inFlightFences[__Swapchain::GetFrameInFlight()].GetFence()}; 
     vkWaitForFences(__Device::GetDevice(), waitFences.size(), waitFences.data(), VK_TRUE, std::numeric_limits<uint64_t>::max());
+    vkResetFences(__Device::GetDevice(), waitFences.size(), waitFences.data());
 
     __Swapchain::IncrementCurrentFrameIndex(presentSemaphores[__Swapchain::GetFrameInFlight()]);
 
@@ -59,6 +60,7 @@ void Renderer::Update(){
 void Renderer::Submit(){
     std::array<VkSemaphore, 1> waitSemaphores = {presentSemaphores[__Swapchain::GetFrameInFlight()].GetSemaphore()};
     std::array<VkSemaphore, 1> signalSemaphores = {renderSemaphores[__Swapchain::GetFrameInFlight()].GetSemaphore()};
+    std::array<VkPipelineStageFlags, 1>  waitDestinationStageMask = {VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT};
 
     VkSubmitInfo submitInfo{};
     submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
@@ -68,6 +70,7 @@ void Renderer::Submit(){
 
     submitInfo.waitSemaphoreCount = waitSemaphores.size();
     submitInfo.pWaitSemaphores = waitSemaphores.data();
+    submitInfo.pWaitDstStageMask = waitDestinationStageMask.data();
 
     submitInfo.signalSemaphoreCount = signalSemaphores.size();
     submitInfo.pSignalSemaphores = signalSemaphores.data();

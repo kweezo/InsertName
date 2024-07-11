@@ -64,17 +64,19 @@ public:
 
     void Bind(VkCommandBuffer commandBuffer, VkPipelineLayout pipelineLayout);
 
+    void CreateGraphicsPipepeline();
 
     static void CreateDescriptorSets();
 private:
     static std::vector<__ShaderBindingInfo> shaderBindings;
 
-    void CreateGraphicsPipepeline(__VertexInputDescriptions vertexInputDescriptions);
 
     std::vector<unsigned char> ReadBytecode(const std::string path); 
 
     VkShaderModule vertexShaderModule;
     VkShaderModule fragmentShaderModule;
+
+    __VertexInputDescriptions vertexInputDescriptions;
 
     VkDescriptorSet descriptorSet;
 
