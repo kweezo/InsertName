@@ -65,7 +65,7 @@ void __ShaderManager::Init(){
 
         std::vector<VkVertexInputBindingDescription> bindingDescriptions{};
 
-        const Json::Value& inputBindings = root["bindingDescriptions"];
+        const Json::Value& inputBindings = shader["bindingDescriptions"];
         for(const Json::Value& inputBinding : inputBindings){
             VkVertexInputBindingDescription bindingDescription{};
             bindingDescription.binding = inputBinding["binding"].asInt();
@@ -77,10 +77,10 @@ void __ShaderManager::Init(){
         
         std::vector<VkVertexInputAttributeDescription> attributeDescriptions{};
         
-        const Json::Value& inputAttributes = root["inputAttributes"];
+        const Json::Value& inputAttributes = shader["inputAttributes"];
         for(const Json::Value& inputAttribute : inputAttributes){
             VkVertexInputAttributeDescription attributeDescription{};
-            attributeDescription.binding = inputAttribute["location"].asInt();
+            attributeDescription.binding = inputAttribute["binding"].asInt();
             attributeDescription.format = (VkFormat)inputAttribute["format"].asInt();
             attributeDescription.location = inputAttribute["location"].asInt();
             attributeDescription.offset = inputAttribute["offset"].asInt();
