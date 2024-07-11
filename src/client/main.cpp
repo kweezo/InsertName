@@ -124,43 +124,12 @@ int main(){
     Renderer::Init();
 
 
-    __CommandBufferCreateInfo createInfo{};
-    createInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-    createInfo.threadIndex = 0;
-    createInfo.type = __CommandBufferType::GENERIC;
-    createInfo.flags = COMMAND_BUFFER_GRAPHICS_FLAG;
+    std::shared_ptr<__Shader> modelShader = __ShaderManager::GetShader("basicModel");
 
+    __ModelCreateInfo modelCreateInfo{};
+    modelCreateInfo.path = dir + "res/models/teapot/teapot.fbx";
+    //modelCreateInfo.shader
 
-
-
-    __CommandBuffer cmdBuffer = __CommandBuffer(createInfo);
-
-   std::vector<VkVertexInputAttributeDescription> attributeDescriptions(2);
-
-    attributeDescriptions[0].binding = 0;
-    attributeDescriptions[0].location = 0;
-    attributeDescriptions[0].format = VK_FORMAT_R32G32_SFLOAT;
-    attributeDescriptions[0].offset = 0;
-
-    attributeDescriptions[1].binding = 0;
-    attributeDescriptions[1].location = 1;
-    attributeDescriptions[1].format = VK_FORMAT_R32G32B32_SFLOAT;
-    attributeDescriptions[1].offset = sizeof(float)* 2;
-
-
-    VkVertexInputBindingDescription bindingDescription = {};
-    bindingDescription.binding = 0;
-    bindingDescription.stride = 5 * sizeof(float);
-    bindingDescription.inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
-
-
-    std::shared_ptr<__Shader> shader = __ShaderManager::GetShader("triangle");
-    shader->CreateGraphicsPipepeline({attributeDescriptions, {bindingDescription}});
-
-    cmdBuffer.BeginCommandBuffer(nullptr, false);
-    shader->GetGraphicsPipeline()->BeginRenderPassAndBindPipeline(__Swapchain::GetImageIndex(), cmdBuffer.GetCommandBuffer());
-    shader->GetGraphicsPipeline()->EndRenderPass(cmdBuffer.GetCommandBuffer());
-    cmdBuffer.EndCommandBuffer();
 
     while(!glfwWindowShouldClose(Window::GetGLFWwindow())){
         glfwPollEvents();
@@ -171,7 +140,6 @@ int main(){
             continue;
         }
 
-        Renderer::AddCommandBuffer(cmdBuffer, __Swapchain::GetFrameInFlight());
         Renderer::Update();
     }
     vkDeviceWaitIdle(__Device::GetDevice());

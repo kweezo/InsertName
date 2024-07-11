@@ -98,7 +98,7 @@ std::function<void(void)> __Model::GetExtraDrawCommands(){
     return extraDrawCommands;
 }
 
-__Shader* __Model::GetShader(){
+std::shared_ptr<__Shader> __Model::GetShader(){
     return shader;
 }
 

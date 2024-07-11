@@ -65,7 +65,7 @@ void StaticModelInstance::RecordSecondaryCommandBuffers(){
     for(uint32_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++){
         for(auto& [modelHandle, instanceData] : staticModelInstanceMap){
             VkCommandBuffer buf = instanceData.commandBuffer[i].GetCommandBuffer();
-            secondaryBuffers[i][instanceData.model->GetShader()].push_back(buf);
+            secondaryBuffers[i][instanceData.model->GetShader().get()].push_back(buf);
         }
     }
 }
