@@ -106,11 +106,6 @@ void userTemp(UserManager* userManager){
     }
 }
 
-struct ModelDat{
-    glm::mat4 model;
-    glm::mat4 view;
-    glm::mat4 proj;
-};
 
 int main(){
     std::string dir = "./client_data/";
@@ -128,8 +123,21 @@ int main(){
 
     __ModelCreateInfo modelCreateInfo{};
     modelCreateInfo.path = dir + "res/models/teapot/teapot.fbx";
-    //modelCreateInfo.shader
+    modelCreateInfo.shader = __ShaderManager::GetShader("basicMesh");
 
+    ModelHandle teapot = ModelManager::Create(modelCreateInfo);
+
+
+    ModelInstanceCreateInfo instanceCreateInfo{};
+    instanceCreateInfo.model = teapot;
+    instanceCreateInfo.isStatic = true;
+    instanceCreateInfo.transform = {
+        glm::vec3(0.0f, 0.0f, 0.0f),
+        glm::vec4(0.0f, 0.0f, 0.0f, 1.0f),
+        glm::vec3(1.0f, 1.0f, 1.0f)
+    };
+
+    ModelInstance teapotInstance = ModelInstance(instanceCreateInfo);
 
     while(!glfwWindowShouldClose(Window::GetGLFWwindow())){
         glfwPollEvents();

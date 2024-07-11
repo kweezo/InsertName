@@ -32,8 +32,6 @@ class __Model;
 struct __ModelCreateInfo{
     std::string path;
     std::shared_ptr<__Shader> shader;
-    std::vector<VkVertexInputBindingDescription> vertexInputBindingDescriptions;
-    std::vector<VkVertexInputAttributeDescription> vertexInputAttributeDescriptions;
     std::function<void(void)> extraDrawCalls;
 };
 
@@ -56,7 +54,6 @@ public:
     
     std::shared_ptr<__Shader> GetShader();
     std::function<void(void)> GetExtraDrawCommands();
-    __VertexInputDescriptions GetExtraDescriptions();
 
 
 private: //copied from learnopengl.com *mostly* shamelessly

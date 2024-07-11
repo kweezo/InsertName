@@ -95,6 +95,7 @@ void __Image::SubmitPrimaryCommandBuffer(){
     }
 
     vkWaitForFences(__Device::GetDevice(), 1, &finishedCopyingFenceRaw, VK_TRUE, std::numeric_limits<uint64_t>::max());
+    vkResetFences(__Device::GetDevice(), 1, &finishedCopyingFenceRaw);
 }
 
 void __Image::UpdateCleanup(){
@@ -119,7 +120,7 @@ __CommandBuffer __Image::GetFreeCommandBuffer(uint32_t threadIndex){
     }
 
     __CommandBufferCreateInfo secondaryCommandBufferInfo;
-    secondaryCommandBufferInfo.type = __CommandBufferType::DATA;
+    secondaryCommandBufferInfo.type = __CommandBufferType::IMAGE;
     secondaryCommandBufferInfo.level = VK_COMMAND_BUFFER_LEVEL_SECONDARY;
     secondaryCommandBufferInfo.flags = COMMAND_POOL_TYPE_TRANSFER | COMMAND_BUFFER_ONE_TIME_SUBMIT_FLAG;
     secondaryCommandBufferInfo.threadIndex = threadIndex;
@@ -142,7 +143,7 @@ void __Image::CreateCommmandBuffers(){
     for(std::vector<std::pair<__CommandBuffer, bool>>& commandBuffers : secondaryCommandBuffers){
 
         __CommandBufferCreateInfo stagingCommandBufferInfo;
-        stagingCommandBufferInfo.type = __CommandBufferType::DATA;
+        stagingCommandBufferInfo.type = __CommandBufferType::IMAGE;
         stagingCommandBufferInfo.level = VK_COMMAND_BUFFER_LEVEL_SECONDARY;
         stagingCommandBufferInfo.flags = COMMAND_POOL_TYPE_TRANSFER | COMMAND_BUFFER_ONE_TIME_SUBMIT_FLAG;
         stagingCommandBufferInfo.threadIndex = i;

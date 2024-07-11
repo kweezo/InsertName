@@ -2,15 +2,17 @@
 
 namespace renderer{
 
-ModelInstance::ModelInstance(ModelHandle model, Transform transform, bool isStatic){
+ModelInstance::ModelInstance(ModelInstanceCreateInfo createInfo){
     this->model = glm::mat4(1.0f);
-    this->model = glm::translate(this->model, transform.pos);
-    this->model = glm::scale(this->model, transform.scale);
+    this->model = glm::translate(this->model, createInfo.transform.pos);
+    this->model = glm::scale(this->model, createInfo.transform.scale);
     //todo, face your enemies (rotation)
 
-    if(isStatic){
-        staticModelInstanceMap[model].instanceList.push_back(this);
-        staticModelInstanceMap[model].model = static_cast<__Model*>(model);
+    if(createInfo.isStatic){
+        __StaticModelData& modelData = staticModelInstanceMap[createInfo.model];
+
+        modelData.instanceList.push_back(this);
+        modelData.model = static_cast<__Model*>(createInfo.model);
     }
 
     shouldDraw = true;

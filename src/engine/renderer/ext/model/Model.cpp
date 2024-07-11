@@ -31,7 +31,6 @@ __Model::__Model(__ModelCreateInfo createInfo){
     ProcessNode(scene->mRootNode, scene);
 
     this->shader = shader;
-    this->extraDescriptions = extraDescriptions;
     this->extraDrawCommands = extraDrawCommands;
 }
 
@@ -100,10 +99,6 @@ std::function<void(void)> __Model::GetExtraDrawCommands(){
 
 std::shared_ptr<__Shader> __Model::GetShader(){
     return shader;
-}
-
-__VertexInputDescriptions __Model::GetExtraDescriptions(){
-    return extraDescriptions;
 }
 
 }

@@ -21,11 +21,11 @@
 namespace renderer{
 
 enum __CommandBufferType{
-    GENERIC = 1,
-    IMAGE = 2,
-    DATA = 3,
-    UNIFORM = 4,
-    INSTANCE = 5,
+    GENERIC = 0,
+    IMAGE = 1,
+    DATA = 2,
+    UNIFORM = 3,
+    INSTANCE = 4,
     size = 5
 };
 

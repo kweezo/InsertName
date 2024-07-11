@@ -45,6 +45,7 @@ __CommandBuffer::__CommandBuffer(__CommandBufferCreateInfo createInfo): flags(cr
     }
 
     useCount = std::make_shared<uint32_t>(1);
+
 }
 
 void __CommandBuffer::ResetCommandBuffer(){
@@ -99,6 +100,7 @@ void __CommandBuffer::EndCommandBuffer(){
 
 void __CommandBuffer::ResetPools(__CommandBufferType type, uint32_t threadIndex){
     __CommandPool::ResetPool(type * std::thread::hardware_concurrency() + threadIndex);
+
 }
 
 VkCommandBuffer __CommandBuffer::GetCommandBuffer(){

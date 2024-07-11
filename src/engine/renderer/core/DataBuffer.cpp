@@ -313,15 +313,13 @@ void __DataBuffer::SubmitPrimaryCommandBuffer(){
     VkCommandBuffer primaryCommandBufferRaw = primaryCommandBuffer.GetCommandBuffer();
     VkFence finishedCopyingFenceHandle = finishedCopyingFence.GetFence();
 
-    vkResetFences(__Device::GetDevice(), 1, &finishedCopyingFenceHandle);
-
     VkSubmitInfo submitInfo{};
     submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
     submitInfo.commandBufferCount = 1;
     submitInfo.pCommandBuffers = &primaryCommandBufferRaw;
 
 
-    if(vkQueueSubmit(__Device::GetTransferQueue(), 1, &submitInfo, finishedCopyingFence.GetFence()) != VK_SUCCESS){
+    if(vkQueueSubmit(__Device::GetTransferQueue(), 1, &submitInfo, finishedCopyingFenceHandle) != VK_SUCCESS){
         throw std::runtime_error("Failed to submit data buffer command buffer");
     }
 

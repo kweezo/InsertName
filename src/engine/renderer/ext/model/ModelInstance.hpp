@@ -27,9 +27,16 @@
 
 namespace renderer{
 
+struct ModelInstanceCreateInfo{
+    ModelHandle model;
+    Transform transform;
+    bool isStatic;
+};
+
+
 class ModelInstance : public StaticModelInstance{
 public:
-    ModelInstance(ModelHandle model, Transform transform, bool isStatic);
+    ModelInstance(ModelInstanceCreateInfo createInfo);
 
     static void __Update();
     static void __Draw(uint32_t imageIndex);
