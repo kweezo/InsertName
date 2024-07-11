@@ -70,6 +70,7 @@ private:
     static __CommandBuffer primaryCommandBuffer;
     static __Fence finishedPrimaryCommandBufferExecutionFence;
     static std::set<uint32_t> commandPoolResetIndexes;
+    static bool primaryCommandBufferRecorded;
 
     VkImage image;
     VkImageView imageView;

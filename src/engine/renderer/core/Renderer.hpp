@@ -1,5 +1,9 @@
 #pragma once
 
+#include <array>
+#include <vector>
+#include <limits>
+
 #include <vulkan/vulkan.h>
 
 #include "Instance.hpp"
@@ -14,6 +18,8 @@
 #include "Shader.hpp"
 #include "engine/renderer/ext/camera/Camera.hpp"
 #include "engine/renderer/ext/model/ModelInstance.hpp"
+#include "Semaphore.hpp"
+#include "Fence.hpp"
 
 
 namespace renderer{
@@ -23,10 +29,24 @@ public:
     static void Init();
     static void Cleanup();
 
-    static void RenderFrame();
+    static void Update();
+
+    static void AddCommandBuffer(__CommandBuffer& commandBuffer, uint32_t frameInFlight);
 private:
     static void HardInit();
     static void SoftInit();
+
+    static void Submit();
+    static void Present();
+    static void UpdateCleanup();
+
+    static std::array<__Semaphore, MAX_FRAMES_IN_FLIGHT> presentSemaphores;
+    static std::array<__Semaphore, MAX_FRAMES_IN_FLIGHT> renderSemaphores;
+    static std::array<std::vector<VkCommandBuffer>, MAX_FRAMES_IN_FLIGHT> commandBuffers;
+
+    static std::array<__Fence, MAX_FRAMES_IN_FLIGHT> inFlightFences;
+
+
 /*
     So basically when you start up the renderer hard init gets called
     which initializes everyhing that needs to be initialized

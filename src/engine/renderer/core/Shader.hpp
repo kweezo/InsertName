@@ -30,7 +30,7 @@ typedef struct __ShaderBindingInfo{
     std::vector<VkDescriptorSetLayoutBinding> bindings;
 }__ShaderBindingInfo;
 
-class ShaderManager{
+class __ShaderManager{
 public:
     static void Init();
     static void Cleanup();

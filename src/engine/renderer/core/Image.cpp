@@ -9,6 +9,7 @@ __CommandBuffer __Image::primaryCommandBuffer = {};
 __Fence __Image::finishedPrimaryCommandBufferExecutionFence = {};
 std::set<uint32_t> __Image::commandPoolResetIndexes = {};
 std::list<std::pair<VkBuffer, VkDeviceMemory>> __Image::bufferAndMemoryCleanupQueue = { };
+bool __Image::primaryCommandBufferRecorded = false;
 
 
 void __Image::Init(){
@@ -45,10 +46,15 @@ void __Image::RecordPrimaryCommandBuffer(){
         i++;
     }
 
+    if(usedSecondaryCommandBuffers.size() == 0){
+        return;
+    }
+
     primaryCommandBuffer.BeginCommandBuffer(nullptr, false);
     vkCmdExecuteCommands(primaryCommandBuffer.GetCommandBuffer(), usedSecondaryCommandBuffers.size(), usedSecondaryCommandBuffers.data());
     primaryCommandBuffer.EndCommandBuffer();
-
+    
+    primaryCommandBufferRecorded = true;
 }
 
 VkFormat __Image::GetSupportedFormat(std::vector<VkFormat> candidates, VkImageTiling tiling, VkFormatFeatureFlags features){
@@ -72,6 +78,10 @@ inline bool __Image::HasStencilComponent(VkFormat format){
 
 
 void __Image::SubmitPrimaryCommandBuffer(){
+    if(!primaryCommandBufferRecorded){
+        return;
+    }
+
     VkCommandBuffer primaryCommandBufferRaw = primaryCommandBuffer.GetCommandBuffer();
     VkFence finishedCopyingFenceRaw = finishedPrimaryCommandBufferExecutionFence.GetFence();
 
@@ -91,6 +101,7 @@ void __Image::UpdateCleanup(){
     for(uint32_t i : commandPoolResetIndexes){
         __CommandBuffer::ResetPools(__CommandBufferType::IMAGE, i); 
     }
+    primaryCommandBufferRecorded = false;
 
     for(std::pair<VkBuffer, VkDeviceMemory>& bufferAndMemory : bufferAndMemoryCleanupQueue){
         vkFreeMemory(__Device::GetDevice(), std::get<1>(bufferAndMemory), nullptr);

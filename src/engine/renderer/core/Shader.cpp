@@ -5,9 +5,9 @@ namespace renderer{
 const std::string shaderPath = "client_data/shaders/bin/";
 
 std::vector<__ShaderBindingInfo> __Shader::shaderBindings = {};
-boost::container::flat_map<std::string, std::shared_ptr<__Shader>> ShaderManager::shaders = {};
+boost::container::flat_map<std::string, std::shared_ptr<__Shader>> __ShaderManager::shaders = {};
 
-void ShaderManager::Init(){
+void __ShaderManager::Init(){
     std::ifstream stream("client_data/shaders/shaders.json");
     if(!stream.is_open()){
         throw std::runtime_error("Failed to open shaders.json");
@@ -66,7 +66,7 @@ void ShaderManager::Init(){
         vertexPath = shaderPath + vertexPath;
         fragmentPath = shaderPath + fragmentPath;
 
-        ShaderManager::shaders.emplace(name, std::make_shared<__Shader>(vertexPath, fragmentPath,
+        __ShaderManager::shaders.emplace(name, std::make_shared<__Shader>(vertexPath, fragmentPath,
         name, descriptorBindings));
     }
 
@@ -75,14 +75,14 @@ void ShaderManager::Init(){
     stream.close();
 }
 
-std::shared_ptr<__Shader> ShaderManager::GetShader(std::string name){
+std::shared_ptr<__Shader> __ShaderManager::GetShader(std::string name){
     if(shaders.find(name) == shaders.end()){
         throw std::runtime_error("Attempting to get nonexistent shader with name " + name);
     }
     return shaders[name];
 }
 
-void ShaderManager::Cleanup(){
+void __ShaderManager::Cleanup(){
     shaders.clear();
 }
 

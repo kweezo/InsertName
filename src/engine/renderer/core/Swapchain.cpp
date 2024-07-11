@@ -5,6 +5,8 @@ namespace renderer{
 //TODO allow window resizing
 
 const uint32_t PREFERRED_IMAGE_COUNT = 3;
+uint32_t __Swapchain::currentImageIndex{};
+uint32_t __Swapchain::currentFrameInFlight{};
 
 VkSwapchainKHR __Swapchain::swapchain = VK_NULL_HANDLE;
 std::vector<VkImageView> __Swapchain::swapchainImageViews = {};
@@ -161,6 +163,21 @@ uint32_t __Swapchain::GetImageCount(){
 
 std::vector<VkImageView> __Swapchain::GetSwapchainImageViews(){
     return swapchainImageViews;
+}
+void __Swapchain::IncrementCurrentFrameInFlight(){
+    currentFrameInFlight += (currentFrameInFlight + 1) % MAX_FRAMES_IN_FLIGHT;
+}
+
+void __Swapchain::IncrementCurrentFrameIndex(__Semaphore semaphore){
+    vkAcquireNextImageKHR(__Device::GetDevice(), swapchain, std::numeric_limits<uint64_t>::max(), semaphore.GetSemaphore(), VK_NULL_HANDLE, &currentImageIndex);
+}
+
+uint32_t __Swapchain::GetFrameInFlight(){
+    return currentFrameInFlight;
+}
+
+uint32_t __Swapchain::GetImageIndex(){
+    return currentImageIndex;
 }
 
 VkFormat __Swapchain::GetImageFormat(){
