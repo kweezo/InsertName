@@ -124,7 +124,7 @@ int main(){
     Renderer::Init();
 
 
-    std::shared_ptr<__Shader> modelShader = __ShaderManager::GetShader("basicModel");
+    std::shared_ptr<__Shader> modelShader = __ShaderManager::GetShader("basicMesh");
 
     __ModelCreateInfo modelCreateInfo{};
     modelCreateInfo.path = dir + "res/models/teapot/teapot.fbx";

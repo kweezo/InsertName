@@ -30,7 +30,7 @@
                 "offset": 8
             }
         ],
-        "inputBinding": [
+        "bindingDescriptions": [
             {
                 "binding": 0,
                 "stride": 20,
@@ -44,6 +44,18 @@
         "fragmentPath": "basicMesh.frag.spv",
         "name": "basicMesh",
         "bindings": [
+            {
+                "binding": 0,
+                "type": "uniform_buffer",
+                "stage": "vertex"
+            },
+            {
+                "binding": 1,
+                "type": "sampler",
+                "stage": "fragment"
+            }
+        ],
+        "inputAttributes": [
             {
                 "location": 0,
                 "binding": 0,
@@ -87,7 +99,7 @@
                 "offset": 48
             }
         ],
-        "inputBinding": [
+        "bindingDescriptions": [
             {
                 "binding": 0,
                 "stride": 30,
