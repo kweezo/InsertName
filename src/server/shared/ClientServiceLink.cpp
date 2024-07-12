@@ -47,6 +47,7 @@ void ClientServiceLink::DisconnectFromTcpServer() {
     #else
         close(sock);
     #endif
+    sock = 0;
 }
 
 void ClientServiceLink::HandleConnection() {
@@ -55,11 +56,13 @@ void ClientServiceLink::HandleConnection() {
 
     while (true) {
         memset(buffer, 0, bufferSize);
-        int bytesReceived;
+        int sock_;
         {
             std::lock_guard<std::mutex> lock(sockMutex);
-            bytesReceived = recv(sock, buffer, bufferSize, 0);
+            sock_ = sock;
         }
+
+        int bytesReceived = recv(sock_, buffer, bufferSize, 0);
 
         if (bytesReceived <= 0) {
             std::cerr << "Error receiving message from server\n";
@@ -104,7 +107,7 @@ bool ClientServiceLink::SendDataFromBuffer(const std::string& message) {
 
     ssize_t bytesSent = send(sock_, message.c_str(), message.length(), 0);
     if (bytesSent == -1) {
-        std::cerr << "Failed to send message to the service." << std::endl;
+        std::cerr << "Failed to send message to the service.\n";
         return false;
     }
     return true;
@@ -128,6 +131,7 @@ void ClientServiceLink::StartClient(const std::string& dir) {
         }
 
         SendData("CONNECT");
+
         HandleConnection();
 
         DisconnectFromTcpServer();
