@@ -61,14 +61,12 @@ private:
     static __CommandBuffer GetFreeCommandBuffer(uint32_t threadIndex);
     static std::vector<std::vector<std::pair<__CommandBuffer, bool>>> secondaryCommandBuffers;
 
-    static void RecordPrimaryCommandBuffer();
-    static void SubmitPrimaryCommandBuffer();
+    static void SubmitCommandBuffers();
     static void UpdateCleanup();
 
     static void CreateCommmandBuffers();
 
-    static __CommandBuffer primaryCommandBuffer;
-    static __Fence finishedPrimaryCommandBufferExecutionFence;
+    static __Fence commandBuffersFinishedExecutionFence;
     static std::set<uint32_t> commandPoolResetIndexes;
     static bool primaryCommandBufferRecorded;
 

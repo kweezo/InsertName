@@ -2,6 +2,7 @@
 
 #include <array>
 #include <vector>
+#include <thread>
 #include <limits>
 
 #include <vulkan/vulkan.h>
@@ -36,6 +37,8 @@ private:
     static void HardInit();
     static void SoftInit();
 
+    static void UpdatePrepare();
+    static void UpdateComponents();
     static void Submit();
     static void Present();
     static void UpdateCleanup();

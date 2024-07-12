@@ -6,11 +6,11 @@ const uint32_t TARGET_STAGING_BUFFER_COUNT_PER_THREAD = 5;
 
 const size_t FREE_STAGING_MEMORY_TRESHOLD = 1024;
 
-std::vector<std::vector<std::pair<__CommandBuffer, bool>>> __DataBuffer::stagingCommandBuffers = {};
+std::vector<std::vector<__DataBufferStagingCommandBuferData>> __DataBuffer::stagingCommandBuffers = {};
 std::list<VkDeviceMemory> __DataBuffer::stagingMemoryDeleteQueue = {};
 __Fence __DataBuffer::finishedCopyingFence = {};
 std::set<uint32_t> __DataBuffer::resetPoolIndexes = {};
-bool __DataBuffer::primaryCommandBufferRecorded = false;
+bool __DataBuffer::anyCommandBuffersRecorded = false;
 
 void __DataBuffer::Init(){
     CreateCommandBuffers();
@@ -21,7 +21,7 @@ void __DataBuffer::Init(){
 void __DataBuffer::CreateCommandBuffers(){
     uint32_t i = 0;
     stagingCommandBuffers.resize(std::thread::hardware_concurrency());
-    for(std::vector<std::pair<__CommandBuffer, bool>>& commandBuffers : stagingCommandBuffers){
+    for(std::vector<__DataBufferStagingCommandBuferData>& commandBuffers : stagingCommandBuffers){
 
         __CommandBufferCreateInfo stagingCommandBufferInfo;
         stagingCommandBufferInfo.type = __CommandBufferType::DATA;
@@ -31,7 +31,7 @@ void __DataBuffer::CreateCommandBuffers(){
 
         commandBuffers.resize(TARGET_STAGING_BUFFER_COUNT_PER_THREAD);
         for(uint32_t y = 0; y < TARGET_STAGING_BUFFER_COUNT_PER_THREAD; y++){
-            commandBuffers[y] = {__CommandBuffer(stagingCommandBufferInfo), true};
+            commandBuffers[y] = {__CommandBuffer(stagingCommandBufferInfo), true, __Semaphore()};
         }
 
         i = (i + 1) % std::thread::hardware_concurrency();
@@ -53,8 +53,7 @@ __DataBuffer::__DataBuffer(){
     useCount = std::make_shared<uint32_t>(1);
 }
 
-__DataBuffer::__DataBuffer(__DataBufferCreateInfo createInfo) : transferToLocalDeviceMemory(createInfo.transferToLocalDeviceMemory),
- size(createInfo.size), stagingBuffer(VK_NULL_HANDLE), stagingMemory(VK_NULL_HANDLE), isDynamic(createInfo.isDynamic){
+__DataBuffer::__DataBuffer(__DataBufferCreateInfo createInfo) : createInfo(createInfo){
 
     if(!__Device::DeviceMemoryFree()){
         createInfo.transferToLocalDeviceMemory = false;
@@ -78,23 +77,27 @@ __DataBuffer::__DataBuffer(__DataBufferCreateInfo createInfo) : transferToLocalD
         UploadDataToMemory(memory, createInfo.data, createInfo.size);
     }
 
+    if(!createInfo.signalSemaphore.IsInitialized()){
+        createInfo.signalSemaphore = __Semaphore(__SemaphoreCreateInfo{});
+    }
+
     useCount = std::make_shared<uint32_t>(1);
 }
 
 void __DataBuffer::UpdateData(void* data, size_t size, uint32_t threadIndex){
-    if(this->size != size){
+    if(createInfo.size != size){
         throw std::runtime_error("Size of data does not match size of buffer, you need to create a new buffer for this");
     }
 
-    if(!isDynamic){
+    if(!createInfo.isDynamic){
         throw std::runtime_error("This buffer isn't dynamic, so it can't be changed");
     }
 
     if(!__Device::DeviceMemoryFree()){
-        transferToLocalDeviceMemory = false;
+        createInfo.transferToLocalDeviceMemory = false;
     }
 
-    if(transferToLocalDeviceMemory){
+    if(createInfo.transferToLocalDeviceMemory){
         if(stagingMemory == VK_NULL_HANDLE){
             AllocateMemory(stagingMemory, stagingBuffer, size, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
         }
@@ -118,9 +121,7 @@ __DataBuffer::__DataBuffer(const __DataBuffer& other){
     memory = other.memory;
     stagingBuffer = other.stagingBuffer;
     stagingMemory = other.stagingMemory;
-    size = other.size;
-    transferToLocalDeviceMemory = other.transferToLocalDeviceMemory;
-    isDynamic = other.isDynamic;
+    createInfo = other.createInfo;
     useCount = other.useCount;
 
     (*useCount.get())++;
@@ -136,9 +137,7 @@ __DataBuffer __DataBuffer::operator=(const __DataBuffer& other) {
     memory = other.memory;
     stagingBuffer = other.stagingBuffer;
     stagingMemory = other.stagingMemory;
-    size = other.size;
-    transferToLocalDeviceMemory = other.transferToLocalDeviceMemory;
-    isDynamic = other.isDynamic;
+    createInfo = other.createInfo;
     useCount = other.useCount;
 
     (*useCount.get())++;
@@ -228,11 +227,12 @@ void __DataBuffer::UploadDataToMemory(VkDeviceMemory memory, void* data, size_t 
     vkUnmapMemory(__Device::GetDevice(), memory);
 }
 
-__CommandBuffer __DataBuffer::RetrieveFreeStagingCommandBuffer(uint32_t threadIndex){
-    for(std::pair<__CommandBuffer, bool>& commandBuffer : stagingCommandBuffers[threadIndex]){
-        if(std::get<bool>(commandBuffer)){
-            std::get<bool>(commandBuffer) = false;
-            return std::get<__CommandBuffer>(commandBuffer);
+__CommandBuffer __DataBuffer::RetrieveFreeStagingCommandBuffer(uint32_t threadIndex, __Semaphore signalSemaphore){
+    for(__DataBufferStagingCommandBuferData& commandBuffer : stagingCommandBuffers[threadIndex]){
+        if(commandBuffer.free){
+            commandBuffer.free = false;
+            commandBuffer.signalSemaphore = signalSemaphore;
+            return commandBuffer.commandBuffer;
         }
     }
 
@@ -242,12 +242,12 @@ __CommandBuffer __DataBuffer::RetrieveFreeStagingCommandBuffer(uint32_t threadIn
     stagingCommandBufferInfo.flags = COMMAND_POOL_TYPE_TRANSFER | COMMAND_BUFFER_ONE_TIME_SUBMIT_FLAG;
     stagingCommandBufferInfo.threadIndex = threadIndex;
 
-    stagingCommandBuffers[threadIndex].push_back({__CommandBuffer(stagingCommandBufferInfo), false});
-    return std::get<__CommandBuffer>(stagingCommandBuffers[threadIndex].back());
+    stagingCommandBuffers[threadIndex].push_back({__CommandBuffer(stagingCommandBufferInfo), false, signalSemaphore});
+    return stagingCommandBuffers[threadIndex].back().commandBuffer;
 }
 
 void __DataBuffer::RecordCopyCommandBuffer(uint32_t threadIndex, size_t size){
-    __CommandBuffer commandBuffer = RetrieveFreeStagingCommandBuffer(threadIndex);
+    __CommandBuffer commandBuffer = RetrieveFreeStagingCommandBuffer(createInfo.threadIndex, createInfo.signalSemaphore);
 
     commandBuffer.BeginCommandBuffer(nullptr, false);
 
@@ -258,44 +258,77 @@ void __DataBuffer::RecordCopyCommandBuffer(uint32_t threadIndex, size_t size){
 
     commandBuffer.EndCommandBuffer();
 
-    if(isDynamic && size > FREE_STAGING_MEMORY_TRESHOLD){
+    if(createInfo.isDynamic && size > FREE_STAGING_MEMORY_TRESHOLD){
         stagingMemoryDeleteQueue.push_front(stagingMemory);
         stagingMemory = VK_NULL_HANDLE;
     }
 }
 
 void __DataBuffer::SubmitCommandBuffers(){
-    if(!primaryCommandBufferRecorded){
+  if(!anyCommandBuffersRecorded){
         return;
     }
 
+    std::vector<VkSubmitInfo> submitInfos{};
 
-  /* VkCommandBuffer primaryCommandBufferRaw = primaryCommandBuffer.GetCommandBuffer();
-    VkFence finishedCopyingFenceHandle = finishedCopyingFence.GetFence();
+
+    std::vector<VkCommandBuffer> recordedCommandBuffers{};
+    std::vector<VkSemaphore> signalSemaphores{};
+
+    std::vector<__Fence> fences{};
+
+    for(std::vector<__DataBufferStagingCommandBuferData>& commandBuffers : stagingCommandBuffers){
+        for(__DataBufferStagingCommandBuferData& commandBuffer : commandBuffers){
+            if(!commandBuffer.free){
+                if(!commandBuffer.signalSemaphore.IsInitialized()){
+                    recordedCommandBuffers.push_back(commandBuffer.commandBuffer.GetCommandBuffer());
+                    signalSemaphores.push_back(commandBuffer.signalSemaphore.GetSemaphore());
+                }
+                else{
+                    VkCommandBuffer commandBufferHandle = commandBuffer.commandBuffer.GetCommandBuffer();
+                    VkSemaphore signalSemaphoreHandle = commandBuffer.signalSemaphore.GetSemaphore();
+
+                    VkSubmitInfo submitInfo{};
+                    submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+
+                    submitInfo.commandBufferCount = 1;
+                    submitInfo.pCommandBuffers = &commandBufferHandle;
+
+                    submitInfo.signalSemaphoreCount = 1;
+                    submitInfo.pSignalSemaphores = &signalSemaphoreHandle;
+
+                    submitInfos.push_back(submitInfo);
+                }
+            }
+        }
+    }
 
     VkSubmitInfo submitInfo{};
     submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
-    submitInfo.commandBufferCount = 1;
-    submitInfo.pCommandBuffers = &primaryCommandBufferRaw;
 
+    submitInfo.commandBufferCount = recordedCommandBuffers.size();
+    submitInfo.pCommandBuffers = recordedCommandBuffers.data();
+
+    submitInfos.push_back(submitInfo);
+
+    VkFence finishedCopyingFenceHandle = finishedCopyingFence.GetFence();
 
     if(vkQueueSubmit(__Device::GetTransferQueue(), 1, &submitInfo, finishedCopyingFenceHandle) != VK_SUCCESS){
         throw std::runtime_error("Failed to submit data buffer command buffer");
     }
 
     vkWaitForFences(__Device::GetDevice(), 1, &finishedCopyingFenceHandle, VK_TRUE, std::numeric_limits<uint64_t>::max());
-*/}
-
+}
 
 void __DataBuffer::UpdateCleanup(){
     for(uint32_t i : resetPoolIndexes){
         __CommandBuffer::ResetPools(__CommandBufferType::DATA, i); 
     }
-    primaryCommandBufferRecorded = false;
+    anyCommandBuffersRecorded = false;
 
    stagingMemoryDeleteQueue.clear();
 
-    for(std::vector<std::pair<__CommandBuffer, bool>>& commandBuffers : stagingCommandBuffers){
+    for(std::vector<__DataBufferStagingCommandBuferData>& commandBuffers : stagingCommandBuffers){
         commandBuffers.resize(TARGET_STAGING_BUFFER_COUNT_PER_THREAD);
         for(std::pair<__CommandBuffer, bool>& commandBuffer : commandBuffers){
             std::get<bool>(commandBuffer) = true;

@@ -36,9 +36,11 @@ void StaticModelInstance::Init(){
         createInfo.threadIndex = 0;
         createInfo.type = __CommandBufferType::GENERIC;
 
+        __SemaphoreCreateInfo semaphoreInfo{};
+
         staticInstancesCommandBuffers[i] = __CommandBuffer(createInfo);
-        staticInstancesSemaphores[i].imageAvailableSemaphore = __Semaphore();
-        staticInstancesSemaphores[i].renderFinishedSemaphore = __Semaphore();
+        staticInstancesSemaphores[i].imageAvailableSemaphore = __Semaphore(semaphoreInfo);
+        staticInstancesSemaphores[i].renderFinishedSemaphore = __Semaphore(semaphoreInfo);
     }
 }
 

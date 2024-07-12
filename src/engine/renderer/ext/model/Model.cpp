@@ -19,7 +19,12 @@ void ModelManager::Cleanup(){
     models.clear();
 }
 
-__Model::__Model(__ModelCreateInfo createInfo){
+__Model::__Model(__ModelCreateInfo createInfo): createInfo(createInfo){
+    LoadModelFile();
+
+}
+
+void __Model::LoadModelFile(){
     Assimp::Importer importer;
     const aiScene* scene = importer.ReadFile(createInfo.path, aiProcess_Triangulate | aiProcess_FlipUVs |
      aiProcess_GenNormals);
@@ -29,9 +34,6 @@ __Model::__Model(__ModelCreateInfo createInfo){
     }
 
     ProcessNode(scene->mRootNode, scene);
-
-    this->shader = shader;
-    this->extraDrawCommands = extraDrawCommands;
 }
 
 void __Model::ProcessNode(aiNode* node, const aiScene* scene){
@@ -68,7 +70,7 @@ void __Model::ProcessNode(aiNode* node, const aiScene* scene){
                 __TextureCreateInfo createInfo;
                 createInfo.binding = 0;
                 createInfo.path = std::string(path.C_Str());
-                createInfo.descriptorSet = shader->GetDescriptorSet();
+                createInfo.descriptorSet = this->createInfo.shader->GetDescriptorSet();
 
                 textureMaps.albedoMap = std::make_shared<__Texture>(createInfo);
             }
@@ -94,11 +96,11 @@ void __Model::RecordDrawCommands(__CommandBuffer& commandBuffer, uint32_t instan
 }
 
 std::function<void(void)> __Model::GetExtraDrawCommands(){
-    return extraDrawCommands;
+    return createInfo.extraDrawCalls;
 }
 
 std::shared_ptr<__Shader> __Model::GetShader(){
-    return shader;
+    return createInfo.shader;
 }
 
 }

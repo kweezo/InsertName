@@ -6,7 +6,7 @@ __Fence::__Fence(): fence(VK_NULL_HANDLE){
     useCount = std::make_shared<uint32_t>(1);
 }
 
-__Fence::__Fence(bool signaled){
+__Fence::__Fence(bool signaled): fence(VK_NULL_HANDLE) {
     if(!__Device::IsInitialized()){
         return;
     }
@@ -22,8 +22,16 @@ __Fence::__Fence(bool signaled){
     useCount = std::make_shared<uint32_t>(1);
 }
 
-VkFence __Fence::GetFence(){
+VkFence __Fence::GetFence() const{
+    if(fence == VK_NULL_HANDLE){
+        throw std::runtime_error("Tried to return an uninitialized fence");
+    }
+
     return fence;
+}
+
+bool __Fence::IsInitialized() const{
+    return fence != VK_NULL_HANDLE;
 }
 
 __Fence::__Fence(const __Fence& other){

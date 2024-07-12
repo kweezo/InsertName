@@ -21,7 +21,9 @@ public:
     __Fence(const __Fence& other);
     __Fence& operator=(const __Fence& other);
 
-    VkFence GetFence();
+    bool IsInitialized() const;
+
+    VkFence GetFence() const;
 private:
     VkFence fence;
     

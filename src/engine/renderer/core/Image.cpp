@@ -5,8 +5,7 @@ namespace renderer{
 const uint32_t TARGET_SECONDARY_BUFFER_COUNT_PER_THREAD = 5;
     
 std::vector<std::vector<std::pair<__CommandBuffer, bool>>> __Image::secondaryCommandBuffers = {};
-__CommandBuffer __Image::primaryCommandBuffer = {};
-__Fence __Image::finishedPrimaryCommandBufferExecutionFence = {};
+__Fence __Image::commandBuffersFinishedExecutionFence ={};
 std::set<uint32_t> __Image::commandPoolResetIndexes = {};
 std::list<std::pair<VkBuffer, VkDeviceMemory>> __Image::bufferAndMemoryCleanupQueue = { };
 bool __Image::primaryCommandBufferRecorded = false;
@@ -15,46 +14,17 @@ bool __Image::primaryCommandBufferRecorded = false;
 void __Image::Init(){
     CreateCommmandBuffers();
 
-    finishedPrimaryCommandBufferExecutionFence = __Fence(false);
+    commandBuffersFinishedExecutionFence = __Fence(false);
 }
 
 void __Image::Update(){
-    RecordPrimaryCommandBuffer();
-    SubmitPrimaryCommandBuffer();
+    SubmitCommandBuffers();
     UpdateCleanup();
 }
 
 void __Image::Cleanup(){
     secondaryCommandBuffers.clear();
-    primaryCommandBuffer.~__CommandBuffer();
-    finishedPrimaryCommandBufferExecutionFence.~__Fence();
-}
-void __Image::RecordPrimaryCommandBuffer(){
-    
-    std::vector<VkCommandBuffer> usedSecondaryCommandBuffers;
-
-    uint32_t i = 0;
-    for(std::vector<std::pair<__CommandBuffer, bool>>& commandBuffers : secondaryCommandBuffers){
-        for(std::pair<__CommandBuffer, bool>& commandBuffer : commandBuffers){
-            if(!std::get<bool>(commandBuffer)){
-                usedSecondaryCommandBuffers.push_back(std::get<__CommandBuffer>(commandBuffer).GetCommandBuffer());
-                std::get<bool>(commandBuffer) = true;
-
-                commandPoolResetIndexes.emplace(i);
-            }
-        }
-        i++;
-    }
-
-    if(usedSecondaryCommandBuffers.size() == 0){
-        return;
-    }
-
-    primaryCommandBuffer.BeginCommandBuffer(nullptr, false);
-    vkCmdExecuteCommands(primaryCommandBuffer.GetCommandBuffer(), usedSecondaryCommandBuffers.size(), usedSecondaryCommandBuffers.data());
-    primaryCommandBuffer.EndCommandBuffer();
-    
-    primaryCommandBufferRecorded = true;
+    commandBuffersFinishedExecutionFence.~__Fence();
 }
 
 VkFormat __Image::GetSupportedFormat(std::vector<VkFormat> candidates, VkImageTiling tiling, VkFormatFeatureFlags features){
@@ -77,20 +47,29 @@ inline bool __Image::HasStencilComponent(VkFormat format){
 }
 
 
-void __Image::SubmitPrimaryCommandBuffer(){
+void __Image::SubmitCommandBuffers(){
     if(!primaryCommandBufferRecorded){
         return;
     }
 
-    VkCommandBuffer primaryCommandBufferRaw = primaryCommandBuffer.GetCommandBuffer();
-    VkFence finishedCopyingFenceRaw = finishedPrimaryCommandBufferExecutionFence.GetFence();
+    VkFence finishedCopyingFenceRaw = commandBuffersFinishedExecutionFence.GetFence();
 
+    std::vector<VkCommandBuffer> recordedCommandBuffers{};
+
+    for(std::vector<std::pair<__CommandBuffer, bool>>& commandBuffers : secondaryCommandBuffers){
+        for(std::pair<__CommandBuffer, bool>& commandBuffer : commandBuffers){
+            if(!std::get<bool>(commandBuffer)){
+                recordedCommandBuffers.push_back(std::get<__CommandBuffer>(commandBuffer).GetCommandBuffer());
+            }
+        }
+    }
+//TODO paralelize image and data buffer command buffer execution
     VkSubmitInfo submitInfo{};
     submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
-    submitInfo.commandBufferCount = 1;
-    submitInfo.pCommandBuffers = &primaryCommandBufferRaw;
+    submitInfo.commandBufferCount = recordedCommandBuffers.size();
+    submitInfo.pCommandBuffers = recordedCommandBuffers.data();
 
-    if(vkQueueSubmit(__Device::GetTransferQueue(), 1, &submitInfo, finishedPrimaryCommandBufferExecutionFence.GetFence()) != VK_SUCCESS){
+    if(vkQueueSubmit(__Device::GetTransferQueue(), 1, &submitInfo, commandBuffersFinishedExecutionFence.GetFence()) != VK_SUCCESS){
         throw std::runtime_error("Failed to submit data buffer command buffer");
     }
 
@@ -130,14 +109,6 @@ __CommandBuffer __Image::GetFreeCommandBuffer(uint32_t threadIndex){
 }
 
 void __Image::CreateCommmandBuffers(){
-    __CommandBufferCreateInfo commandBufferInfo{};
-    commandBufferInfo.type = __CommandBufferType::GENERIC;
-    commandBufferInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-    commandBufferInfo.flags = COMMAND_POOL_TYPE_TRANSFER | COMMAND_BUFFER_ONE_TIME_SUBMIT_FLAG;
-    commandBufferInfo.threadIndex = 0;
-
-    primaryCommandBuffer = __CommandBuffer(commandBufferInfo);
-
     uint32_t i = 0;
     secondaryCommandBuffers.resize(std::thread::hardware_concurrency());
     for(std::vector<std::pair<__CommandBuffer, bool>>& commandBuffers : secondaryCommandBuffers){

@@ -57,14 +57,15 @@ public:
 
 
 private: //copied from learnopengl.com *mostly* shamelessly
+    void LoadModelFile();
     void ProcessNode(aiNode* node, const aiScene* scene);
 
     std::vector<__Mesh> meshes;
     std::unordered_map<std::string, __Texture> loadedTextures;
-    std::function<void(void)> extraDrawCommands;
 
-    std::shared_ptr<__Shader> shader;
     __VertexInputDescriptions extraDescriptions;
+
+    __ModelCreateInfo createInfo;
 
 };
 

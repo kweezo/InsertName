@@ -16,6 +16,7 @@
 #include "CommandPool.hpp"
 #include "CommandBuffer.hpp"
 #include "Fence.hpp"
+#include "Semaphore.hpp"
 
 
 namespace renderer{
@@ -28,6 +29,14 @@ struct __DataBufferCreateInfo{
     bool isDynamic;
     bool transferToLocalDeviceMemory;
     uint32_t threadIndex;
+
+    __Semaphore signalSemaphore;
+};
+
+struct __DataBufferStagingCommandBuferData{
+    __CommandBuffer commandBuffer;
+    bool free;
+    __Semaphore signalSemaphore;
 };
 
 class __DataBuffer{
@@ -56,7 +65,7 @@ public:
 private:
 
     static void CreateCommandBuffers();
-    static __CommandBuffer RetrieveFreeStagingCommandBuffer(uint32_t threadIndex);
+    static __CommandBuffer RetrieveFreeStagingCommandBuffer(uint32_t threadIndex, __Semaphore signalSemaphore);
 
     static void RecordPrimaryCommandBuffer();
     static void SubmitCommandBuffers();
@@ -64,9 +73,7 @@ private:
 
     void RecordCopyCommandBuffer(uint32_t threadIndex, size_t size);
 
-    size_t size;
-    bool transferToLocalDeviceMemory;
-    bool isDynamic;
+    __DataBufferCreateInfo createInfo;
 
     VkBuffer buffer;
     VkDeviceMemory memory;
@@ -74,11 +81,11 @@ private:
     VkBuffer stagingBuffer;
     VkDeviceMemory stagingMemory;
 
-    static std::vector<std::vector<std::pair<__CommandBuffer, bool>>> stagingCommandBuffers;
+    static std::vector<std::vector<__DataBufferStagingCommandBuferData>> stagingCommandBuffers;
     static std::list<VkDeviceMemory> stagingMemoryDeleteQueue;
     static std::set<uint32_t> resetPoolIndexes;
     static __Fence finishedCopyingFence;
-    static bool primaryCommandBufferRecorded;
+    static bool anyCommandBuffersRecorded;
 
     std::shared_ptr<uint32_t> useCount;
 };

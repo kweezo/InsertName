@@ -29,27 +29,47 @@ void Renderer::SoftInit(){
         fence = __Fence(true);
     }
 
+    __SemaphoreCreateInfo semaphoreInfo{};
+
     for(__Semaphore& semaphore : renderSemaphores){
-        semaphore = __Semaphore();
+        semaphore = __Semaphore(semaphoreInfo);
     }
 
     for(__Semaphore& semaphore : presentSemaphores){
-        semaphore = __Semaphore();
+        semaphore = __Semaphore(semaphoreInfo);
     }
 
 
     __Image::Update();
 }
 
-void Renderer::Update(){
+void Renderer::UpdatePrepare(){
     std::array<VkFence, 1> waitFences = {inFlightFences[__Swapchain::GetFrameInFlight()].GetFence()}; 
     vkWaitForFences(__Device::GetDevice(), waitFences.size(), waitFences.data(), VK_TRUE, std::numeric_limits<uint64_t>::max());
     vkResetFences(__Device::GetDevice(), waitFences.size(), waitFences.data());
 
     __Swapchain::IncrementCurrentFrameIndex(presentSemaphores[__Swapchain::GetFrameInFlight()]);
+}
 
-    __DataBuffer::Update();
+void Renderer::UpdateComponents(){
     Camera::__Update();
+
+
+    std::array<std::thread, 2> threads = {
+        std::thread(__DataBuffer::Update),
+        std::thread(__Image::Update)
+    };
+
+    for(std::thread& thread : threads){
+        thread.join();
+    }
+    
+}
+
+void Renderer::Update(){
+    UpdatePrepare();
+
+    UpdateComponents();
 
     Submit();
     Present(); 
