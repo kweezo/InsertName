@@ -15,14 +15,103 @@
                 "type": "sampler",
                 "stage": "fragment"
             }
+        ],
+        "inputAttributes": [
+            {
+                "location": 0,
+                "binding": 0,
+                "format": 103,
+                "offset": 0
+            },
+            {
+                "location": 1,
+                "binding": 0,
+                "format": 106,
+                "offset": 8
+            }
+        ],
+        "bindingDescriptions": [
+            {
+                "binding": 0,
+                "stride": 20,
+                "inputRate": 0
+            }
         ]
+
         }, 
         {
         "vertexPath": "basicMesh.vert.spv",
         "fragmentPath": "basicMesh.frag.spv",
         "name": "basicMesh",
         "bindings": [
-        ] 
+            {
+                "binding": 0,
+                "type": "uniform_buffer",
+                "stage": "vertex"
+            },
+            {
+                "binding": 1,
+                "type": "sampler",
+                "stage": "fragment"
+            }
+        ],
+        "inputAttributes": [
+            {
+                "location": 0,
+                "binding": 0,
+                "format": 106,
+                "offset": 0
+            },
+            {
+                "location": 1,
+                "binding": 0,
+                "format": 103,
+                "offset": 12
+            },
+            {
+                "location": 2,
+                "binding": 0,
+                "format": 106,
+                "offset": 20
+            },
+            {
+                "location": 3,
+                "binding": 1,
+                "format": 109,
+                "offset": 0
+            },
+            {
+                "location": 4,
+                "binding": 1,
+                "format": 109,
+                "offset": 16
+            },
+            {
+                "location": 5,
+                "binding": 1,
+                "format": 109,
+                "offset": 32
+            },
+            {
+                "location": 6,
+                "binding": 1,
+                "format": 109,
+                "offset": 48
+            }
+        ],
+        "bindingDescriptions": [
+            {
+                "binding": 0,
+                "stride": 30,
+                "inputRate": 0
+            },
+            {
+                "binding": 1,
+                "stride": 64,
+                "inputRate": 0
+            }
+
+        ]
         }
     ] 
 }

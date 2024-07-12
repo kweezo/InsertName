@@ -63,14 +63,45 @@ void __ShaderManager::Init(){
 
         }
 
+        std::vector<VkVertexInputBindingDescription> bindingDescriptions{};
+
+        const Json::Value& inputBindings = shader["bindingDescriptions"];
+        for(const Json::Value& inputBinding : inputBindings){
+            VkVertexInputBindingDescription bindingDescription{};
+            bindingDescription.binding = inputBinding["binding"].asInt();
+            bindingDescription.stride = inputBinding["stride"].asInt();
+            bindingDescription.inputRate = (VkVertexInputRate)inputBinding["inputRate"].asInt();
+
+            bindingDescriptions.push_back(bindingDescription);
+        }
+        
+        std::vector<VkVertexInputAttributeDescription> attributeDescriptions{};
+        
+        const Json::Value& inputAttributes = shader["inputAttributes"];
+        for(const Json::Value& inputAttribute : inputAttributes){
+            VkVertexInputAttributeDescription attributeDescription{};
+            attributeDescription.binding = inputAttribute["binding"].asInt();
+            attributeDescription.format = (VkFormat)inputAttribute["format"].asInt();
+            attributeDescription.location = inputAttribute["location"].asInt();
+            attributeDescription.offset = inputAttribute["offset"].asInt();
+
+            attributeDescriptions.push_back(attributeDescription);
+        }
+
         vertexPath = shaderPath + vertexPath;
         fragmentPath = shaderPath + fragmentPath;
 
+        __VertexInputDescriptions inputDescriptions = {attributeDescriptions, bindingDescriptions};
+
         __ShaderManager::shaders.emplace(name, std::make_shared<__Shader>(vertexPath, fragmentPath,
-        name, descriptorBindings));
+        name, descriptorBindings, inputDescriptions));
     }
 
     __Shader::CreateDescriptorSets();
+
+    for(auto& [name, shader] : __ShaderManager::shaders){
+        shader->CreateGraphicsPipepeline();
+    }
 
     stream.close();
 }
@@ -130,7 +161,7 @@ VkDescriptorSet __Shader::GetDescriptorSet() const{
     return descriptorSet;
 }
 
-void __Shader::CreateGraphicsPipepeline(__VertexInputDescriptions vertexInputDescriptions){
+void __Shader::CreateGraphicsPipepeline(){
     __GraphicsPipelineCreateInfo createInfo{};
     createInfo.shaderStageCreateInfo = GetShaderStageCreateInfo();
     createInfo.attributeDescriptions = std::get<0>(vertexInputDescriptions);
@@ -144,7 +175,7 @@ __Shader::__Shader(){
 }
 
 __Shader::__Shader(const std::string vertexShaderPath, const std::string fragmentShaderPath, const std::string name, 
-     std::vector<VkDescriptorSetLayoutBinding> bindings){    
+     std::vector<VkDescriptorSetLayoutBinding> bindings, __VertexInputDescriptions vertexInputDescriptions){    
 
     useCount = std::make_shared<uint32_t>(1);
 
@@ -166,6 +197,8 @@ __Shader::__Shader(const std::string vertexShaderPath, const std::string fragmen
     if(vkCreateShaderModule(__Device::GetDevice(), &createInfo, nullptr, &fragmentShaderModule) != VK_SUCCESS){
         throw std::runtime_error("Failed to create fragment shader module");
     }
+
+    this->vertexInputDescriptions = vertexInputDescriptions;
 
     shaderBindings.push_back({this, bindings});
     this->name = name;

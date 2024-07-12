@@ -47,12 +47,11 @@ class __Shader{
 public:
     __Shader();
     __Shader(const std::string vertexShaderPath, const std::string fragmentShaderPath, const std::string name, 
-     std::vector<VkDescriptorSetLayoutBinding> bindings);    
+     std::vector<VkDescriptorSetLayoutBinding> bindings, __VertexInputDescriptions vertexInputDescriptions);    
     __Shader(const __Shader& other);
     __Shader operator=(const __Shader& other);
     ~__Shader();
 
-    void CreateGraphicsPipepeline(__VertexInputDescriptions vertexInputDescriptions);
     __GraphicsPipeline* GetGraphicsPipeline();
 
     VkShaderModule GetVertexShaderModule() const;
@@ -65,6 +64,7 @@ public:
 
     void Bind(VkCommandBuffer commandBuffer, VkPipelineLayout pipelineLayout);
 
+    void CreateGraphicsPipepeline();
 
     static void CreateDescriptorSets();
 private:
@@ -75,6 +75,8 @@ private:
 
     VkShaderModule vertexShaderModule;
     VkShaderModule fragmentShaderModule;
+
+    __VertexInputDescriptions vertexInputDescriptions;
 
     VkDescriptorSet descriptorSet;
 

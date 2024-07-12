@@ -30,8 +30,8 @@ namespace renderer{
 class __Model;
 
 struct __ModelCreateInfo{
-    const std::string path;
-    __Shader* shader;
+    std::string path;
+    std::shared_ptr<__Shader> shader;
     std::vector<VkVertexInputBindingDescription> vertexInputBindingDescriptions;
     std::vector<VkVertexInputAttributeDescription> vertexInputAttributeDescriptions;
     std::function<void(void)> extraDrawCalls;
@@ -54,7 +54,7 @@ public:
 
     void RecordDrawCommands(__CommandBuffer& commandBuffer, uint32_t instanceCount);
     
-    __Shader* GetShader();
+    std::shared_ptr<__Shader> GetShader();
     std::function<void(void)> GetExtraDrawCommands();
     __VertexInputDescriptions GetExtraDescriptions();
 
@@ -66,7 +66,7 @@ private: //copied from learnopengl.com *mostly* shamelessly
     std::unordered_map<std::string, __Texture> loadedTextures;
     std::function<void(void)> extraDrawCommands;
 
-    __Shader* shader;
+    std::shared_ptr<__Shader> shader;
     __VertexInputDescriptions extraDescriptions;
 
 };
