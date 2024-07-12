@@ -6,7 +6,6 @@ const uint32_t TARGET_STAGING_BUFFER_COUNT_PER_THREAD = 5;
 
 const size_t FREE_STAGING_MEMORY_TRESHOLD = 1024;
 
-__CommandBuffer __DataBuffer::primaryCommandBuffer = {};
 std::vector<std::vector<std::pair<__CommandBuffer, bool>>> __DataBuffer::stagingCommandBuffers = {};
 std::list<VkDeviceMemory> __DataBuffer::stagingMemoryDeleteQueue = {};
 __Fence __DataBuffer::finishedCopyingFence = {};
@@ -20,21 +19,13 @@ void __DataBuffer::Init(){
 }
 
 void __DataBuffer::CreateCommandBuffers(){
-    __CommandBufferCreateInfo commandBufferInfo{};
-    commandBufferInfo.type = __CommandBufferType::GENERIC;
-    commandBufferInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-    commandBufferInfo.flags = COMMAND_POOL_TYPE_TRANSFER | COMMAND_BUFFER_ONE_TIME_SUBMIT_FLAG;
-    commandBufferInfo.threadIndex = 0;
-
-    primaryCommandBuffer = __CommandBuffer(commandBufferInfo);
-
     uint32_t i = 0;
     stagingCommandBuffers.resize(std::thread::hardware_concurrency());
     for(std::vector<std::pair<__CommandBuffer, bool>>& commandBuffers : stagingCommandBuffers){
 
         __CommandBufferCreateInfo stagingCommandBufferInfo;
         stagingCommandBufferInfo.type = __CommandBufferType::DATA;
-        stagingCommandBufferInfo.level = VK_COMMAND_BUFFER_LEVEL_SECONDARY;
+        stagingCommandBufferInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
         stagingCommandBufferInfo.flags = COMMAND_POOL_TYPE_TRANSFER | COMMAND_BUFFER_ONE_TIME_SUBMIT_FLAG;
         stagingCommandBufferInfo.threadIndex = i;
 
@@ -48,13 +39,11 @@ void __DataBuffer::CreateCommandBuffers(){
 }
 
 void __DataBuffer::Update(){
-    RecordPrimaryCommandBuffer();
-    SubmitPrimaryCommandBuffer();
+    SubmitCommandBuffers();
     UpdateCleanup();
 }
 
 void __DataBuffer::Cleanup(){
-    primaryCommandBuffer.~__CommandBuffer();
     stagingCommandBuffers.clear();
     finishedCopyingFence.~__Fence();
 }
@@ -260,11 +249,7 @@ __CommandBuffer __DataBuffer::RetrieveFreeStagingCommandBuffer(uint32_t threadIn
 void __DataBuffer::RecordCopyCommandBuffer(uint32_t threadIndex, size_t size){
     __CommandBuffer commandBuffer = RetrieveFreeStagingCommandBuffer(threadIndex);
 
-    VkCommandBufferInheritanceInfo inheritanceInfo{};
-    inheritanceInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_INFO;
-
-
-    commandBuffer.BeginCommandBuffer(&inheritanceInfo, false);
+    commandBuffer.BeginCommandBuffer(nullptr, false);
 
     VkBufferCopy copyRegion{};
     copyRegion.size = size;
@@ -279,38 +264,13 @@ void __DataBuffer::RecordCopyCommandBuffer(uint32_t threadIndex, size_t size){
     }
 }
 
-void __DataBuffer::RecordPrimaryCommandBuffer(){
-    std::vector<VkCommandBuffer> usedSecondaryCommandBuffers;
-
-    uint32_t i = 0;
-    for(std::vector<std::pair<__CommandBuffer, bool>>& commandBuffers : stagingCommandBuffers){
-        for(std::pair<__CommandBuffer, bool>& commandBuffer : commandBuffers){
-            if(!std::get<bool>(commandBuffer)){
-                usedSecondaryCommandBuffers.push_back(std::get<__CommandBuffer>(commandBuffer).GetCommandBuffer());
-                resetPoolIndexes.emplace(i);
-            }
-        }
-        i++;
-    }
-
-    if(usedSecondaryCommandBuffers.size() == 0){
-        return;
-    }
-
-    primaryCommandBuffer.BeginCommandBuffer(nullptr, false);
-    vkCmdExecuteCommands(primaryCommandBuffer.GetCommandBuffer(), usedSecondaryCommandBuffers.size(), usedSecondaryCommandBuffers.data());
-    primaryCommandBuffer.EndCommandBuffer();
-
-    primaryCommandBufferRecorded = true;
-}
-
-void __DataBuffer::SubmitPrimaryCommandBuffer(){
+void __DataBuffer::SubmitCommandBuffers(){
     if(!primaryCommandBufferRecorded){
         return;
     }
 
 
-    VkCommandBuffer primaryCommandBufferRaw = primaryCommandBuffer.GetCommandBuffer();
+  /* VkCommandBuffer primaryCommandBufferRaw = primaryCommandBuffer.GetCommandBuffer();
     VkFence finishedCopyingFenceHandle = finishedCopyingFence.GetFence();
 
     VkSubmitInfo submitInfo{};
@@ -324,7 +284,7 @@ void __DataBuffer::SubmitPrimaryCommandBuffer(){
     }
 
     vkWaitForFences(__Device::GetDevice(), 1, &finishedCopyingFenceHandle, VK_TRUE, std::numeric_limits<uint64_t>::max());
-}
+*/}
 
 
 void __DataBuffer::UpdateCleanup(){

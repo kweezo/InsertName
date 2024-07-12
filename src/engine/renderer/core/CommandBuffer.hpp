@@ -26,7 +26,8 @@ enum __CommandBufferType{
     DATA = 2,
     UNIFORM = 3,
     INSTANCE = 4,
-    size = 5
+    MODEL = 6,
+    size = 6
 };
 
 struct __CommandBufferCreateInfo{

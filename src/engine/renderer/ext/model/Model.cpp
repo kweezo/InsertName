@@ -37,11 +37,11 @@ __Model::__Model(__ModelCreateInfo createInfo){
 void __Model::ProcessNode(aiNode* node, const aiScene* scene){
     for(uint32_t i = 0; i < node->mNumMeshes; i++){
         aiMesh* mesh = scene->mMeshes[node->mMeshes[i]];
-        std::vector<BasicMeshVertex> vertices;
+        std::vector<__BasicMeshVertex> vertices;
         std::vector<uint32_t> indices;
 
         for(uint32_t j = 0; j < mesh->mNumVertices; j++){
-            BasicMeshVertex vertex;
+            __BasicMeshVertex vertex;
             vertex.pos = glm::vec3(mesh->mVertices[j].x, mesh->mVertices[j].y, mesh->mVertices[j].z);
             vertex.texCoord = glm::vec2(mesh->mTextureCoords[0][j].x, mesh->mTextureCoords[0][j].y);
             vertex.normal = glm::vec3(mesh->mNormals[j].x, mesh->mNormals[j].y, mesh->mNormals[j].z);
@@ -55,7 +55,7 @@ void __Model::ProcessNode(aiNode* node, const aiScene* scene){
             }
         }
 
-        TextureMaps textureMaps{};
+        __TextureMaps textureMaps{};
 
 
         if(mesh->mMaterialIndex >= 0){

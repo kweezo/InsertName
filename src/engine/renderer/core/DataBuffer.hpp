@@ -59,7 +59,7 @@ private:
     static __CommandBuffer RetrieveFreeStagingCommandBuffer(uint32_t threadIndex);
 
     static void RecordPrimaryCommandBuffer();
-    static void SubmitPrimaryCommandBuffer();
+    static void SubmitCommandBuffers();
     static void UpdateCleanup();
 
     void RecordCopyCommandBuffer(uint32_t threadIndex, size_t size);
@@ -74,7 +74,6 @@ private:
     VkBuffer stagingBuffer;
     VkDeviceMemory stagingMemory;
 
-    static __CommandBuffer primaryCommandBuffer;
     static std::vector<std::vector<std::pair<__CommandBuffer, bool>>> stagingCommandBuffers;
     static std::list<VkDeviceMemory> stagingMemoryDeleteQueue;
     static std::set<uint32_t> resetPoolIndexes;

@@ -22,31 +22,35 @@
 
 namespace renderer{
 
-typedef struct BasicMeshVertex{
+typedef struct __BasicMeshVertex{
     glm::vec3 pos;
     glm::vec2 texCoord;
     glm::vec3 normal;
-}BasicMeshVertex;
+}__BasicMeshVertex;
 
-typedef struct TextureMaps{
+typedef struct __TextureMaps{
     std::shared_ptr<__Texture> diffuseMap{};
     std::shared_ptr<__Texture> specularMap{};
     std::shared_ptr<__Texture> normalMap{};
     std::shared_ptr<__Texture> albedoMap{};
-}TextureMaps;
+}__TextureMaps;
 
 class __Mesh{
 public:
-    __Mesh(std::vector<BasicMeshVertex>& vertices, std::vector<uint32_t>& indices, TextureMaps textureMaps);
+    __Mesh(std::vector<__BasicMeshVertex>& vertices, std::vector<uint32_t>& indices, __TextureMaps textureMaps);
 
     void RecordDrawCommands(__CommandBuffer& commandBuffer, uint32_t instanceCount);
 private:
     __DataBuffer vtnBuffer;
     __DataBuffer indexBuffer;
 
-    TextureMaps textureMaps;
+    __TextureMaps textureMaps;
 
     uint32_t indexCount;
+
+    static uint32_t GetCurrentThreadIndex();
+
+    static uint32_t currentThreadIndex;
 };
 
 }
