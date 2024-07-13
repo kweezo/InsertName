@@ -127,7 +127,6 @@ void __Image::CreateCommmandBuffers(){
 }
 
 __Image::__Image(){
-    useCount = std::make_shared<uint32_t>(1);
 }
 
 __Image::__Image(__ImageCreateInfo createInfo): createInfo(createInfo) {
@@ -323,6 +322,10 @@ __Image __Image::operator=(const __Image& other){
         return *this;
     }
 
+    if(useCount.get() == nullptr){
+        return *this;
+    }
+
     image = other.image;
     imageView = other.imageView;
     memory = other.memory;
@@ -335,6 +338,10 @@ __Image __Image::operator=(const __Image& other){
 }
 
 __Image::__Image(const __Image& other){
+    if(useCount.get() == nullptr){
+        return;
+    }
+
     image = other.image;
     imageView = other.imageView;
     memory = other.memory;

@@ -6,7 +6,6 @@ VkRenderPass __GraphicsPipeline::renderPass = {};
 std::vector <VkFramebuffer> __GraphicsPipeline::framebuffers = {};
 
 __GraphicsPipeline::__GraphicsPipeline(): pipeline(VK_NULL_HANDLE){
-    useCount = std::make_shared<uint32_t>(1);
 }
 
 void __GraphicsPipeline::Init(){
@@ -266,6 +265,10 @@ VkRenderPass __GraphicsPipeline::GetRenderPass(){
 }
 
 __GraphicsPipeline::__GraphicsPipeline(const __GraphicsPipeline& other){
+    if(useCount.get() == nullptr){
+        return;
+    }
+
     pipeline = other.pipeline;
     pipelineLayout = other.pipelineLayout;
     renderPass = other.renderPass;
@@ -276,6 +279,10 @@ __GraphicsPipeline::__GraphicsPipeline(const __GraphicsPipeline& other){
 
 __GraphicsPipeline __GraphicsPipeline::operator=(const __GraphicsPipeline& other){
     if(this == &other){
+        return *this;
+    }
+
+    if(useCount.get() == nullptr){
         return *this;
     }
 

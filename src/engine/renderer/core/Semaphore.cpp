@@ -3,7 +3,6 @@
 namespace renderer{
 
 __Semaphore::__Semaphore(): semaphore(VK_NULL_HANDLE){
-    useCount = std::make_shared<uint32_t>(1);
 }
 
 __Semaphore::__Semaphore(__SemaphoreCreateInfo createInfo): semaphore(VK_NULL_HANDLE){
@@ -34,6 +33,10 @@ bool __Semaphore::IsInitialized() const{
 }
 
 __Semaphore::__Semaphore(const __Semaphore& other){
+    if(useCount.get() == nullptr){
+        return;
+    }
+
     semaphore = other.semaphore;
     useCount = other.useCount;
     (*useCount.get())++;
@@ -41,6 +44,10 @@ __Semaphore::__Semaphore(const __Semaphore& other){
 
 __Semaphore& __Semaphore::operator=(const __Semaphore& other){
     if(this == &other){
+        return *this;
+    }
+
+    if(useCount.get() == nullptr){
         return *this;
     }
 

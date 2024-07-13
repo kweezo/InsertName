@@ -9,7 +9,6 @@ namespace renderer{
 //TODO delete image contents
 
 __Texture::__Texture(){
-    useCount = std::make_shared<uint32_t>(1);
 }
 
 __Texture::__Texture(__TextureCreateInfo createInfo): descriptorSet(createInfo.descriptorSet), binding(createInfo.binding) {
@@ -95,6 +94,10 @@ void __Texture::Update(){
 }
 
 __Texture::__Texture(const __Texture& other){
+    if(useCount.get() == nullptr){
+        return;
+    }
+
     width = other.width;
     height = other.height;
     channels = other.channels;
@@ -110,6 +113,10 @@ __Texture::__Texture(const __Texture& other){
 
 __Texture __Texture::operator=(const __Texture& other){
     if(this == &other){
+        return *this;
+    }
+
+    if(useCount.get() == nullptr){
         return *this;
     }
 

@@ -3,7 +3,6 @@
 namespace renderer{
 
 __Fence::__Fence(): fence(VK_NULL_HANDLE){
-    useCount = std::make_shared<uint32_t>(1);
 }
 
 __Fence::__Fence(bool signaled): fence(VK_NULL_HANDLE) {
@@ -35,6 +34,10 @@ bool __Fence::IsInitialized() const{
 }
 
 __Fence::__Fence(const __Fence& other){
+    if(useCount.get() == nullptr){
+        return;
+    }
+
     fence = other.fence;
     useCount = other.useCount;
     (*useCount.get())++;
@@ -42,6 +45,10 @@ __Fence::__Fence(const __Fence& other){
 
 __Fence& __Fence::operator=(const __Fence& other){
     if(this == &other){
+        return *this;
+    }
+
+    if(useCount.get() == nullptr){
         return *this;
     }
 

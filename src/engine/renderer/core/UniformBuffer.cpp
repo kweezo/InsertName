@@ -4,7 +4,6 @@
 namespace renderer{
 
 __UniformBuffer::__UniformBuffer(){
-    useCount = std::make_shared<uint32_t>(1);
 }
 
 __UniformBuffer::__UniformBuffer(__UniformBufferCreateInfo createInfo): size(createInfo.size), binding(createInfo.binding), 
@@ -59,6 +58,10 @@ VkWriteDescriptorSet __UniformBuffer::GetWriteDescriptorSet(){
 }
 
 __UniformBuffer::__UniformBuffer(const __UniformBuffer& other){
+    if(useCount.get() == nullptr){
+        return;
+    }
+
     dataBuffer = other.dataBuffer;
     size = other.size;
     binding = other.binding;
@@ -70,6 +73,10 @@ __UniformBuffer::__UniformBuffer(const __UniformBuffer& other){
 
 __UniformBuffer  __UniformBuffer::operator=(const __UniformBuffer& other){
     if(this == &other){
+        return *this;
+    }
+
+    if(useCount.get() == nullptr){
         return *this;
     }
 

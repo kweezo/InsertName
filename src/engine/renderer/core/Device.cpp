@@ -131,9 +131,7 @@ void __Device::CreateLogicalDevice(){
     if(queueFamilyInfo.transferFamilyFound){
         queueFamilyInfo.transferQueueCreateInfo.pQueuePriorities = transferQueuePriorities.data();
         queueCreateInfos.push_back(queueFamilyInfo.transferQueueCreateInfo);
-
     }
-
 
     VkDeviceCreateInfo createInfo{};
     createInfo.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;

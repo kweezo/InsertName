@@ -50,10 +50,9 @@ void __DataBuffer::Cleanup(){
 
 
 __DataBuffer::__DataBuffer(){
-    useCount = std::make_shared<uint32_t>(1);
 }
 
-__DataBuffer::__DataBuffer(__DataBufferCreateInfo createInfo) : createInfo(createInfo){
+__DataBuffer::__DataBuffer(__DataBufferCreateInfo createInfo) : createInfo(createInfo), stagingBuffer(VK_NULL_HANDLE), stagingMemory(VK_NULL_HANDLE){
 
     if(!__Device::DeviceMemoryFree()){
         createInfo.transferToLocalDeviceMemory = false;
@@ -65,6 +64,8 @@ __DataBuffer::__DataBuffer(__DataBufferCreateInfo createInfo) : createInfo(creat
 
         CreateBuffer(stagingBuffer, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, createInfo.size);
         AllocateMemory(stagingMemory, stagingBuffer, createInfo.size, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+
+        std::cerr << stagingBuffer << std::endl;
 
         UploadDataToMemory(stagingMemory, createInfo.data, createInfo.size);
 
@@ -117,6 +118,10 @@ VkBuffer __DataBuffer::GetBuffer(){
 }
 
 __DataBuffer::__DataBuffer(const __DataBuffer& other){
+    if(useCount.get() == nullptr){
+        return;
+    }
+
     buffer = other.buffer;
     memory = other.memory;
     stagingBuffer = other.stagingBuffer;
@@ -129,6 +134,10 @@ __DataBuffer::__DataBuffer(const __DataBuffer& other){
 
 __DataBuffer __DataBuffer::operator=(const __DataBuffer& other) {
     if(this == &other){
+        return *this;
+    }
+
+    if(useCount.get() == nullptr){
         return *this;
     }
 

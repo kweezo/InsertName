@@ -14,7 +14,6 @@ void __CommandBuffer::Init(){
 
 
 __CommandBuffer::__CommandBuffer() : commandBuffer(VK_NULL_HANDLE){
-    useCount = std::make_shared<uint32_t>(1);
     flags = 0;
 }
 
@@ -108,6 +107,10 @@ VkCommandBuffer __CommandBuffer::GetCommandBuffer(){
 }
 
 __CommandBuffer::__CommandBuffer(const __CommandBuffer &other){
+    if(useCount.get() == nullptr){
+        return;
+    }
+
     commandBuffer = other.commandBuffer;
     useCount = other.useCount;
     flags = other.flags;
@@ -117,6 +120,10 @@ __CommandBuffer::__CommandBuffer(const __CommandBuffer &other){
 
 __CommandBuffer __CommandBuffer::operator=(const __CommandBuffer &other){
     if (this == &other){
+        return *this;
+    }
+
+    if(useCount.get() == nullptr){
         return *this;
     }
 

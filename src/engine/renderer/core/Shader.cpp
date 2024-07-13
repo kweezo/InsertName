@@ -171,7 +171,6 @@ void __Shader::CreateGraphicsPipepeline(){
 }
 
 __Shader::__Shader(){
-    useCount = std::make_shared<uint32_t>(1);
 }
 
 __Shader::__Shader(const std::string vertexShaderPath, const std::string fragmentShaderPath, const std::string name, 
@@ -247,6 +246,10 @@ std::array<VkPipelineShaderStageCreateInfo, 2> __Shader::GetShaderStageCreateInf
 }
 
 __Shader::__Shader(const __Shader& other){
+    if(useCount.get() == nullptr){
+        return;
+    }
+
     useCount = other.useCount;
     vertexShaderModule = other.vertexShaderModule;
     fragmentShaderModule = other.fragmentShaderModule;
@@ -258,6 +261,10 @@ __Shader::__Shader(const __Shader& other){
 
 __Shader __Shader::operator=(const __Shader& other){
     if(this == &other){
+        return *this;
+    }
+
+    if(useCount.get() == nullptr){
         return *this;
     }
 
