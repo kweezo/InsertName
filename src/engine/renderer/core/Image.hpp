@@ -74,12 +74,13 @@ private:
     VkImageView imageView;
     VkDeviceMemory memory;
 
-    VkBuffer stagingBuffer;
-    VkDeviceMemory stagingMemory;
+    std::unique_ptr<__DataBuffer> stagingBuffer;
+
+    __Semaphore waitSemaphore;
 
     __ImageCreateInfo createInfo;
 
-    static std::list<std::pair<VkBuffer, VkDeviceMemory>> bufferAndMemoryCleanupQueue;
+    static std::list<std::unique_ptr<__DataBuffer>> bufferCleanupQueue;
 
 
     std::shared_ptr<uint32_t> useCount;

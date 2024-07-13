@@ -7,7 +7,7 @@ const uint32_t TARGET_SECONDARY_BUFFER_COUNT_PER_THREAD = 5;
 std::vector<std::vector<std::pair<__CommandBuffer, bool>>> __Image::secondaryCommandBuffers = {};
 __Fence __Image::commandBuffersFinishedExecutionFence ={};
 std::set<uint32_t> __Image::commandPoolResetIndexes = {};
-std::list<std::pair<VkBuffer, VkDeviceMemory>> __Image::bufferAndMemoryCleanupQueue = { };
+std::list<std::unique_ptr<__DataBuffer>> __Image::bufferCleanupQueue = { };
 bool __Image::primaryCommandBufferRecorded = false;
 
 
@@ -83,11 +83,7 @@ void __Image::UpdateCleanup(){
     }
     primaryCommandBufferRecorded = false;
 
-    for(std::pair<VkBuffer, VkDeviceMemory>& bufferAndMemory : bufferAndMemoryCleanupQueue){
-        vkFreeMemory(__Device::GetDevice(), std::get<1>(bufferAndMemory), nullptr);
-        vkDestroyBuffer(__Device::GetDevice(), std::get<0>(bufferAndMemory), nullptr);
-    }
-
+    bufferCleanupQueue.clear();
 }
 
 __CommandBuffer __Image::GetFreeCommandBuffer(uint32_t threadIndex){
@@ -150,11 +146,17 @@ __Image::__Image(__ImageCreateInfo createInfo): createInfo(createInfo) {
     }
 
     if(__Device::DeviceMemoryFree() && createInfo.copyToLocalDeviceMemory){
-        __DataBuffer::CreateBuffer(stagingBuffer, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, createInfo.size);
+    
+        waitSemaphore = __Semaphore(__SemaphoreCreateInfo{});
 
-        __DataBuffer::AllocateMemory(stagingMemory, stagingBuffer, createInfo.size, VK_MEMORY_PROPERTY_HOST_COHERENT_BIT | VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT);
+        __DataBufferCreateInfo bufferCreateInfo{};
+        bufferCreateInfo.data = createInfo.data;
+        bufferCreateInfo.size = createInfo.size;
+        bufferCreateInfo.isDynamic = false;
+        bufferCreateInfo.signalSemaphore = waitSemaphore;
+        bufferCreateInfo.transferToLocalDeviceMemory = false;
 
-        __DataBuffer::UploadDataToMemory(stagingMemory, createInfo.data, createInfo.size);
+       stagingBuffer = std::make_unique<__DataBuffer>(__DataBuffer(bufferCreateInfo));
 
         CopyDataToDevice();
     }else{
@@ -253,6 +255,7 @@ void __Image::CreateImageView(){
 }
 
 void __Image::CopyDataToDevice(){
+
     __CommandBuffer commandBuffer = GetFreeCommandBuffer(createInfo.threadIndex);
 
     VkCommandBufferInheritanceInfo inheritanceInfo{};
@@ -263,10 +266,10 @@ void __Image::CopyDataToDevice(){
     copyRegion.imageSubresource = {createInfo.aspectMask, 0, 0, 1};
 
     commandBuffer.BeginCommandBuffer(&inheritanceInfo, false);
-    vkCmdCopyBufferToImage(commandBuffer.GetCommandBuffer(), stagingBuffer, image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &copyRegion);
+    vkCmdCopyBufferToImage(commandBuffer.GetCommandBuffer(), stagingBuffer->GetBuffer(), image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &copyRegion);
     commandBuffer.EndCommandBuffer();
 
-    bufferAndMemoryCleanupQueue.push_front({stagingBuffer, stagingMemory});
+    bufferCleanupQueue.push_front(std::move(stagingBuffer));
 }
 
 void __Image::TransitionLayout(VkImageLayout oldLayout, VkImageLayout newLayout){

@@ -60,19 +60,19 @@ __DataBuffer::__DataBuffer(__DataBufferCreateInfo createInfo) : createInfo(creat
     }
 
     if(createInfo.transferToLocalDeviceMemory){
-        CreateBuffer(buffer, createInfo.usage | VK_BUFFER_USAGE_TRANSFER_DST_BIT, size);
+        CreateBuffer(buffer, createInfo.usage | VK_BUFFER_USAGE_TRANSFER_DST_BIT, createInfo.size);
         AllocateMemory(memory, buffer, size, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
 
-        CreateBuffer(stagingBuffer, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, size);
-        AllocateMemory(stagingMemory, stagingBuffer, size, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+        CreateBuffer(stagingBuffer, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, createInfo.size);
+        AllocateMemory(stagingMemory, stagingBuffer, createInfo.size, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
 
         UploadDataToMemory(stagingMemory, createInfo.data, createInfo.size);
 
-        RecordCopyCommandBuffer(createInfo.threadIndex, size);
+        RecordCopyCommandBuffer(createInfo.threadIndex, createInfo.size);
 
     }else{
-        CreateBuffer(buffer, createInfo.usage, size);
-        AllocateMemory(memory, buffer, size, VK_MEMORY_PROPERTY_HOST_COHERENT_BIT | VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT);
+        CreateBuffer(buffer, createInfo.usage, createInfo.size);
+        AllocateMemory(memory, buffer, createInfo.size, VK_MEMORY_PROPERTY_HOST_COHERENT_BIT | VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT);
 
         UploadDataToMemory(memory, createInfo.data, createInfo.size);
     }
@@ -330,14 +330,18 @@ void __DataBuffer::UpdateCleanup(){
 
     for(std::vector<__DataBufferStagingCommandBuferData>& commandBuffers : stagingCommandBuffers){
         commandBuffers.resize(TARGET_STAGING_BUFFER_COUNT_PER_THREAD);
-        for(std::pair<__CommandBuffer, bool>& commandBuffer : commandBuffers){
-            std::get<bool>(commandBuffer) = true;
+        for(__DataBufferStagingCommandBuferData& commandBuffer : commandBuffers){
+            commandBuffer.free = true;
         }
     }
 
     for(VkDeviceMemory stagingMemory : stagingMemoryDeleteQueue){
         vkFreeMemory(__Device::GetDevice(), stagingMemory, nullptr);
     }
+}
+
+void __DataBuffer::SetSignalSemaphore(__Semaphore signalSemaphore){
+    createInfo.signalSemaphore = signalSemaphore; 
 }
 
 }

@@ -58,6 +58,7 @@ public:
 
     VkBuffer GetBuffer();
 
+    void SetSignalSemaphore(__Semaphore signalSemaphore);
 
     static void CreateBuffer(VkBuffer& buffer, VkBufferUsageFlags usage, VkDeviceSize size);
     static void AllocateMemory(VkDeviceMemory& memory, VkBuffer buffer, size_t size, VkMemoryPropertyFlags properties);

@@ -43,6 +43,7 @@ __Mesh::__Mesh(std::vector<__BasicMeshVertex>& vertices, std::vector<uint32_t>& 
         vtnCreateInfo.transferToLocalDeviceMemory = true;
         vtnCreateInfo.usage = VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
         vtnCreateInfo.threadIndex = GetCurrentThreadIndex();
+        vtnCreateInfo.isDynamic = false;
 
         vtnBuffer = __DataBuffer(vtnCreateInfo);
 
@@ -52,6 +53,7 @@ __Mesh::__Mesh(std::vector<__BasicMeshVertex>& vertices, std::vector<uint32_t>& 
         indexCreateInfo.transferToLocalDeviceMemory = true;
         indexCreateInfo.usage = VK_BUFFER_USAGE_INDEX_BUFFER_BIT;
         indexCreateInfo.threadIndex = GetCurrentThreadIndex();
+        indexCreateInfo.isDynamic = false;
 
         indexBuffer = __DataBuffer(vtnCreateInfo);
 
