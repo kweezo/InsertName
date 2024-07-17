@@ -76,10 +76,13 @@ void ClientServiceLink::HandleConnection() {
 
 void ClientServiceLink::ProcessSendBuffer() {
     while (true) {
+        int sock_;
+        {
+            std::lock_guard<std::mutex> sockLock(sockMutex);
+            sock_ = sock;
+        }
         std::unique_lock<std::mutex> bufferLock(sendBufferMutex);
-        std::unique_lock<std::mutex> sockLock(sockMutex);
-        if (!sendBuffer.empty() && sock > 0) {
-            sockLock.unlock();
+        if (!sendBuffer.empty() && sock_ > 0) {
             std::string message = sendBuffer.front();
             bufferLock.unlock();
             if (SendDataFromBuffer(message)) {
@@ -89,6 +92,7 @@ void ClientServiceLink::ProcessSendBuffer() {
             }
 
         } else {
+            bufferLock.unlock();
             std::this_thread::sleep_for(std::chrono::milliseconds(100));
         }
     }
