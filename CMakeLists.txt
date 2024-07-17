@@ -104,6 +104,9 @@ if(BUILD_SERVER_CONTROL)
     if(WIN32)
         target_link_libraries(servercontrol PUBLIC
             servershared
+            pqxx
+            ${PQ_LIBRARY}
+            -l:pdcurses.a
         )
     else()
         target_link_libraries(servercontrol PUBLIC

@@ -74,6 +74,14 @@ void ServiceLink::HandleConnection(int socket) {
         std::string receivedMessage(buffer, bytesReceived);
         serviceId = stoi(GetFirstParameter(receivedMessage));
 
+        {
+            std::lock_guard<std::mutex> lock(socketMutex);
+            if (serviceSockets[serviceId] > 0) {
+                std::cerr << "Service " << serviceId << " already connected" << std::endl;
+                break;
+            }
+        }
+
         if (receivedMessage == "CONNECT") {
             receivedMessage += static_cast<char>(30) + std::to_string(socket);
         }

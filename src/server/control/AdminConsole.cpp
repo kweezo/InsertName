@@ -1,14 +1,5 @@
 #include "AdminConsole.hpp"
 
-#include "Config.hpp"
-#include "Server.hpp"
-#include "Log.hpp"
-
-#include <algorithm>
-#include <thread>
-#include <regex>
-
-
 bool AdminConsole::isRunning;
 std::array<std::string, COMMAND_COUNT> AdminConsole::commands;
 std::array<std::vector<std::string>, COMMAND_COUNT> AdminConsole::secParam;
@@ -27,20 +18,22 @@ size_t AdminConsole::selectionStart;
 size_t AdminConsole::selectionEnd;
 size_t AdminConsole::selectionStartOrdered;
 size_t AdminConsole::selectionEndOrdered;
+std::mutex AdminConsole::logMutex;
 
-void AdminConsole::init() {
-    initVariables();
+
+void AdminConsole::Init() {
+    InitVariables();
     initscr(); // Initialize ncurses
     keypad(stdscr, TRUE);
     noecho();
-    initColors();
-    addCommands();
-    initWindows();
+    InitColors();
+    AddCommands();
+    InitWindows();
 }
 
-void AdminConsole::initVariables() {
-    commandWindowHeight = Config::commandWindowHeight;
-    prompt = Config::commandPrompt;
+void AdminConsole::InitVariables() {
+    commandWindowHeight = AdvancedSettingsManager::GetSettings().commandWindowHeight;
+    prompt = AdvancedSettingsManager::GetSettings().commandPrompt;
 
     isRunning = true;
     currentCommand = -1;
@@ -48,7 +41,7 @@ void AdminConsole::initVariables() {
     selectionEnd = std::string::npos;
 }
 
-void AdminConsole::initColors() {
+void AdminConsole::InitColors() {
     start_color();
     init_pair(1, COLOR_WHITE, COLOR_BLACK);
     init_pair(2, COLOR_BLUE, COLOR_BLACK);
@@ -56,7 +49,7 @@ void AdminConsole::initColors() {
     init_pair(4, COLOR_RED, COLOR_BLACK);
 }
 
-void AdminConsole::initWindows() {
+void AdminConsole::InitWindows() {
     logWindow = derwin(stdscr, LINES-commandWindowHeight-1, COLS, 0, 0); // Create a new window. Parameters: parent window, number of lines, number of columns, y position, x position
     scrollok(logWindow, TRUE); // Enable scrolling for the log window
 
@@ -71,15 +64,30 @@ void AdminConsole::initWindows() {
 
 }
 
-void AdminConsole::addCommands() {
-    commands = {"stop", "config", "save"};
+void AdminConsole::AddCommands() {
+    commands = {"stop", "setting", "save"};
 
     secParam[0] = {"0"};
-    secParam[1] = {"dbname", "dbuser", "dbpassword", "dbhostaddr", "dbport", "serverport", "loginattempts", "loglevel", "maxlogbuffersize", "commandprompt", "commandwindowheight"};
-    secParam[2] = {"all", "config", "logs"};
+    secParam[1] = {
+        "serviceid",
+        "port",
+
+        "loglevel",
+        "maxlogbuffersize",
+
+        "dbname",
+        "dbuser",
+        "dbpassword",
+        "dbhostaddr",
+        "dbport",
+
+        "commandprompt",
+        "commandwindowheight"
+    };
+    secParam[2] = {"all", "setting", "logs"};
 }
 
-std::string AdminConsole::readLine() {
+std::string AdminConsole::ReadLine() {
     move(LINES-1, 0); // Move the cursor to the command line
     clrtoeol(); // Clear the command line
     printw(prompt.c_str()); // Print the command prefix
@@ -90,7 +98,7 @@ std::string AdminConsole::readLine() {
     cursorPos = 0;
     
     while ((ch = getch()) != '\n' && ch != '\r') {
-        processKey(ch);
+        ProcessKey(ch);
 
         if (line.empty() && (ch == '\n' || ch == '\r')) {
             return "";  // Return an empty string if the line is empty
@@ -106,7 +114,7 @@ std::string AdminConsole::readLine() {
     return line;
 }
 
-int AdminConsole::filterKey(int key) {
+int AdminConsole::FilterKey(int key) {
     switch (key) {
         case 8:
         case 127:
@@ -151,8 +159,8 @@ int AdminConsole::filterKey(int key) {
     return key;
 }
 
-void AdminConsole::processKey(int key) {
-    key = filterKey(key);
+void AdminConsole::ProcessKey(int key) {
+    key = FilterKey(key);
 
     switch (key) {
         case 443: // Ctrl+KEY_LEFT
@@ -434,7 +442,7 @@ void AdminConsole::processKey(int key) {
     move(LINES-1, cursorPos + prompt.size());
 }
 
-void AdminConsole::cmdReport(const std::string& msg, int colorPair) { // Same functionality as printLog, just different window
+void AdminConsole::CmdReport(const std::string& msg, int colorPair) { // Same functionality as printLog, just different window
     wattron(commandFeedbackWindow, COLOR_PAIR(colorPair));
     wprintw(commandFeedbackWindow, "\n%s", msg.c_str());
     wattroff(commandFeedbackWindow, COLOR_PAIR(colorPair));
@@ -443,7 +451,7 @@ void AdminConsole::cmdReport(const std::string& msg, int colorPair) { // Same fu
     wrefresh(commandWindow);
 }
 
-void AdminConsole::printLog(const std::string& msg, int colorPair) {
+void AdminConsole::PrintLog(const std::string& msg, int colorPair) {
     // Set the color pair for the log window
     wattron(logWindow, COLOR_PAIR(colorPair));
     // Print the message in the log window
@@ -457,7 +465,7 @@ void AdminConsole::printLog(const std::string& msg, int colorPair) {
     wrefresh(commandWindow);
 }
 
-void AdminConsole::processLine(const std::string& line) {
+void AdminConsole::ProcessLine(const std::string& line) {
     if (line.empty()) {
         return;
     }
@@ -500,137 +508,134 @@ void AdminConsole::processLine(const std::string& line) {
     if (commands[0] == "stop") {
         double value;
         if (cmdSize == 2) {
-            if (Config::TryPassDouble(commands[1], value)) {
-                stop(value);
+            if (AdvancedSettingsManager::TryPassDouble(commands[1], value)) {
+                Stop(value);
             } else {
-                cmdReport("Invalid argument for 'stop' command. Argument should be type double.", 4);
+                CmdReport("Invalid argument for 'stop' command. Argument should be type double.", 4);
             }
         } else if (cmdSize == 1) {
-            cmdReport("'stop' command requires a time argument.", 4);
+            CmdReport("'stop' command requires a time argument.", 4);
         } else {
-            cmdReport("Too many arguments for 'stop' command.", 4);
+            CmdReport("Too many arguments for 'stop' command.", 4);
         }
         
 
-    } else if (commands[0] == "config") {
+    } else if (commands[0] == "setting") {
         if (cmdSize == 1) {
-            cmdReport("'config' command requires parameters", 4);
+            CmdReport("'config' command requires parameters", 4);
             return;
         }
 
         if(cmdSize > 3){
-            cmdReport("Too many arguments for config command", 4);
+            CmdReport("Too many arguments for config command", 4);
             return;
         }
         
         auto it = std::find(secParam[1].begin(), secParam[1].end(), commands[1]);
         if (it == secParam[1].end()) {
-            cmdReport("Unknown config parameter: " + commands[1], 4);
+            CmdReport("Unknown config parameter: " + commands[1], 4);
             return;
         }
         int index = std::distance(secParam[1].begin(), it);
 
         if (cmdSize == 2) {
-            cmdReport("Setting '" + commands[1] + "' is set to: '" + Config::AccessConfigPointer(index) + '\'', 2);
+            CmdReport("Setting '" + commands[1] + "' is set to: '" + AdvancedSettingsManager::GetSetting(index) + '\'', 2);
             return;
         }
 
         // Size is 3
         if (index <= 2 || index == 9) {
-            Config::SetConfigStringValue(index, commands[2]);
-            cmdReport("Setting '" + commands[1] + "' is set to: '" + commands[2] + '\'', 2);
+            AdvancedSettingsManager::SetSetting(index, commands[2]);
+            CmdReport("Setting '" + commands[1] + "' is set to: '" + commands[2] + '\'', 2);
             return;
         }
         if (index == 3) {
-            if (Config::IsValidIPv4(commands[2])) {
-                Config::SetConfigStringValue(index, commands[2]);
-                cmdReport("Setting '" + commands[1] + "' is set to: '" + commands[2] + '\'', 2);
+            if (AdvancedSettingsManager::IsValidIPv4(commands[2])) {
+                AdvancedSettingsManager::SetSetting(index, commands[2]);
+                CmdReport("Setting '" + commands[1] + "' is set to: '" + commands[2] + '\'', 2);
                 return;
             }
-            cmdReport("Invalid IPv4 address", 4);
+            CmdReport("Invalid IPv4 address", 4);
             return;
         }
         int value;
-        if (!Config::TryPassInt(commands[2], value)) {
-            cmdReport("Invalid argument for config command. Argument should be type int", 4);
+        if (!AdvancedSettingsManager::TryPassInt(commands[2], value)) {
+            CmdReport("Invalid argument for config command. Argument should be type int", 4);
             return;
         }
         if (index == 4 && (value < 1 || value > 65535)) {
-            cmdReport("Database port must be greater than 0 and smaller than 65536", 4);
+            CmdReport("Database port must be greater than 0 and smaller than 65536", 4);
         } else if (index == 5 && (value < 1 || value > 65535)) {
-            cmdReport("Server port must be greater than  and smaller than 65536", 4);
+            CmdReport("Server port must be greater than  and smaller than 65536", 4);
         } else if (index == 6 && value < 1) {
-            cmdReport("Login attempts must be greater than 0", 4);
+            CmdReport("Login attempts must be greater than 0", 4);
         } else if (index == 7 && (value < 0 || value > 4)) {
-            cmdReport("Log level must be between 0 and 4", 4);
+            CmdReport("Log level must be between 0 and 4", 4);
         } else if (index == 8 && value < 1) {
-            cmdReport("Max log buffer size must be greater than 0", 4);
+            CmdReport("Max log buffer size must be greater than 0", 4);
         } else if (index == 10 && value < 1) {
-            cmdReport("Command window height must be greater than 0", 4);
+            CmdReport("Command window height must be greater than 0", 4);
         } else {
-            Config::SetConfigIntValue(index, value);
-            cmdReport("Setting '" + commands[1] + "' is set to: '" + std::to_string(value) + '\'', 2);
+            AdvancedSettingsManager::SetSetting(index, value);
+            CmdReport("Setting '" + commands[1] + "' is set to: '" + std::to_string(value) + '\'', 2);
         }
     } else if (commands[0] == "save") {
         if (cmdSize == 1) {
-            cmdReport("Saving all...", 2);
-            Config::SaveConfig();
-            Log::sendLogsToDatabase();
+            CmdReport("Saving all...", 2);
+            AdvancedSettingsManager::SaveSettings();
+            Log::SendLogsToDatabase();
             return;
         }
 
         if (cmdSize > 2) {
-            cmdReport("Too many arguments for save command", 4);
+            CmdReport("Too many arguments for save command", 4);
             return;
         }
 
         auto it = std::find(secParam[2].begin(), secParam[2].end(), commands[1]);
         if (it == secParam[2].end()) {
-            cmdReport("Unknown parameter: " + commands[1], 4);
+            CmdReport("Unknown parameter: " + commands[1], 4);
             return;
         }
         int index = std::distance(secParam[2].begin(), it);
 
         if (index == 0) {
-            cmdReport("Saving all...", 2);
-            Config::SaveConfig();
-            Log::sendLogsToDatabase();
+            CmdReport("Saving all...", 2);
+            AdvancedSettingsManager::SaveSettings();
+            Log::SendLogsToDatabase();
             return;
         }
         if (index == 1) {
-            cmdReport("Saving config...", 2);
-            Config::SaveConfig();
+            CmdReport("Saving settings...", 2);
+            AdvancedSettingsManager::SaveSettings();
             return;
         }
         if (index == 2) {
-            cmdReport("Saving logs...", 2);
-            Log::sendLogsToDatabase();
+            CmdReport("Saving logs...", 2);
+            Log::SendLogsToDatabase();
             return;
         }
     } else {
-        cmdReport("Unknown command: '" + line + '\'', 4);
+        CmdReport("Unknown command: '" + line + '\'', 4);
     }
     
 }
 
-void AdminConsole::stop(double waitTime) {
-    cmdReport("Stopping server in " + std::to_string(waitTime) + " minutes...", 2);
-    Server::isShuttingDown = true;
+void AdminConsole::Stop(double waitTime) {
+    CmdReport("Stopping server in " + std::to_string(waitTime) + " minutes...", 2); //* There was Server::shutingdown = true; here, but it was removed
 
     std::thread([waitTime]() {
         int waitTimeInSeconds = static_cast<int>(waitTime * 60);
         std::this_thread::sleep_for(std::chrono::seconds(waitTimeInSeconds));
 
-        cmdReport("Stopping server...", 2);
-        Log::print(1, "Server stopped by admin command");
-        Server::shutdown = true;
+        CmdReport("Stopping server...", 2);
+        Log::Print(1, "Server stopped by admin command"); //* There was Server::shutdown = true; here, but it was removed
 
-        Config::SaveConfig();
-        Server::stop();
-        Log::destroy();
+        AdvancedSettingsManager::SaveSettings(); //* There was Server::Stop() here, but it was removed
+        Log::Destroy();
         isRunning = false;
 
-        cmdReport("Server stopped.", 1);
+        CmdReport("Server stopped.", 1);
         exit(0);
     }).detach();
 }

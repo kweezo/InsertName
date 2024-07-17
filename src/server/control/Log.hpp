@@ -1,8 +1,7 @@
 #pragma once
 
-#include "buildConfig.hpp"
-#include "Config.hpp"
 #include "AdminConsole.hpp"
+#include "AdvancedSettingsManager.hpp"
 
 #include <ctime>
 #include <string>
@@ -19,11 +18,11 @@ struct LogEntry {
 
 class Log {
 public:
-    static void init();
-    static void destroy();
+    static void Init();
+    static void Destroy();
 
-    static void print(int alertLevel, const std::string& msg);
-    static void sendLogsToDatabase();
+    static void Print(int alertLevel, const std::string& msg);
+    static void SendLogsToDatabase();
 
 private:
     static std::unique_ptr<pqxx::connection> c;

@@ -1,24 +1,22 @@
 #include "Log.hpp"
 
-#include "Config.hpp"
-
-
 std::unique_ptr<pqxx::connection> Log::c;
 int Log::logLevel;
 int Log::maxLogBufferSize;
 std::vector<LogEntry> Log::logsBuffer;
 
-void Log::init() {
 
-    logLevel = Config::logLevel;
-    maxLogBufferSize = Config::maxLogBufferSize;
+void Log::Init() {
+
+    logLevel = AdvancedSettingsManager::GetSettings().logLevel;
+    maxLogBufferSize = AdvancedSettingsManager::GetSettings().maxLogBufferSize;
 
 #ifndef NO_DB
-    std::string conn_str = "dbname=" + Config::dbname +
-                          " user=" + Config::dbuser +
-                          " password=" + Config::dbpassword +
-                          " hostaddr=" + Config::dbhostaddr +
-                          " port=" + Config::dbport;
+    std::string conn_str = "dbname=" + AdvancedSettingsManager::GetSettings().dbname +
+                          " user=" + AdvancedSettingsManager::GetSettings().dbuser +
+                          " password=" + AdvancedSettingsManager::GetSettings().dbpassword +
+                          " hostaddr=" + AdvancedSettingsManager::GetSettings().dbhostaddr +
+                          " port=" + AdvancedSettingsManager::GetSettings().dbport;
     c = std::make_unique<pqxx::connection>(conn_str); 
     
     if (!c->is_open()) {
@@ -31,14 +29,14 @@ void Log::init() {
 #endif
 }
 
-void Log::destroy() {
+void Log::Destroy() {
 #ifndef NO_DB
     // Send all remaining logs to the database
-    sendLogsToDatabase();
+    SendLogsToDatabase();
 #endif
 }
 
-void Log::print(int alertLevel, const std::string& msg) {
+void Log::Print(int alertLevel, const std::string& msg) {
     // Get current time as Unix timestamp
     std::time_t now = std::time(nullptr);
 
@@ -52,7 +50,7 @@ void Log::print(int alertLevel, const std::string& msg) {
     
         // Construct and print the log message
         std::string logMsg = "[" + std::string(buffer) + "] " + msg;
-        AdminConsole::printLog(logMsg, colorPair);
+        AdminConsole::PrintLog(logMsg, colorPair);
     }
 
 #ifndef NO_DB
@@ -61,12 +59,12 @@ void Log::print(int alertLevel, const std::string& msg) {
 
     // If we have enough logs in the buffer, send them to the database
     if (logsBuffer.size() >= maxLogBufferSize) {
-        sendLogsToDatabase();
+        SendLogsToDatabase();
     }
 #endif
 }
 
-void Log::sendLogsToDatabase() {
+void Log::SendLogsToDatabase() {
     // Create log entries
     pqxx::work w(*c);
     for (const auto& log : logsBuffer) {
