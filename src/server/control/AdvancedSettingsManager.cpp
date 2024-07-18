@@ -185,8 +185,12 @@ std::string AdvancedSettingsManager::GetSetting(size_t index) {
             return std::to_string(*arg);
         } else if constexpr (std::is_same_v<T, std::string>) {
             return *arg;
+        } else if constexpr (std::is_same_v<T, int*>) {
+            return std::to_string(*arg);
+        } else if constexpr (std::is_same_v<T, std::string*>) {
+            return *arg;
         } else {
-            throw std::runtime_error("Unsupported type");
+            throw std::runtime_error(std::string("Unsupported type: ") + typeid(T).name());
         }
     }, settings[index]);
 }
