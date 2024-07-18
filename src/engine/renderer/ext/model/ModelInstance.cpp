@@ -2,24 +2,28 @@
 
 namespace renderer{
 
-ModelInstance::ModelInstance(ModelInstanceCreateInfo createInfo){
+ModelInstanceHandle ModelInstance::Create(ModelInstanceCreateInfo& createInfo){
+    return std::shared_ptr<ModelInstance>(new ModelInstance(createInfo));
+}
+
+ModelInstance::ModelInstance(ModelInstanceCreateInfo& createInfo){
     this->model = glm::mat4(1.0f);
     this->model = glm::translate(this->model, createInfo.transform.pos);
     this->model = glm::scale(this->model, createInfo.transform.scale);
     //todo, face your enemies (rotation)
 
-    if(createInfo.isStatic){
+    if(!createInfo.isDynamic){
         __StaticModelData& modelData = staticModelInstanceMap[createInfo.model];
 
-        modelData.instanceList.push_back(this);
-        modelData.model = static_cast<__Model*>(createInfo.model);
+        modelData.instanceList.emplace_back(this);
+        modelData.model = createInfo.model;
     }
 
     shouldDraw = true;
 }
 
 void ModelInstance::__Cleanup(){
-    StaticModelInstance::Cleanup();
+    __StaticModelInstance::Cleanup();
 }
 
 glm::mat4 ModelInstance::GetModelMatrix(){

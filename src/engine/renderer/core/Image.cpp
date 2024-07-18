@@ -322,7 +322,7 @@ __Image __Image::operator=(const __Image& other){
         return *this;
     }
 
-    if(useCount.get() == nullptr){
+    if(other.useCount.get() == nullptr){
         return *this;
     }
 
@@ -338,7 +338,7 @@ __Image __Image::operator=(const __Image& other){
 }
 
 __Image::__Image(const __Image& other){
-    if(useCount.get() == nullptr){
+    if(other.useCount.get() == nullptr){
         return;
     }
 

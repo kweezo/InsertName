@@ -2,7 +2,6 @@
 
 #include <stdexcept>
 #include <thread>
-#include <unordered_map>
 
 #include <vulkan/vulkan.h>
 
@@ -16,22 +15,33 @@ namespace renderer{
 typedef struct __CommandPoolSet{
     VkCommandPool transferCommandPool;
     VkCommandPool graphicsCommandPool;
-    uint32_t commandBufferCount = 0;
 }__CommandPoolSet;
+
+enum __CommandBufferType{ // necessary evil :(
+    GENERIC = 0,
+    IMAGE = 1,
+    DATA = 2,
+    UNIFORM = 3,
+    INSTANCE = 4,
+    MODEL = 6,
+    size = 6
+};
+
 
 class __CommandPool{
 public:
+    static void Init();
     static void Cleanup();
 
-    static void CreateCommandPools(uint32_t poolID, uint32_t commandPoolType);
 
-    static void FreeCommandBuffer(VkCommandBuffer commandBuffer, uint32_t poolID, uint32_t commandPoolType);
     static VkCommandPool GetTransferCommandPool(uint32_t poolID);
     static VkCommandPool GetGraphicsCommandPool(uint32_t poolID);
 
     static VkCommandPool ResetPool(uint32_t poolID);// TODO implement lol
 private:
-    static std::unordered_map<uint32_t, __CommandPoolSet> commandPools;
+    static std::vector<__CommandPoolSet> commandPools;
+
+    static void CreateCommandPool(uint32_t poolID);
 };
 
 }

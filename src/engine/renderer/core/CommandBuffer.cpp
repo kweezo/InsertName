@@ -6,12 +6,7 @@ std::deque<std::mutex> __CommandBuffer::poolMutexes = {};
 
 void __CommandBuffer::Init(){
     poolMutexes.resize(__CommandBufferType::size * std::thread::hardware_concurrency());
-
-    for(uint32_t i = 0; i < __CommandBufferType::size * std::thread::hardware_concurrency(); i++){
-        __CommandPool::CreateCommandPools(i, 1);
-    }
 }
-
 
 __CommandBuffer::__CommandBuffer() : commandBuffer(VK_NULL_HANDLE){
     flags = 0;
@@ -19,7 +14,7 @@ __CommandBuffer::__CommandBuffer() : commandBuffer(VK_NULL_HANDLE){
 
 __CommandBuffer::__CommandBuffer(__CommandBufferCreateInfo createInfo): flags(createInfo.flags), level(createInfo.level){
 
-    poolID = createInfo.type * std::thread::hardware_concurrency() + createInfo.threadIndex; // TODO does this work?=????
+    poolID = createInfo.type * std::thread::hardware_concurrency() + createInfo.threadIndex; 
 
     VkCommandBufferAllocateInfo allocInfo = {};
     allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
@@ -63,7 +58,7 @@ void __CommandBuffer::BeginCommandBuffer(VkCommandBufferInheritanceInfo *inherit
 
 
      //actfuhasaally you can't use make_unique cause mutexes can't be moved 🤓
-    //I'm being FORCED into this by a static assert, fuck RAII all my homies *despise* RAII
+    //I'm being FORCED into this by a static assert, fuck RAII all my homies *despise* RAII(not really it just mildly inconveniences me)
 
     lock.reset(new std::lock_guard(poolMutexes[poolID]));
 
@@ -107,14 +102,17 @@ VkCommandBuffer __CommandBuffer::GetCommandBuffer(){
 }
 
 __CommandBuffer::__CommandBuffer(const __CommandBuffer &other){
-    if(useCount.get() == nullptr){
+    if(other.useCount.get() == nullptr){
         return;
     }
+
 
     commandBuffer = other.commandBuffer;
     useCount = other.useCount;
     flags = other.flags;
     poolID = other.poolID;
+    level = other.level;
+
     (*useCount.get())++;
 }
 
@@ -123,7 +121,7 @@ __CommandBuffer __CommandBuffer::operator=(const __CommandBuffer &other){
         return *this;
     }
 
-    if(useCount.get() == nullptr){
+    if(other.useCount.get() == nullptr){
         return *this;
     }
 
@@ -131,6 +129,8 @@ __CommandBuffer __CommandBuffer::operator=(const __CommandBuffer &other){
     useCount = other.useCount;
     flags = other.flags;
     poolID = other.poolID;
+    level = other.level;
+
     (*useCount.get())++;
 
     return *this;
@@ -143,10 +143,10 @@ __CommandBuffer::~__CommandBuffer(){
 
     if (*useCount == 1){
         if ((flags & COMMAND_BUFFER_GRAPHICS_FLAG) == COMMAND_BUFFER_GRAPHICS_FLAG){
-            __CommandPool::FreeCommandBuffer(commandBuffer, poolID, COMMAND_POOL_TYPE_GRAPHICS);
+            vkFreeCommandBuffers(__Device::GetDevice(), __CommandPool::GetGraphicsCommandPool(poolID), 1, &commandBuffer);
         }
         else{
-            __CommandPool::FreeCommandBuffer(commandBuffer, poolID, COMMAND_POOL_TYPE_TRANSFER);
+            vkFreeCommandBuffers(__Device::GetDevice(), __CommandPool::GetTransferCommandPool(poolID), 1, &commandBuffer);
         }
         useCount.reset();
     }

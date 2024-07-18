@@ -33,9 +33,4 @@ private:
     std::shared_ptr<uint32_t> useCount;
 };
 
-typedef struct RenderSemaphores{
-    __Semaphore renderFinishedSemaphore;
-    __Semaphore imageAvailableSemaphore;
-} RenderSemaphores;
-
 }

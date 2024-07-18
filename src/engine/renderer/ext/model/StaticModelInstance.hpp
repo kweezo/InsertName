@@ -24,23 +24,21 @@
 
 namespace renderer{
 
-class StaticModelInstance;
+class __StaticModelInstance;
 
 
 typedef struct __StaticModelData{
-    __Model* model = nullptr;
-    __DataBuffer instanceBuffer = {};
+    ModelHandle model;
+    __DataBuffer instanceBuffer;
 
-    bool initialized = false;
-    bool dataBufferInitialized = false;
+    std::array<__CommandBuffer, MAX_FRAMES_IN_FLIGHT> commandBuffer = {};
 
     uint32_t drawCount = 0;
-    std::array<__CommandBuffer, MAX_FRAMES_IN_FLIGHT> commandBuffer = {};
-    std::vector<StaticModelInstance*> instanceList = {};
+    std::vector<std::shared_ptr<__StaticModelInstance>> instanceList = {};
 } __StaticModelData;
 
 
-class StaticModelInstance{
+class __StaticModelInstance{
 public:
     static void Init();
     static void Update();
@@ -57,20 +55,16 @@ private:
     static void RecordStaticCommandBuffer(__StaticModelData& instances, uint32_t imageIndex, uint32_t threadsIndex);
     static void UploadDataToInstanceBuffer(__StaticModelData& instances, uint32_t threadIndex);
 
-    static void RecordSecondaryCommandBuffers();
-    static void RecordPrimaryCommandBuffer();
+    static void RecordCommandBuffers();
     static void UpdateCleanup();
 
-    static void PrimaryCommandBufferDrawCommands(uint32_t i);
-
-    static std::array<std::unordered_map<__Shader*, std::vector<VkCommandBuffer>>, MAX_FRAMES_IN_FLIGHT> InitializeInstanceData();
+    static std::array<boost::container::flat_map<std::shared_ptr<__Shader>, std::vector<VkCommandBuffer>>, MAX_FRAMES_IN_FLIGHT> InitializeInstanceData();
     static void HandleThreads();
 
     const static __VertexInputDescriptions baseStaticInstanceDescriptions;
 
-    static std::array<__CommandBuffer, MAX_FRAMES_IN_FLIGHT> staticInstancesCommandBuffers;
-    static std::array<RenderSemaphores, MAX_FRAMES_IN_FLIGHT> staticInstancesSemaphores;
-    static std::array<boost::container::flat_map<__Shader*, std::vector<VkCommandBuffer>>, MAX_FRAMES_IN_FLIGHT> secondaryBuffers;
+    static std::array<__Semaphore, MAX_FRAMES_IN_FLIGHT> renderFinishedSemaphores;
+    static std::array<boost::container::flat_map<std::shared_ptr<__Shader>, std::vector<VkCommandBuffer>>, MAX_FRAMES_IN_FLIGHT> commandBuffers;
 
     static std::vector<std::thread> threads;
     static uint32_t threadIndex;

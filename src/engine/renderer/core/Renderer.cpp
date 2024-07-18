@@ -14,9 +14,10 @@ void Renderer::HardInit(){
     __Instance::Init();
     __Device::Init();
     Window::Init();
+    __CommandPool::Init();
     __CommandBuffer::Init();
-    __Image::Init();
     __DataBuffer::Init();
+    __Image::Init();
     Camera::__Init();
 }
 

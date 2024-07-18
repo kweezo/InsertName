@@ -245,40 +245,6 @@ std::array<VkPipelineShaderStageCreateInfo, 2> __Shader::GetShaderStageCreateInf
     return {vertexShaderStageInfo, fragmentShaderStageInfo};
 }
 
-__Shader::__Shader(const __Shader& other){
-    if(useCount.get() == nullptr){
-        return;
-    }
-
-    useCount = other.useCount;
-    vertexShaderModule = other.vertexShaderModule;
-    fragmentShaderModule = other.fragmentShaderModule;
-    descriptorSet = other.descriptorSet;
-    name = other.name;
-
-    (*useCount.get())++;
-}
-
-__Shader __Shader::operator=(const __Shader& other){
-    if(this == &other){
-        return *this;
-    }
-
-    if(useCount.get() == nullptr){
-        return *this;
-    }
-
-    useCount = other.useCount;
-    vertexShaderModule = other.vertexShaderModule;
-    fragmentShaderModule = other.fragmentShaderModule;
-    descriptorSet = other.descriptorSet;
-    name = other.name;
-
-    (*useCount.get())++;
-
-    return *this;
-}
-
 __Shader::~__Shader(){
     if(useCount.get() == nullptr){
         return;

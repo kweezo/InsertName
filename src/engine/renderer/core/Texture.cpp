@@ -94,7 +94,7 @@ void __Texture::Update(){
 }
 
 __Texture::__Texture(const __Texture& other){
-    if(useCount.get() == nullptr){
+    if(other.useCount.get() == nullptr){
         return;
     }
 
@@ -116,7 +116,7 @@ __Texture __Texture::operator=(const __Texture& other){
         return *this;
     }
 
-    if(useCount.get() == nullptr){
+    if(other.useCount.get() == nullptr){
         return *this;
     }
 

@@ -23,7 +23,7 @@
 
 #include "Mesh.hpp"
 
-#define ModelHandle void*
+#define ModelHandle std::shared_ptr<__Model>
 
 namespace renderer{
 
@@ -49,6 +49,11 @@ private:
 class __Model{
 public:
     __Model(__ModelCreateInfo createInfo);
+
+    __Model(const __Model& other) = delete;
+    __Model(__Model&& other) = delete;
+    __Model& operator=(const __Model& other) = delete;
+    __Model& operator=(__Model&& other) = delete;
 
     void RecordDrawCommands(__CommandBuffer& commandBuffer, uint32_t instanceCount);
     

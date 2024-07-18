@@ -130,14 +130,14 @@ int main(){
 
     ModelInstanceCreateInfo instanceCreateInfo{};
     instanceCreateInfo.model = teapot;
-    instanceCreateInfo.isStatic = true;
+    instanceCreateInfo.isDynamic = true;
     instanceCreateInfo.transform = {
         glm::vec3(0.0f, 0.0f, 0.0f),
         glm::vec4(0.0f, 0.0f, 0.0f, 1.0f),
         glm::vec3(1.0f, 1.0f, 1.0f)
     };
 
-    ModelInstance teapotInstance = ModelInstance(instanceCreateInfo);
+    ModelInstanceHandle teapotInstance = ModelInstance::Create(instanceCreateInfo);
 
     while(!glfwWindowShouldClose(Window::GetGLFWwindow())){
         glfwPollEvents();

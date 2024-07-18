@@ -58,7 +58,7 @@ VkWriteDescriptorSet __UniformBuffer::GetWriteDescriptorSet(){
 }
 
 __UniformBuffer::__UniformBuffer(const __UniformBuffer& other){
-    if(useCount.get() == nullptr){
+    if(other.useCount.get() == nullptr){
         return;
     }
 
@@ -76,7 +76,7 @@ __UniformBuffer  __UniformBuffer::operator=(const __UniformBuffer& other){
         return *this;
     }
 
-    if(useCount.get() == nullptr){
+    if(other.useCount.get() == nullptr){
         return *this;
     }
 

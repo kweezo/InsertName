@@ -21,22 +21,28 @@
 #include "engine/renderer/core/Fence.hpp"
 #include "engine/renderer/core/Semaphore.hpp"
 
-#define ModelInstanceHandle ModelInstanceImpl*
 
-
+#define ModelInstanceHandle std::shared_ptr<ModelInstance> 
 
 namespace renderer{
 
 struct ModelInstanceCreateInfo{
-    ModelHandle model;
     Transform transform;
-    bool isStatic;
+    bool isDynamic;
+    ModelHandle model;
 };
 
 
-class ModelInstance : public StaticModelInstance{
+class ModelInstance : public __StaticModelInstance{
 public:
-    ModelInstance(ModelInstanceCreateInfo createInfo);
+    static ModelInstanceHandle Create(ModelInstanceCreateInfo& createInfo);
+
+
+    ModelInstance& operator=(const ModelInstance& other) = delete;
+    ModelInstance& operator=(ModelInstance&& other) = delete;
+    ModelInstance(const ModelInstance& other) = delete;
+    ModelInstance(ModelInstance&& other) = delete;
+
 
     static void __Update();
     static void __Draw(uint32_t imageIndex);
@@ -47,6 +53,8 @@ public:
     glm::mat4 GetModelMatrix() override;
 
 private:
+    ModelInstance(ModelInstanceCreateInfo& createInfo);
+
     bool shouldDraw;
     glm::mat4 model; 
 };

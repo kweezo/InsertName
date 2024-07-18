@@ -48,8 +48,12 @@ public:
     __Shader();
     __Shader(const std::string vertexShaderPath, const std::string fragmentShaderPath, const std::string name, 
      std::vector<VkDescriptorSetLayoutBinding> bindings, __VertexInputDescriptions vertexInputDescriptions);    
-    __Shader(const __Shader& other);
-    __Shader operator=(const __Shader& other);
+
+    __Shader(const __Shader& other) = delete;
+    __Shader operator=(const __Shader& other) = delete;
+    __Shader(__Shader&& other) = delete;
+    __Shader& operator=(__Shader&& other) = delete;
+
     ~__Shader();
 
     __GraphicsPipeline* GetGraphicsPipeline();

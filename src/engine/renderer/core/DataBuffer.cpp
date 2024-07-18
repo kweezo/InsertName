@@ -65,8 +65,6 @@ __DataBuffer::__DataBuffer(__DataBufferCreateInfo createInfo) : createInfo(creat
         CreateBuffer(stagingBuffer, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, createInfo.size);
         AllocateMemory(stagingMemory, stagingBuffer, createInfo.size, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
 
-        std::cerr << stagingBuffer << std::endl;
-
         UploadDataToMemory(stagingMemory, createInfo.data, createInfo.size);
 
         RecordCopyCommandBuffer(createInfo.threadIndex, createInfo.size);
@@ -118,7 +116,7 @@ VkBuffer __DataBuffer::GetBuffer(){
 }
 
 __DataBuffer::__DataBuffer(const __DataBuffer& other){
-    if(useCount.get() == nullptr){
+    if(other.useCount.get() == nullptr){
         return;
     }
 
@@ -137,7 +135,7 @@ __DataBuffer __DataBuffer::operator=(const __DataBuffer& other) {
         return *this;
     }
 
-    if(useCount.get() == nullptr){
+    if(other.useCount.get() == nullptr){
         return *this;
     }
 
@@ -247,7 +245,7 @@ __CommandBuffer __DataBuffer::RetrieveFreeStagingCommandBuffer(uint32_t threadIn
 
     __CommandBufferCreateInfo stagingCommandBufferInfo;
     stagingCommandBufferInfo.type = __CommandBufferType::DATA;
-    stagingCommandBufferInfo.level = VK_COMMAND_BUFFER_LEVEL_SECONDARY;
+    stagingCommandBufferInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
     stagingCommandBufferInfo.flags = COMMAND_POOL_TYPE_TRANSFER | COMMAND_BUFFER_ONE_TIME_SUBMIT_FLAG;
     stagingCommandBufferInfo.threadIndex = threadIndex;
 

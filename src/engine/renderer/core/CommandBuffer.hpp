@@ -20,16 +20,6 @@
 
 namespace renderer{
 
-enum __CommandBufferType{
-    GENERIC = 0,
-    IMAGE = 1,
-    DATA = 2,
-    UNIFORM = 3,
-    INSTANCE = 4,
-    MODEL = 6,
-    size = 6
-};
-
 struct __CommandBufferCreateInfo{
     VkCommandBufferLevel level;
     uint32_t flags;

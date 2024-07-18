@@ -5,10 +5,10 @@ namespace renderer{
 boost::container::flat_map<ModelHandle, std::shared_ptr<__Model>> ModelManager::models;
 
 ModelHandle ModelManager::Create(__ModelCreateInfo createInfo){
-    std::shared_ptr<__Model> model = std::make_shared<__Model>(__Model(createInfo));
+    std::shared_ptr<__Model> model = std::make_shared<__Model>(createInfo);
     models[static_cast<ModelHandle>(model.get())] = model;
 
-    return static_cast<ModelHandle>(model.get());
+    return model;
 }
 
 void ModelManager::Destoy(ModelHandle handle){

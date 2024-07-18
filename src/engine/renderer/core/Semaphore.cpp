@@ -33,7 +33,7 @@ bool __Semaphore::IsInitialized() const{
 }
 
 __Semaphore::__Semaphore(const __Semaphore& other){
-    if(useCount.get() == nullptr){
+    if(other.useCount.get() == nullptr){
         return;
     }
 
@@ -47,7 +47,7 @@ __Semaphore& __Semaphore::operator=(const __Semaphore& other){
         return *this;
     }
 
-    if(useCount.get() == nullptr){
+    if(other.useCount.get() == nullptr){
         return *this;
     }
 

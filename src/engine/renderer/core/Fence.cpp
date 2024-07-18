@@ -34,7 +34,7 @@ bool __Fence::IsInitialized() const{
 }
 
 __Fence::__Fence(const __Fence& other){
-    if(useCount.get() == nullptr){
+    if(other.useCount.get() == nullptr){
         return;
     }
 
@@ -48,7 +48,7 @@ __Fence& __Fence::operator=(const __Fence& other){
         return *this;
     }
 
-    if(useCount.get() == nullptr){
+    if(other.useCount.get() == nullptr){
         return *this;
     }
 
