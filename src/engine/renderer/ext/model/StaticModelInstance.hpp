@@ -31,7 +31,7 @@ typedef struct __StaticModelData{
     ModelHandle model;
     __DataBuffer instanceBuffer;
 
-    std::array<__CommandBuffer, MAX_FRAMES_IN_FLIGHT> commandBuffer = {};
+    std::array<__CommandBuffer, MAX_FRAMES_IN_FLIGHT> commandBuffers = {};
 
     uint32_t drawCount = 0;
     std::vector<std::shared_ptr<__StaticModelInstance>> instanceList = {};
@@ -39,18 +39,21 @@ typedef struct __StaticModelData{
 
 
 class __StaticModelInstance{
-public:
-    static void Init();
-    static void Update();
-    static void DrawStatic(uint32_t imageIndex);
-
 protected:
+    static void StaticInit();
+    static void StaticUpdate();
+    static void StaticCleanup();
+
+    static VkSemaphore GetStaticRenderFinishedSemaphore(uint32_t imageIndex);
+
+    static void StaticDraw(uint32_t imageIndex, __Semaphore presentSemaphore);
+
     virtual bool GetShouldDraw() = 0;
     virtual glm::mat4 GetModelMatrix() = 0;
 
     static boost::container::flat_map<ModelHandle, __StaticModelData> staticModelInstanceMap;
 
-    static void Cleanup();
+    static void InitializeStaticInstanceData(__StaticModelData& instanceData, ModelHandle model);
 private:
     static void RecordStaticCommandBuffer(__StaticModelData& instances, uint32_t imageIndex, uint32_t threadsIndex);
     static void UploadDataToInstanceBuffer(__StaticModelData& instances, uint32_t threadIndex);

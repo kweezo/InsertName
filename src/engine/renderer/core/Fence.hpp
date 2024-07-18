@@ -25,7 +25,7 @@ public:
 
     VkFence GetFence() const;
 private:
-    VkFence fence;
+    VkFence fence = VK_NULL_HANDLE;
     
     std::shared_ptr<uint32_t> useCount;
 };

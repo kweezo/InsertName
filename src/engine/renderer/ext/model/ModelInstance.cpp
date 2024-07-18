@@ -13,17 +13,42 @@ ModelInstance::ModelInstance(ModelInstanceCreateInfo& createInfo){
     //todo, face your enemies (rotation)
 
     if(!createInfo.isDynamic){
-        __StaticModelData& modelData = staticModelInstanceMap[createInfo.model];
+        if(staticModelInstanceMap.find(createInfo.model) == staticModelInstanceMap.end()){
+            __StaticModelData instanceData{};
+            instanceData.instanceList.emplace_back(this);
 
-        modelData.instanceList.emplace_back(this);
-        modelData.model = createInfo.model;
+            InitializeStaticInstanceData(instanceData, createInfo.model);
+
+            staticModelInstanceMap[createInfo.model] = instanceData;
+        }
+        else{
+            __StaticModelData& instanceData =  staticModelInstanceMap[createInfo.model];
+            instanceData.instanceList.emplace_back(this);
+        }
+
     }
 
     shouldDraw = true;
 }
 
+void ModelInstance::__Init(){
+    StaticInit();
+}
+
+void ModelInstance::__Update(){
+    StaticUpdate();
+}
+
+void ModelInstance::__Draw(uint32_t imageIndex, __Semaphore presentSemaphore){
+    StaticDraw(imageIndex, presentSemaphore);
+}
+
 void ModelInstance::__Cleanup(){
-    __StaticModelInstance::Cleanup();
+    StaticCleanup();
+}
+
+std::array<VkSemaphore, 2> ModelInstance::GetRenderFinishedSemaphores(uint32_t imageIndex){
+    return {GetStaticRenderFinishedSemaphore(imageIndex), GetStaticRenderFinishedSemaphore(imageIndex)};
 }
 
 glm::mat4 ModelInstance::GetModelMatrix(){

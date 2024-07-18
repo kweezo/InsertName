@@ -40,6 +40,7 @@ void Renderer::SoftInit(){
         semaphore = __Semaphore(semaphoreInfo);
     }
 
+    ModelInstance::__Init();
 
     __Image::Update();
 }
@@ -62,9 +63,12 @@ void Renderer::UpdateComponents(){
     };
 
     for(std::thread& thread : threads){
-        thread.join();
+        if(thread.joinable()){
+            thread.join(); // TODO if proper sync we don't have to wait???
+        }
     }
-    
+
+    ModelInstance::__Update();   
 }
 
 void Renderer::Update(){
@@ -79,32 +83,15 @@ void Renderer::Update(){
 }
 
 void Renderer::Submit(){
-    std::array<VkSemaphore, 1> waitSemaphores = {presentSemaphores[__Swapchain::GetFrameInFlight()].GetSemaphore()};
-    std::array<VkSemaphore, 1> signalSemaphores = {renderSemaphores[__Swapchain::GetFrameInFlight()].GetSemaphore()};
-    std::array<VkPipelineStageFlags, 1>  waitDestinationStageMask = {VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT};
-
-    VkSubmitInfo submitInfo{};
-    submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
-
-    submitInfo.commandBufferCount = commandBuffers[__Swapchain::GetFrameInFlight()].size();
-    submitInfo.pCommandBuffers = commandBuffers[__Swapchain::GetFrameInFlight()].data();
-
-    submitInfo.waitSemaphoreCount = waitSemaphores.size();
-    submitInfo.pWaitSemaphores = waitSemaphores.data();
-    submitInfo.pWaitDstStageMask = waitDestinationStageMask.data();
-
-    submitInfo.signalSemaphoreCount = signalSemaphores.size();
-    submitInfo.pSignalSemaphores = signalSemaphores.data();
-
-    if(vkQueueSubmit(__Device::GetGraphicsQueue(), 1, &submitInfo, inFlightFences[__Swapchain::GetFrameInFlight()].GetFence()) != VK_SUCCESS){
-        throw std::runtime_error("Failed to submit rendering commands to queue");
-    }
+    ModelInstance::__Draw(__Swapchain::GetImageIndex(), presentSemaphores[__Swapchain::GetFrameInFlight()]);
 }
 
 void Renderer::Present(){
+    std::array<VkSemaphore, 2> modelRenderFinishedSemaphores = ModelInstance::GetRenderFinishedSemaphores(__Swapchain::GetImageIndex());
+
     std::array<VkSwapchainKHR, 1> swapchains = {__Swapchain::GetSwapchain()};
     std::array<uint32_t, 1> imageIndices = {__Swapchain::GetImageIndex()};
-    std::array<VkSemaphore, 1> waitSemaphores = {renderSemaphores[__Swapchain::GetFrameInFlight()].GetSemaphore()};
+    std::array<VkSemaphore, 1> waitSemaphores = {modelRenderFinishedSemaphores[0]};
 
     VkPresentInfoKHR presentInfo{};
     presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
@@ -127,10 +114,6 @@ void Renderer::UpdateCleanup(){
     for(std::vector<VkCommandBuffer>& commandBuffersForFrame : commandBuffers){
         commandBuffersForFrame.clear();
     }
-}
-
-void Renderer::AddCommandBuffer(__CommandBuffer& commandBuffer, uint32_t frameInFlight){
-    commandBuffers[frameInFlight].push_back(commandBuffer.GetCommandBuffer());
 }
 
 void Renderer::Cleanup(){

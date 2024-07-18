@@ -32,7 +32,6 @@ public:
 
     static void Update();
 
-    static void AddCommandBuffer(__CommandBuffer& commandBuffer, uint32_t frameInFlight);
 private:
     static void HardInit();
     static void SoftInit();

@@ -265,7 +265,7 @@ VkRenderPass __GraphicsPipeline::GetRenderPass(){
 }
 
 __GraphicsPipeline::__GraphicsPipeline(const __GraphicsPipeline& other){
-    if(useCount.get() == nullptr){
+    if(other.useCount.get() == nullptr){
         return;
     }
 
@@ -282,7 +282,7 @@ __GraphicsPipeline __GraphicsPipeline::operator=(const __GraphicsPipeline& other
         return *this;
     }
 
-    if(useCount.get() == nullptr){
+    if(other.useCount.get() == nullptr){
         return *this;
     }
 

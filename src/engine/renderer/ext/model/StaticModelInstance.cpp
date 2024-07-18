@@ -27,28 +27,28 @@ const __VertexInputDescriptions __StaticModelInstance::baseStaticInstanceDescrip
 }
 };
 
-void __StaticModelInstance::Init(){
+void __StaticModelInstance::StaticInit(){
     for(uint32_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++){
         __SemaphoreCreateInfo semaphoreInfo{};
 
         renderFinishedSemaphores[i] = __Semaphore(semaphoreInfo);
     }
 }
+    
+void __StaticModelInstance::InitializeStaticInstanceData(__StaticModelData& instanceData, ModelHandle model){
+    instanceData.model = model;
+}
 
 void __StaticModelInstance::HandleThreads(){
     uint32_t threadIndex = 0;
     for(auto& [modelHandle, instances] : staticModelInstanceMap){
         threads.push_back(std::thread(&UploadDataToInstanceBuffer, std::ref(instances), threadIndex));
-        threads.back().detach();
-
         threadIndex = (threadIndex + 1) % std::thread::hardware_concurrency();
     }
 
     for(uint32_t i = 0; i < threads.size(); i++){
         if(threads[i].joinable()){
             threads[i].join();
-            threads.erase(threads.begin() + i);
-            i--;
         }
     } 
 }
@@ -57,7 +57,7 @@ void __StaticModelInstance::RecordCommandBuffers(){
     HandleThreads();
     for(uint32_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++){
         for(auto& [modelHandle, instanceData] : staticModelInstanceMap){
-            VkCommandBuffer commandBuffer = instanceData.commandBuffer[i].GetCommandBuffer();
+            VkCommandBuffer commandBuffer = instanceData.commandBuffers[i].GetCommandBuffer();
             commandBuffers[i][instanceData.model->GetShader()].push_back(commandBuffer);
         }
     }
@@ -65,14 +65,14 @@ void __StaticModelInstance::RecordCommandBuffers(){
 
 void __StaticModelInstance::UpdateCleanup(){
     for(uint32_t i = 0; i < std::thread::hardware_concurrency(); i++){
-        __CommandBuffer::ResetPools(__CommandBufferType::INSTANCE, i);
+       // __CommandBuffer::ResetPools(__CommandBufferType::INSTANCE, i);
     }
 }
 
-void __StaticModelInstance::Update(){
+void __StaticModelInstance::StaticUpdate(){
 
-    void RecordCommandBuffers();
-    void UpdateCleanup();
+    RecordCommandBuffers();
+    UpdateCleanup();
 
 }
 
@@ -109,7 +109,7 @@ void __StaticModelInstance::UploadDataToInstanceBuffer(__StaticModelData& instan
         createInfo.threadIndex = threadIndex;
         createInfo.type = __CommandBufferType::INSTANCE;
 
-        instances.commandBuffer[i] = __CommandBuffer(createInfo);
+        instances.commandBuffers[i] = __CommandBuffer(createInfo);
 
         threads.push_back(std::thread(&RecordStaticCommandBuffer, std::ref(instances), i, threadIndex));
 
@@ -127,17 +127,17 @@ void __StaticModelInstance::RecordStaticCommandBuffer(__StaticModelData& instanc
 
 
 
-
-    instances.commandBuffer[imageIndex].BeginCommandBuffer(nullptr, false);
-    instances.model->GetShader()->GetGraphicsPipeline()->BeginRenderPassAndBindPipeline(imageIndex, instances.commandBuffer[imageIndex].GetCommandBuffer());
+    instances.commandBuffers[imageIndex].BeginCommandBuffer(nullptr, false);
+    instances.model->GetShader()->GetGraphicsPipeline()->BeginRenderPassAndBindPipeline(imageIndex, instances.commandBuffers[imageIndex].GetCommandBuffer());
         
     instances.model->GetExtraDrawCommands();
-    instances.model->RecordDrawCommands(instances.commandBuffer[imageIndex], instances.drawCount);
+    instances.model->RecordDrawCommands(instances.commandBuffers[imageIndex], instances.drawCount);
 
-    instances.commandBuffer[imageIndex].EndCommandBuffer();
+    instances.model->GetShader()->GetGraphicsPipeline()->EndRenderPass(instances.commandBuffers[imageIndex].GetCommandBuffer());
+    instances.commandBuffers[imageIndex].EndCommandBuffer();
 }
 
-void __StaticModelInstance::DrawStatic(uint32_t imageIndex){
+void __StaticModelInstance::StaticDraw(uint32_t imageIndex, __Semaphore presentSemaphore){
 
     std::vector<VkCommandBuffer> toSubmitCommandBuffers;
 
@@ -145,11 +145,23 @@ void __StaticModelInstance::DrawStatic(uint32_t imageIndex){
         std::copy(commandBuffers.begin(), commandBuffers.end(), std::back_inserter(toSubmitCommandBuffers));
     }
 
+    std::array<VkSemaphore, 1> signalSemaphores = {renderFinishedSemaphores[imageIndex].GetSemaphore()};
+    std::array<VkSemaphore, 1> waitSemaphores = {presentSemaphore.GetSemaphore()};
+
+    std::array<VkPipelineStageFlags, waitSemaphores.size()> waitDstStageMaks = {VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT};
+
     VkSubmitInfo submitInfo{};
     submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
 
     submitInfo.commandBufferCount = toSubmitCommandBuffers.size();
     submitInfo.pCommandBuffers = toSubmitCommandBuffers.data();
+
+    submitInfo.waitSemaphoreCount = waitSemaphores.size();
+    submitInfo.pWaitSemaphores = waitSemaphores.data();
+    submitInfo.pWaitDstStageMask = waitDstStageMaks.data();
+
+    submitInfo.signalSemaphoreCount = signalSemaphores.size();
+    submitInfo.pSignalSemaphores = signalSemaphores.data();
 
     if(vkQueueSubmit(__Device::GetGraphicsQueue(), 1, &submitInfo, VK_NULL_HANDLE) != VK_SUCCESS){
         throw std::runtime_error("Failed to submit drawing command buffers for static instances");
@@ -157,7 +169,11 @@ void __StaticModelInstance::DrawStatic(uint32_t imageIndex){
     
 }
 
-void __StaticModelInstance::Cleanup(){
+VkSemaphore __StaticModelInstance::GetStaticRenderFinishedSemaphore(uint32_t imageIndex){
+    return renderFinishedSemaphores[imageIndex].GetSemaphore();
+}
+
+void __StaticModelInstance::StaticCleanup(){
     for(__Semaphore& semaphore : renderFinishedSemaphores){
         semaphore.~__Semaphore();
     }
@@ -168,6 +184,5 @@ void __StaticModelInstance::Cleanup(){
 
     staticModelInstanceMap.clear();
 }
-
 
 }

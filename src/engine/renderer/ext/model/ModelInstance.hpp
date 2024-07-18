@@ -35,8 +35,11 @@ struct ModelInstanceCreateInfo{
 
 class ModelInstance : public __StaticModelInstance{
 public:
-    static ModelInstanceHandle Create(ModelInstanceCreateInfo& createInfo);
+    static void __Init();
+    static void __Update();
+    static void __Cleanup();
 
+    static ModelInstanceHandle Create(ModelInstanceCreateInfo& createInfo);
 
     ModelInstance& operator=(const ModelInstance& other) = delete;
     ModelInstance& operator=(ModelInstance&& other) = delete;
@@ -44,9 +47,9 @@ public:
     ModelInstance(ModelInstance&& other) = delete;
 
 
-    static void __Update();
-    static void __Draw(uint32_t imageIndex);
-    static void __Cleanup();
+    static std::array<VkSemaphore, 2> GetRenderFinishedSemaphores(uint32_t imageIndex);
+
+    static void __Draw(uint32_t imageIndex, __Semaphore presentSemaphore);
 
     bool GetShouldDraw() override;
     void SetShouldDraw(bool shouldDraw);

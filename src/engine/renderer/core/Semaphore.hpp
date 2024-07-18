@@ -29,7 +29,7 @@ public:
 
     VkSemaphore GetSemaphore() const;
 private:
-    VkSemaphore semaphore;
+    VkSemaphore semaphore = VK_NULL_HANDLE;
     std::shared_ptr<uint32_t> useCount;
 };
 
