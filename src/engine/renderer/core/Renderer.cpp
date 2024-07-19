@@ -4,7 +4,8 @@ namespace renderer{
 
 std::array<__Semaphore, MAX_FRAMES_IN_FLIGHT> Renderer::presentSemaphores{};
 std::array<__Semaphore, MAX_FRAMES_IN_FLIGHT> Renderer::renderSemaphores{};
-std::array<__Fence, MAX_FRAMES_IN_FLIGHT> Renderer::inFlightFences{};
+std::array<std::array<__Fence, 2>, MAX_FRAMES_IN_FLIGHT> Renderer::inFlightFences{};
+std::array<std::array<VkFence, DRAW_QUEUE_SUBMIT_COUNT>, MAX_FRAMES_IN_FLIGHT> Renderer::inFlightFenceHandles{};
 std::array<std::vector<VkCommandBuffer>, MAX_FRAMES_IN_FLIGHT> Renderer::commandBuffers{};
 void Renderer::Init(){
     HardInit();
@@ -26,8 +27,11 @@ void Renderer::SoftInit(){
     __GraphicsPipeline::Init();
     __ShaderManager::Init();
 
-    for(__Fence& fence : inFlightFences){
-        fence = __Fence(true);
+    for(uint32_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++){
+        for(uint32_t y = 0; y < DRAW_QUEUE_SUBMIT_COUNT; y++){
+            inFlightFences[i][y] = __Fence(true);
+            inFlightFenceHandles[i][y] = inFlightFences[i][y].GetFence(); 
+        }
     }
 
     __SemaphoreCreateInfo semaphoreInfo{};
@@ -46,9 +50,10 @@ void Renderer::SoftInit(){
 }
 
 void Renderer::UpdatePrepare(){
-    std::array<VkFence, 1> waitFences = {inFlightFences[__Swapchain::GetFrameInFlight()].GetFence()}; 
-    vkWaitForFences(__Device::GetDevice(), waitFences.size(), waitFences.data(), VK_TRUE, std::numeric_limits<uint64_t>::max());
-    vkResetFences(__Device::GetDevice(), waitFences.size(), waitFences.data());
+
+    vkWaitForFences(__Device::GetDevice(), inFlightFenceHandles[__Swapchain::GetFrameInFlight()].size()-1, &inFlightFenceHandles[__Swapchain::GetFrameInFlight()][0], VK_TRUE, std::numeric_limits<uint64_t>::max());
+        vkResetFences(__Device::GetDevice(), inFlightFenceHandles[__Swapchain::GetFrameInFlight()].size(), inFlightFenceHandles[__Swapchain::GetFrameInFlight()].data());
+
 
     __Swapchain::IncrementCurrentFrameIndex(presentSemaphores[__Swapchain::GetFrameInFlight()]);
 }
@@ -83,7 +88,9 @@ void Renderer::Update(){
 }
 
 void Renderer::Submit(){
-    ModelInstance::__Draw(__Swapchain::GetImageIndex(), presentSemaphores[__Swapchain::GetFrameInFlight()]);
+    std::array<__Fence, 2> instanceFences = {inFlightFences[__Swapchain::GetFrameInFlight()][0], inFlightFences[__Swapchain::GetFrameInFlight()][1]};
+
+    ModelInstance::__Draw(__Swapchain::GetImageIndex(), presentSemaphores[__Swapchain::GetFrameInFlight()], instanceFences);
 }
 
 void Renderer::Present(){

@@ -46,7 +46,7 @@ protected:
 
     static VkSemaphore GetStaticRenderFinishedSemaphore(uint32_t imageIndex);
 
-    static void StaticDraw(uint32_t imageIndex, __Semaphore presentSemaphore);
+    static void StaticDraw(uint32_t imageIndex, __Semaphore presentSemaphor, __Fence inFlightFences);
 
     virtual bool GetShouldDraw() = 0;
     virtual glm::mat4 GetModelMatrix() = 0;
@@ -69,7 +69,8 @@ private:
     static std::array<__Semaphore, MAX_FRAMES_IN_FLIGHT> renderFinishedSemaphores;
     static std::array<boost::container::flat_map<std::shared_ptr<__Shader>, std::vector<VkCommandBuffer>>, MAX_FRAMES_IN_FLIGHT> commandBuffers;
 
-    static std::vector<std::thread> threads;
+    static std::vector<std::thread> dataUploadThreads;
+    static std::vector<std::thread> commandBufferThreads;
     static uint32_t threadIndex;
     static std::mutex threadSpawnMutex;
 };

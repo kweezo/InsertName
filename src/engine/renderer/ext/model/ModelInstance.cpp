@@ -39,8 +39,8 @@ void ModelInstance::__Update(){
     StaticUpdate();
 }
 
-void ModelInstance::__Draw(uint32_t imageIndex, __Semaphore presentSemaphore){
-    StaticDraw(imageIndex, presentSemaphore);
+void ModelInstance::__Draw(uint32_t imageIndex, __Semaphore presentSemaphore, std::array<__Fence, 2> inFlightFences){
+    StaticDraw(imageIndex, presentSemaphore, inFlightFences[0]);
 }
 
 void ModelInstance::__Cleanup(){

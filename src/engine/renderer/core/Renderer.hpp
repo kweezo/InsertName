@@ -22,6 +22,7 @@
 #include "Semaphore.hpp"
 #include "Fence.hpp"
 
+#define DRAW_QUEUE_SUBMIT_COUNT 2
 
 namespace renderer{
 
@@ -46,7 +47,9 @@ private:
     static std::array<__Semaphore, MAX_FRAMES_IN_FLIGHT> renderSemaphores;
     static std::array<std::vector<VkCommandBuffer>, MAX_FRAMES_IN_FLIGHT> commandBuffers;
 
-    static std::array<__Fence, MAX_FRAMES_IN_FLIGHT> inFlightFences;
+    static std::array<std::array<__Fence, DRAW_QUEUE_SUBMIT_COUNT>, MAX_FRAMES_IN_FLIGHT> inFlightFences; //size is the number of draw operations, 1 for each queue submit
+    static std::array<std::array<VkFence, DRAW_QUEUE_SUBMIT_COUNT>, MAX_FRAMES_IN_FLIGHT> inFlightFenceHandles;
+
 
 
 /*
