@@ -31,7 +31,6 @@ void AdvancedSettingsManager::LoadSettings(const std::string& file_) {
 
     std::ifstream configFile(file, std::ifstream::binary);
     if (configFile) {
-        std::cout << "Loading settings from " << file << std::endl;
         Json::Value root;
         configFile >> root;
 
@@ -96,7 +95,7 @@ void AdvancedSettingsManager::SaveSettings() {
     std::ofstream configFile(file, std::ofstream::binary);
     configFile << root;
 
-    std::cout << "Settings saved to " << file << std::endl;
+    Log::Print("Settings saved to " + file, 1);
 }
 
 Config AdvancedSettingsManager::GetSettings() {

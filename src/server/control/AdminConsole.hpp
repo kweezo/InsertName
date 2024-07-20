@@ -26,12 +26,16 @@ public:
     static std::string ReadLine();
     static void ProcessLine(const std::string& line);
     static void PrintLog(const std::string& msg, int colorPair = 0);
-
-    static bool isShuttingDown;
-    static bool isRunning;
     
+    static bool IsShuttingDown();
+    static bool IsRunning();
 
 private:
+    static bool isShuttingDown;
+    static std::mutex isShuttingDownMutex;
+    static bool isRunning;
+    static std::mutex isRunningMutex;
+
     static std::array<std::string, COMMAND_COUNT> commands;
     static std::array<std::vector<std::string>, COMMAND_COUNT> secParam;
 

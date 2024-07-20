@@ -4,14 +4,17 @@ std::unique_ptr<pqxx::connection> Log::c;
 int Log::logLevel;
 int Log::maxLogBufferSize;
 std::vector<LogEntry> Log::logsBuffer;
+std::mutex Log::mutex;
+std::mutex Log::dbMutex;
 
 
 void Log::Init() {
-
+    std::lock_guard<std::mutex> lock(mutex);
     logLevel = AdvancedSettingsManager::GetSettings().logLevel;
     maxLogBufferSize = AdvancedSettingsManager::GetSettings().maxLogBufferSize;
 
 #ifndef NO_DB
+    std::lock_guard<std::mutex> dbLock(dbMutex);
     std::string conn_str = "dbname=" + AdvancedSettingsManager::GetSettings().dbname +
                           " user=" + AdvancedSettingsManager::GetSettings().dbuser +
                           " password=" + AdvancedSettingsManager::GetSettings().dbpassword +
@@ -30,13 +33,15 @@ void Log::Init() {
 }
 
 void Log::Destroy() {
+    std::lock_guard<std::mutex> lock(mutex);
 #ifndef NO_DB
     // Send all remaining logs to the database
     SendLogsToDatabase();
 #endif
 }
 
-void Log::Print(int alertLevel, const std::string& msg) {
+void Log::Print(const std::string& msg, int alertLevel) {
+    std::lock_guard<std::mutex> lock(mutex);
     // Get current time as Unix timestamp
     std::time_t now = std::time(nullptr);
 
@@ -65,6 +70,7 @@ void Log::Print(int alertLevel, const std::string& msg) {
 }
 
 void Log::SendLogsToDatabase() {
+    std::lock_guard<std::mutex> lock(dbMutex);
     // Create log entries
     pqxx::work w(*c);
     for (const auto& log : logsBuffer) {

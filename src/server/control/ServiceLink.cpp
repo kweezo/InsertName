@@ -23,14 +23,14 @@ bool ServiceLink::SendDataFromBuffer(int serviceId, const std::string& message) 
     }
     ssize_t bytesSent = send(socket, message.c_str(), message.length(), 0);
     if (bytesSent == -1) {
-        std::cerr << "Failed to send message to service with id " << serviceId << "." << std::endl;
+        Log::Print("Failed to send message to service with id " + std::to_string(serviceId) + ".", 3);
         return false;
     }
     return true;
 }
 
 void ServiceLink::ProcessSendBuffer() {
-    while (AdminConsole::isRunning) {
+    while (AdminConsole::IsRunning()) {
         bool wasNewMessage = false;
         std::unique_lock<std::mutex> bufferLock(sendBufferMutex);
         for (int i = 0; i < MAX_CONNECTIONS; i++) {
@@ -57,7 +57,8 @@ void ServiceLink::ProcessSendBuffer() {
 
 void ServiceLink::HandleConnection(int socket) {
     char buffer[1024];
-    int serviceId;
+    int serviceId = -1;
+    bool validConnection = true;
 
     {
         std::lock_guard<std::mutex> lock(connectionMutex);
@@ -77,7 +78,8 @@ void ServiceLink::HandleConnection(int socket) {
         {
             std::lock_guard<std::mutex> lock(socketMutex);
             if (serviceSockets[serviceId] > 0) {
-                std::cerr << "Service " << serviceId << " already connected" << std::endl;
+                validConnection = false;
+                Log::Print("Service " + std::to_string(serviceId) + " already connected", 3);
                 break;
             }
         }
@@ -92,7 +94,7 @@ void ServiceLink::HandleConnection(int socket) {
         }
     }
 
-    {
+    if ((serviceId != -1) == validConnection) {
         std::lock_guard<std::mutex> bufferLock(bufferMutex);
         messageBuffer.push_back({serviceId, "DISCONNECT"});
     }
@@ -123,7 +125,7 @@ void ServiceLink::StartTcpServer(int port) {
 
     #ifdef _WIN32
         if (WSAStartup(MAKEWORD(2, 2), &wsaData) != 0) {
-            std::cerr << "WSAStartup failed.\n";
+            Log::Print("WSAStartup failed.", 3);
             exit(EXIT_FAILURE);
         }
     #endif
@@ -152,16 +154,16 @@ void ServiceLink::StartTcpServer(int port) {
         exit(EXIT_FAILURE);
     }
 
-    std::cout << "ServiceLink server is listening on port " << port << std::endl;
+    Log::Print("ServiceLink server is listening on port " + std::to_string(port), 1);
 
     while (true) {
         {
             std::unique_lock<std::mutex> lock(connectionMutex);
-            connectionCond.wait(lock, []{ return AdminConsole::isShuttingDown || activeConnections < MAX_CONNECTIONS; });
+            connectionCond.wait(lock, []{ return AdminConsole::IsShuttingDown() || activeConnections < MAX_CONNECTIONS; });
+        }
 
-            if (AdminConsole::isShuttingDown) {
-                break;
-            }
+        if (AdminConsole::IsShuttingDown()) {
+            break;
         }
 
         fd_set readfds;
@@ -188,7 +190,7 @@ void ServiceLink::StartTcpServer(int port) {
             t.detach();
         }
 
-        if (AdminConsole::isShuttingDown) {
+        if (AdminConsole::IsShuttingDown()) {
             break;
         }
     }
@@ -202,6 +204,7 @@ void ServiceLink::StartTcpServer(int port) {
 }
 
 void ServiceLink::NotifyConnection() {
+    std::unique_lock<std::mutex> lock(connectionMutex);
     connectionCond.notify_all();
 }
 
@@ -223,7 +226,7 @@ std::string ServiceLink::GetFirstParameter(std::string& message) {
 
 void ServiceLink::ProcessMessages() {
     bool messageBufferEmpty = false;
-    while (AdminConsole::isRunning || !messageBufferEmpty) {
+    while (AdminConsole::IsRunning() || !messageBufferEmpty) {
         std::unique_lock<std::mutex> lock(bufferMutex);
         messageBufferEmpty = messageBuffer.empty();
         if (!messageBufferEmpty) {
@@ -245,16 +248,16 @@ void ServiceLink::HandleMessageContent(Message msg) {
     std::string content = msg.content;
 
     if (action == "CONNECT") {
-        std::cout << "Service " << serviceId << " connected" << std::endl;
+        Log::Print("Service " + std::to_string(serviceId) + " connected", 1);
         std::lock_guard<std::mutex> lock(socketMutex);
         serviceSockets[serviceId] = stoi(GetFirstParameter(content));
 
     } else if (action == "DISCONNECT") {
-        std::cout << "Service " << serviceId << " disconnected" << std::endl;
+        Log::Print("Service " + std::to_string(serviceId) + " disconnected", 2);
         std::lock_guard<std::mutex> lock(socketMutex);
         serviceSockets[serviceId] = -1;
 
     } else {
-        std::cerr << "Unknown action: " << action << std::endl;
+        Log::Print("Unknown action: " + action, 3);
     }
 }

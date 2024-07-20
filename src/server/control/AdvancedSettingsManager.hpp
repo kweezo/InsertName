@@ -4,12 +4,13 @@
 #include <mutex>
 #include <fstream>
 #include <optional>
-#include <iostream>
 #include <regex>
 #include <vector>
 #include <variant>
 
 #include <jsoncpp/json/json.h>
+
+#include "Log.hpp"
 
 
 struct Config {

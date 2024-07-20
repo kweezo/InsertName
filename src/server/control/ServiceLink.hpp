@@ -1,6 +1,5 @@
 #pragma once
 
-#include <iostream>
 #include <thread>
 #include <vector>
 #include <array>
@@ -20,6 +19,7 @@
 #endif
 
 #include "AdminConsole.hpp"
+#include "Log.hpp"
 
 #define MAX_CONNECTIONS 4
 

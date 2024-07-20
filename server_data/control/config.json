@@ -7,7 +7,7 @@
 	"dbpassword" : "password",
 	"dbport" : 5432,
 	"dbuser" : "postgres",
-	"logLevel" : 0,
+	"logLevel" : 4,
 	"maxLogBufferSize" : 128,
-	"serviceId" : 0
+	"serviceId" : 4
 }

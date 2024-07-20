@@ -16,7 +16,7 @@ int main() {
 
     std::thread adminConsoleThread([]() {
         std::string line;
-        while (AdminConsole::isRunning) {
+        while (AdminConsole::IsRunning()) {
             line = AdminConsole::ReadLine();
             AdminConsole::ProcessLine(line);
         }
@@ -25,10 +25,12 @@ int main() {
 
     // ----------------- Add here some other code ----------------- //
 
+
     messageSendingThread.join();
     connectionThread.join();
     messageProcessingThread.join();
     adminConsoleThread.join();
 
+    endwin(); // Close ncurses
     return 0;
 }
