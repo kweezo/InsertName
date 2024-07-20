@@ -573,7 +573,7 @@ void AdminConsole::ProcessLine(const std::string& line) {
             CmdReport("Setting '" + commands[1] + "' is set to: '" + commands[2] + '\'', 2);
             return;
         }
-        if (index == 7) {
+        if (index == 7 || index == 0) {
             if (AdvancedSettingsManager::IsValidIPv4(commands[2])) {
                 AdvancedSettingsManager::SetSetting(index, commands[2]);
                 CmdReport("Setting '" + commands[1] + "' is set to: '" + commands[2] + '\'', 2);

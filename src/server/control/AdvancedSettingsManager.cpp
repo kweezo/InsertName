@@ -10,7 +10,7 @@ std::vector<std::variant<int*, std::string*>> AdvancedSettingsManager::settings;
 
 void AdvancedSettingsManager::LoadSettings(const std::string& file_) {
     settings = {
-        &config.serviceId,
+        &config.controlServiceIp,
         &config.controlServicePort,
 
         &config.logLevel,
@@ -34,8 +34,8 @@ void AdvancedSettingsManager::LoadSettings(const std::string& file_) {
         Json::Value root;
         configFile >> root;
 
-        if (root.isMember("serviceId")) {
-            config.serviceId = root["serviceId"].asInt();
+        if (root.isMember("controlServiceIp")) {
+            config.controlServiceIp = root["controlServiceIp"].asString();
         }
         if (root.isMember("port")) {
             config.controlServicePort = root["controlServicePort"].asInt();
@@ -77,7 +77,7 @@ void AdvancedSettingsManager::SaveSettings() {
     std::lock_guard<std::mutex> lock(mutex);
 
     Json::Value root;
-    root["serviceId"] = config.serviceId;
+    root["controlServiceIp"] = config.controlServiceIp;
     root["controlServicePort"] = config.controlServicePort;
 
     root["logLevel"] = config.logLevel;
@@ -104,7 +104,7 @@ Config AdvancedSettingsManager::GetSettings() {
 }
 
 void AdvancedSettingsManager::SetSettings(
-    std::optional<int> serviceId,
+    std::optional<std::string> controlSericeIp,
     std::optional<int> port,
 
     std::optional<int> logLevel,
@@ -121,8 +121,8 @@ void AdvancedSettingsManager::SetSettings(
 
     std::lock_guard<std::mutex> lock(mutex);
 
-    if (serviceId.has_value()) {
-        config.serviceId = serviceId.value();
+    if (controlSericeIp.has_value()) {
+        config.controlServiceIp = controlSericeIp.value();
     }
     if (port.has_value()) {
         config.controlServicePort = port.value();

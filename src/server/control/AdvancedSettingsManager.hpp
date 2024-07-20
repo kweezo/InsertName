@@ -14,7 +14,7 @@
 
 
 struct Config {
-    int serviceId = 0;
+    std::string controlServiceIp = "127.0.0.1";
     int controlServicePort = 8080;
 
     int logLevel = 0;
@@ -36,7 +36,7 @@ public:
     static void SaveSettings();
     static Config GetSettings();
     static void SetSettings(
-        std::optional<int> serviceId = std::nullopt,
+        std::optional<std::string> controlSericeIp = std::nullopt,
         std::optional<int> controlServicePort = std::nullopt,
 
         std::optional<int> logLevel = std::nullopt,

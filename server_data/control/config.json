@@ -1,6 +1,7 @@
 {
 	"commandPrompt" : "> ",
-	"commandWindowHeight" : 3,
+	"commandWindowHeight" : 4,
+	"controlServiceIp" : "127.0.0.1",
 	"controlServicePort" : 8080,
 	"dbhostaddr" : "127.0.0.1",
 	"dbname" : "postgres",
@@ -8,6 +9,5 @@
 	"dbport" : 5432,
 	"dbuser" : "postgres",
 	"logLevel" : 4,
-	"maxLogBufferSize" : 128,
-	"serviceId" : 4
+	"maxLogBufferSize" : 128
 }
