@@ -30,7 +30,7 @@ bool ServiceLink::SendDataFromBuffer(int serviceId, const std::string& message) 
 }
 
 void ServiceLink::ProcessSendBuffer() {
-    while (true) {
+    while (AdminConsole::isRunning) {
         bool wasNewMessage = false;
         std::unique_lock<std::mutex> bufferLock(sendBufferMutex);
         for (int i = 0; i < MAX_CONNECTIONS; i++) {
@@ -157,16 +157,40 @@ void ServiceLink::StartTcpServer(int port) {
     while (true) {
         {
             std::unique_lock<std::mutex> lock(connectionMutex);
-            connectionCond.wait(lock, []{ return activeConnections < MAX_CONNECTIONS; });
+            connectionCond.wait(lock, []{ return AdminConsole::isShuttingDown || activeConnections < MAX_CONNECTIONS; });
+
+            if (AdminConsole::isShuttingDown) {
+                break;
+            }
         }
 
-        if ((new_socket = accept(server_fd, (struct sockaddr*)&address, (socklen_t*)&addrlen)) < 0) {
-            perror("accept");
-            exit(EXIT_FAILURE);
+        fd_set readfds;
+        FD_ZERO(&readfds);
+        FD_SET(server_fd, &readfds);
+
+        struct timeval timeout;
+        timeout.tv_sec = 1; // 1 second timeout
+        timeout.tv_usec = 0;
+
+        int activity = select(server_fd + 1, &readfds, NULL, NULL, &timeout);
+
+        if (activity < 0 && errno != EINTR) {
+            perror("select error");
         }
 
-        std::thread t(HandleConnection, new_socket);
-        t.detach();
+        if (activity > 0 && FD_ISSET(server_fd, &readfds)) {
+            if ((new_socket = accept(server_fd, (struct sockaddr*)&address, (socklen_t*)&addrlen)) < 0) {
+                perror("accept");
+                exit(EXIT_FAILURE);
+            }
+
+            std::thread t(HandleConnection, new_socket);
+            t.detach();
+        }
+
+        if (AdminConsole::isShuttingDown) {
+            break;
+        }
     }
 
     #ifdef _WIN32
@@ -175,6 +199,10 @@ void ServiceLink::StartTcpServer(int port) {
     #else
         close(server_fd);
     #endif
+}
+
+void ServiceLink::NotifyConnection() {
+    connectionCond.notify_all();
 }
 
 std::string ServiceLink::GetFirstParameter(std::string& message) {
@@ -194,9 +222,11 @@ std::string ServiceLink::GetFirstParameter(std::string& message) {
 }
 
 void ServiceLink::ProcessMessages() {
-    while (true) {
+    bool messageBufferEmpty = false;
+    while (AdminConsole::isRunning || !messageBufferEmpty) {
         std::unique_lock<std::mutex> lock(bufferMutex);
-        if (!messageBuffer.empty()) {
+        messageBufferEmpty = messageBuffer.empty();
+        if (!messageBufferEmpty) {
             Message msg = messageBuffer.front();
             messageBuffer.erase(messageBuffer.begin());
             lock.unlock();

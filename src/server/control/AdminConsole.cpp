@@ -1,6 +1,9 @@
 #include "AdminConsole.hpp"
 
+#include "ServiceLink.hpp"
+
 bool AdminConsole::isRunning;
+bool AdminConsole::isShuttingDown;
 std::array<std::string, COMMAND_COUNT> AdminConsole::commands;
 std::array<std::vector<std::string>, COMMAND_COUNT> AdminConsole::secParam;
 WINDOW* AdminConsole::logWindow = nullptr;
@@ -36,6 +39,7 @@ void AdminConsole::InitVariables() {
     prompt = AdvancedSettingsManager::GetSettings().commandPrompt;
 
     isRunning = true;
+    isShuttingDown = false;
     currentCommand = -1;
     selectionStart = std::string::npos;
     selectionEnd = std::string::npos;
@@ -70,7 +74,7 @@ void AdminConsole::AddCommands() {
     secParam[0] = {"0"};
     secParam[1] = {
         "serviceid",
-        "port",
+        "controlderviceport",
 
         "loglevel",
         "maxlogbuffersize",
@@ -88,9 +92,9 @@ void AdminConsole::AddCommands() {
 }
 
 std::string AdminConsole::ReadLine() {
-    move(LINES-1, 0); // Move the cursor to the command line
-    clrtoeol(); // Clear the command line
-    printw(prompt.c_str()); // Print the command prefix
+    move(LINES-1, 0);
+    clrtoeol();
+    printw(prompt.c_str());
     wrefresh(commandWindow);
 
     int ch;
@@ -466,11 +470,8 @@ void AdminConsole::PrintLog(const std::string& msg, int colorPair) {
 }
 
 void AdminConsole::ProcessLine(const std::string& line) {
-    if (line.empty()) {
+    if (line.empty() || !isRunning) {
         return;
-    }
-    if (!isRunning) {
-        exit(0);
     }
 
     std::vector<std::string> commands;
@@ -522,7 +523,7 @@ void AdminConsole::ProcessLine(const std::string& line) {
 
     } else if (commands[0] == "setting") {
         if (cmdSize == 1) {
-            CmdReport("'config' command requires parameters", 4);
+            CmdReport("'setting' command requires parameters", 4);
             return;
         }
 
@@ -544,12 +545,12 @@ void AdminConsole::ProcessLine(const std::string& line) {
         }
 
         // Size is 3
-        if (index <= 2 || index == 9) {
+        if (index >= 4 && index <= 6) {
             AdvancedSettingsManager::SetSetting(index, commands[2]);
             CmdReport("Setting '" + commands[1] + "' is set to: '" + commands[2] + '\'', 2);
             return;
         }
-        if (index == 3) {
+        if (index == 7) {
             if (AdvancedSettingsManager::IsValidIPv4(commands[2])) {
                 AdvancedSettingsManager::SetSetting(index, commands[2]);
                 CmdReport("Setting '" + commands[1] + "' is set to: '" + commands[2] + '\'', 2);
@@ -558,23 +559,18 @@ void AdminConsole::ProcessLine(const std::string& line) {
             CmdReport("Invalid IPv4 address", 4);
             return;
         }
+
         int value;
         if (!AdvancedSettingsManager::TryPassInt(commands[2], value)) {
             CmdReport("Invalid argument for config command. Argument should be type int", 4);
             return;
         }
-        if (index == 4 && (value < 1 || value > 65535)) {
-            CmdReport("Database port must be greater than 0 and smaller than 65536", 4);
-        } else if (index == 5 && (value < 1 || value > 65535)) {
-            CmdReport("Server port must be greater than  and smaller than 65536", 4);
-        } else if (index == 6 && value < 1) {
-            CmdReport("Login attempts must be greater than 0", 4);
-        } else if (index == 7 && (value < 0 || value > 4)) {
+        if ((index == 1 || index == 8) && (value < 1 || value > 65535)) {
+            CmdReport("Port must be greater than 0 and smaller than 65536", 4);
+        } else if ((index == 0 || index == 3 || index == 10) && value < 0) {
+            CmdReport("This value must be greater or equal to 0", 4);
+        } else if (index == 2 && (value < 0 || value > 4)) {
             CmdReport("Log level must be between 0 and 4", 4);
-        } else if (index == 8 && value < 1) {
-            CmdReport("Max log buffer size must be greater than 0", 4);
-        } else if (index == 10 && value < 1) {
-            CmdReport("Command window height must be greater than 0", 4);
         } else {
             AdvancedSettingsManager::SetSetting(index, value);
             CmdReport("Setting '" + commands[1] + "' is set to: '" + std::to_string(value) + '\'', 2);
@@ -622,20 +618,21 @@ void AdminConsole::ProcessLine(const std::string& line) {
 }
 
 void AdminConsole::Stop(double waitTime) {
-    CmdReport("Stopping server in " + std::to_string(waitTime) + " minutes...", 2); //* There was Server::shutingdown = true; here, but it was removed
+    CmdReport("Stopping server in " + std::to_string(waitTime) + " minutes...", 2);
+    isShuttingDown = true;
+    ServiceLink::NotifyConnection();
 
     std::thread([waitTime]() {
         int waitTimeInSeconds = static_cast<int>(waitTime * 60);
         std::this_thread::sleep_for(std::chrono::seconds(waitTimeInSeconds));
 
         CmdReport("Stopping server...", 2);
-        Log::Print(1, "Server stopped by admin command"); //* There was Server::shutdown = true; here, but it was removed
-
-        AdvancedSettingsManager::SaveSettings(); //* There was Server::Stop() here, but it was removed
-        Log::Destroy();
+        Log::Print(1, "Server stopped by admin command");
         isRunning = false;
 
-        CmdReport("Server stopped.", 1);
-        exit(0);
+        AdvancedSettingsManager::SaveSettings();
+        Log::Destroy();
+
+        CmdReport("Server stopped. Press ENTER to exit.", 1);
     }).detach();
 }

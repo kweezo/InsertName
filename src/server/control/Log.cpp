@@ -16,7 +16,7 @@ void Log::Init() {
                           " user=" + AdvancedSettingsManager::GetSettings().dbuser +
                           " password=" + AdvancedSettingsManager::GetSettings().dbpassword +
                           " hostaddr=" + AdvancedSettingsManager::GetSettings().dbhostaddr +
-                          " port=" + AdvancedSettingsManager::GetSettings().dbport;
+                          " port=" + std::to_string(AdvancedSettingsManager::GetSettings().dbport);
     c = std::make_unique<pqxx::connection>(conn_str); 
     
     if (!c->is_open()) {

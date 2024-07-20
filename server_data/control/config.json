@@ -1,3 +1,13 @@
 {
-    
+	"commandPrompt" : "> ",
+	"commandWindowHeight" : 3,
+	"controlServicePort" : 8080,
+	"dbhostaddr" : "127.0.0.1",
+	"dbname" : "postgres",
+	"dbpassword" : "password",
+	"dbport" : 5432,
+	"dbuser" : "postgres",
+	"logLevel" : 0,
+	"maxLogBufferSize" : 128,
+	"serviceId" : 0
 }

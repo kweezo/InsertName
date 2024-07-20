@@ -1,5 +1,7 @@
 #include "AdvancedSettingsManager.hpp"
 
+#include "AdminConsole.hpp"
+
 std::string AdvancedSettingsManager::file;
 Config AdvancedSettingsManager::config;
 std::mutex AdvancedSettingsManager::mutex;
@@ -9,7 +11,7 @@ std::vector<std::variant<int*, std::string*>> AdvancedSettingsManager::settings;
 void AdvancedSettingsManager::LoadSettings(const std::string& file_) {
     settings = {
         &config.serviceId,
-        &config.port,
+        &config.controlServicePort,
 
         &config.logLevel,
         &config.maxLogBufferSize,
@@ -37,7 +39,7 @@ void AdvancedSettingsManager::LoadSettings(const std::string& file_) {
             config.serviceId = root["serviceId"].asInt();
         }
         if (root.isMember("port")) {
-            config.port = root["port"].asInt();
+            config.controlServicePort = root["controlServicePort"].asInt();
         }
 
         if (root.isMember("logLevel")) {
@@ -60,7 +62,7 @@ void AdvancedSettingsManager::LoadSettings(const std::string& file_) {
             config.dbhostaddr = root["dbhostaddr"].asString();
         }
         if (root.isMember("dbport")) {
-            config.dbport = root["dbport"].asString();
+            config.dbport = root["dbport"].asInt();
         }
 
         if (root.isMember("commandPrompt")) {
@@ -77,7 +79,7 @@ void AdvancedSettingsManager::SaveSettings() {
 
     Json::Value root;
     root["serviceId"] = config.serviceId;
-    root["port"] = config.port;
+    root["controlServicePort"] = config.controlServicePort;
 
     root["logLevel"] = config.logLevel;
     root["maxLogBufferSize"] = config.maxLogBufferSize;
@@ -113,7 +115,7 @@ void AdvancedSettingsManager::SetSettings(
     std::optional<std::string> dbuser,
     std::optional<std::string> dbpassword,
     std::optional<std::string> dbhostaddr,
-    std::optional<std::string> dbport,
+    std::optional<int> dbport,
 
     std::optional<std::string> commandPrompt,
     std::optional<int> commandWindowHeight) {
@@ -124,7 +126,7 @@ void AdvancedSettingsManager::SetSettings(
         config.serviceId = serviceId.value();
     }
     if (port.has_value()) {
-        config.port = port.value();
+        config.controlServicePort = port.value();
     }
     if (logLevel.has_value()) {
         config.logLevel = logLevel.value();

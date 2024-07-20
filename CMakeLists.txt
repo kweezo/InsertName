@@ -111,6 +111,9 @@ if(BUILD_SERVER_CONTROL)
     else()
         target_link_libraries(servercontrol PUBLIC
             servershared
+            pqxx
+            ncurses
+            SDL2
         )
     endif()
 endif()

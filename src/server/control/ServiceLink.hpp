@@ -13,9 +13,13 @@
 	#pragma comment(lib, "Ws2_32.lib")
 #else
 	#include <sys/socket.h>
+	#include <sys/select.h>
 	#include <netinet/in.h>
 	#include <unistd.h>
+	#include <string.h>
 #endif
+
+#include "AdminConsole.hpp"
 
 #define MAX_CONNECTIONS 4
 
@@ -33,6 +37,8 @@ public:
 	
 	template<typename... Args>
     static void SendData(int serviceId, const Args&... args);
+
+	static void NotifyConnection();
 
 private:
 	static void HandleConnection(int socket);

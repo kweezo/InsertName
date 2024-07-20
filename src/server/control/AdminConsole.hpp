@@ -27,7 +27,9 @@ public:
     static void ProcessLine(const std::string& line);
     static void PrintLog(const std::string& msg, int colorPair = 0);
 
+    static bool isShuttingDown;
     static bool isRunning;
+    
 
 private:
     static std::array<std::string, COMMAND_COUNT> commands;

@@ -14,7 +14,7 @@
 
 struct Config {
     int serviceId = 0;
-    int port = 8080;
+    int controlServicePort = 8080;
 
     int logLevel = 0;
     int maxLogBufferSize = 128;
@@ -23,7 +23,7 @@ struct Config {
     std::string dbuser = "postgres";
     std::string dbpassword = "password";
     std::string dbhostaddr = "127.0.0.1";
-    std::string dbport = "5432";
+    int dbport = 5432;
 
     std::string commandPrompt = "> ";
     int commandWindowHeight = 3;
@@ -36,7 +36,7 @@ public:
     static Config GetSettings();
     static void SetSettings(
         std::optional<int> serviceId = std::nullopt,
-        std::optional<int> port = std::nullopt,
+        std::optional<int> controlServicePort = std::nullopt,
 
         std::optional<int> logLevel = std::nullopt,
         std::optional<int> maxLogBufferSize = std::nullopt,
@@ -45,7 +45,7 @@ public:
         std::optional<std::string> dbuser = std::nullopt,
         std::optional<std::string> dbpassword = std::nullopt,
         std::optional<std::string> dbhostaddr = std::nullopt,
-        std::optional<std::string> dbport = std::nullopt,
+        std::optional<int> dbport = std::nullopt,
 
         std::optional<std::string> commandPrompt = std::nullopt,
         std::optional<int> commandWindowHeight = std::nullopt

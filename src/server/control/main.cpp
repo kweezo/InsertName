@@ -8,8 +8,9 @@
 int main() {
     AdvancedSettingsManager::LoadSettings("server_data/control/config.json");
     AdminConsole::Init();
+    Log::Init();
 
-    std::thread connectionThread(&ServiceLink::StartTcpServer, AdvancedSettingsManager::GetSettings().port);
+    std::thread connectionThread(&ServiceLink::StartTcpServer, AdvancedSettingsManager::GetSettings().controlServicePort);
     std::thread messageProcessingThread(&ServiceLink::ProcessMessages);
     std::thread messageSendingThread(&ServiceLink::ProcessSendBuffer);
 
@@ -24,13 +25,10 @@ int main() {
 
     // ----------------- Add here some other code ----------------- //
 
-
     messageSendingThread.join();
     connectionThread.join();
     messageProcessingThread.join();
     adminConsoleThread.join();
-
-    AdvancedSettingsManager::SaveSettings();
 
     return 0;
 }
