@@ -81,7 +81,7 @@ void AdminConsole::AddCommands() {
 
     secParam[0] = {"0"};
     secParam[1] = {
-        "serviceid",
+        "controlserviceip",
         "controlderviceport",
 
         "loglevel",
