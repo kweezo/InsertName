@@ -2,14 +2,14 @@
 
 namespace renderer{
 
-uint32_t __Mesh::currentThreadIndex = 0;
+uint32_t _Mesh::currentThreadIndex = 0;
 
-__Mesh::__Mesh(std::vector<__BasicMeshVertex>& vertices, std::vector<uint32_t>& indices, __TextureMaps textureMaps){
+_Mesh::_Mesh(std::vector<_BasicMeshVertex>& vertices, std::vector<uint32_t>& indices, _TextureMaps textureMaps){
         __VertexInputDescriptions descriptions{};
 
         VkVertexInputBindingDescription bindingDescription = {};
         bindingDescription.binding = 0;
-        bindingDescription.stride = sizeof(__BasicMeshVertex);
+        bindingDescription.stride = sizeof(_BasicMeshVertex);
         bindingDescription.inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
 
         std::get<std::vector<VkVertexInputBindingDescription>>(descriptions).push_back(bindingDescription);
@@ -19,35 +19,35 @@ __Mesh::__Mesh(std::vector<__BasicMeshVertex>& vertices, std::vector<uint32_t>& 
 
         attributeDescription.location = 0;
         attributeDescription.format = VK_FORMAT_R32G32B32_SFLOAT;
-        attributeDescription.offset = offsetof(__BasicMeshVertex, pos);
+        attributeDescription.offset = offsetof(_BasicMeshVertex, pos);
 
         std::get<std::vector<VkVertexInputAttributeDescription>>(descriptions).push_back(attributeDescription);
 
         attributeDescription.location = 1;
         attributeDescription.format = VK_FORMAT_R32G32_SFLOAT;
-        attributeDescription.offset = offsetof(__BasicMeshVertex, texCoord);
+        attributeDescription.offset = offsetof(_BasicMeshVertex, texCoord);
 
         std::get<std::vector<VkVertexInputAttributeDescription>>(descriptions).push_back(attributeDescription);
 
         attributeDescription.location = 2;
         attributeDescription.format = VK_FORMAT_R32G32B32_SFLOAT;
-        attributeDescription.offset = offsetof(__BasicMeshVertex, normal);
+        attributeDescription.offset = offsetof(_BasicMeshVertex, normal);
 
         std::get<std::vector<VkVertexInputAttributeDescription>>(descriptions).push_back(attributeDescription);
     
         this->textureMaps = textureMaps;
 
-        __DataBufferCreateInfo vtnCreateInfo{};
-        vtnCreateInfo.size = sizeof(__BasicMeshVertex) * vertices.size();
+        _DataBufferCreateInfo vtnCreateInfo{};
+        vtnCreateInfo.size = sizeof(_BasicMeshVertex) * vertices.size();
         vtnCreateInfo.data = vertices.data();
         vtnCreateInfo.transferToLocalDeviceMemory = true;
         vtnCreateInfo.usage = VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
         vtnCreateInfo.threadIndex = GetCurrentThreadIndex();
         vtnCreateInfo.isDynamic = false;
 
-        vtnBuffer = __DataBuffer(vtnCreateInfo);
+        vtnBuffer = _DataBuffer(vtnCreateInfo);
 
-        __DataBufferCreateInfo indexCreateInfo{};
+        _DataBufferCreateInfo indexCreateInfo{};
         indexCreateInfo.size = sizeof(uint32_t) * indices.size();
         indexCreateInfo.data = indices.data();
         indexCreateInfo.transferToLocalDeviceMemory = true;
@@ -55,12 +55,12 @@ __Mesh::__Mesh(std::vector<__BasicMeshVertex>& vertices, std::vector<uint32_t>& 
         indexCreateInfo.threadIndex = GetCurrentThreadIndex();
         indexCreateInfo.isDynamic = false;
 
-        indexBuffer = __DataBuffer(vtnCreateInfo);
+        indexBuffer = _DataBuffer(vtnCreateInfo);
 
-        indexBuffer = __DataBuffer(indexCreateInfo);
+        indexBuffer = _DataBuffer(indexCreateInfo);
 }
 
-void __Mesh::RecordDrawCommands(__CommandBuffer& commandBuffer, uint32_t instanceCount){//TODO turn into secondary command buffer
+void _Mesh::RecordDrawCommands(_CommandBuffer& commandBuffer, uint32_t instanceCount){//TODO turn into secondary command buffer
         VkBuffer buffers[] = {vtnBuffer.GetBuffer(), indexBuffer.GetBuffer()};
         VkDeviceSize offset = 0;
 
@@ -69,7 +69,7 @@ void __Mesh::RecordDrawCommands(__CommandBuffer& commandBuffer, uint32_t instanc
         vkCmdDrawIndexed(commandBuffer.GetCommandBuffer(), indexCount, 1, 0, 0, 0);
 }
 
-uint32_t __Mesh::GetCurrentThreadIndex(){
+uint32_t _Mesh::GetCurrentThreadIndex(){
         uint32_t prev = currentThreadIndex;
         currentThreadIndex = (currentThreadIndex + 1) % std::thread::hardware_concurrency(); 
 

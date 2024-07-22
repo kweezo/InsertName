@@ -2,11 +2,11 @@
 
 namespace renderer{
 
-__Fence::__Fence(): fence(VK_NULL_HANDLE){
+_Fence::_Fence(): fence(VK_NULL_HANDLE){
 }
 
-__Fence::__Fence(bool signaled): fence(VK_NULL_HANDLE) {
-    if(!__Device::IsInitialized()){
+_Fence::_Fence(bool signaled): fence(VK_NULL_HANDLE) {
+    if(!_Device::IsInitialized()){
         return;
     }
 
@@ -14,14 +14,14 @@ __Fence::__Fence(bool signaled): fence(VK_NULL_HANDLE) {
     fenceInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
     fenceInfo.flags = signaled ? VK_FENCE_CREATE_SIGNALED_BIT : 0;
 
-    if(vkCreateFence(__Device::GetDevice(), &fenceInfo, nullptr, &fence) != VK_SUCCESS){
+    if(vkCreateFence(_Device::GetDevice(), &fenceInfo, nullptr, &fence) != VK_SUCCESS){
         throw std::runtime_error("Failed to create fence");
     }
 
     useCount = std::make_shared<uint32_t>(1);
 }
 
-VkFence __Fence::GetFence() const{
+VkFence _Fence::GetFence() const{
     if(fence == VK_NULL_HANDLE){
         throw std::runtime_error("Tried to return an uninitialized fence");
     }
@@ -29,11 +29,11 @@ VkFence __Fence::GetFence() const{
     return fence;
 }
 
-bool __Fence::IsInitialized() const{
+bool _Fence::IsInitialized() const{
     return fence != VK_NULL_HANDLE;
 }
 
-__Fence::__Fence(const __Fence& other){
+_Fence::_Fence(const _Fence& other){
     if(other.useCount.get() == nullptr){
         return;
     }
@@ -43,7 +43,7 @@ __Fence::__Fence(const __Fence& other){
     (*useCount.get())++;
 }
 
-__Fence& __Fence::operator=(const __Fence& other){
+_Fence& _Fence::operator=(const _Fence& other){
     if(this == &other){
         return *this;
     }
@@ -52,6 +52,8 @@ __Fence& __Fence::operator=(const __Fence& other){
         return *this;
     }
 
+    Destruct();
+
     fence = other.fence;
     useCount = other.useCount;
     (*useCount.get())++;
@@ -59,19 +61,24 @@ __Fence& __Fence::operator=(const __Fence& other){
     return *this;
 }
 
-__Fence::~__Fence(){
+void _Fence::Destruct(){
     if(useCount.get() == nullptr){
         return;
     }
 
     if(*useCount == 1){
         if(fence != VK_NULL_HANDLE){
-            vkDestroyFence(__Device::GetDevice(), fence, nullptr);
+            vkDestroyFence(_Device::GetDevice(), fence, nullptr);
         }
         useCount.reset();
     }else{
         (*useCount.get())--;
     }
+
+}
+
+_Fence::~_Fence(){
+    Destruct();
 }
 
 }

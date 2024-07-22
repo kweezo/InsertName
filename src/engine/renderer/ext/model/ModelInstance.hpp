@@ -33,10 +33,11 @@ struct ModelInstanceCreateInfo{
 };
 
 
-class ModelInstance : public __StaticModelInstance{
+class ModelInstance : public _StaticModelInstance{
 public:
     static void __Init();
     static void __Update();
+    static void __UpdateCleanup();
     static void __Cleanup();
 
     static ModelInstanceHandle Create(ModelInstanceCreateInfo& createInfo);
@@ -49,7 +50,7 @@ public:
 
     static std::array<VkSemaphore, 2> GetRenderFinishedSemaphores(uint32_t imageIndex);
 
-    static void __Draw(uint32_t imageIndex, __Semaphore presentSemaphore, std::array<__Fence, 2> inFlightFences);
+    static void __Draw(uint32_t frameInFlight, _Semaphore presentSemaphore, std::array<_Fence, 2> inFlightFences);
 
     bool GetShouldDraw() override;
     void SetShouldDraw(bool shouldDraw);

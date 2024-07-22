@@ -23,8 +23,8 @@ private:
     static glm::mat4 perspectiveProjection;
     static glm::mat4 orthoProjection;
 
-    static __UniformBuffer orthoCamera;
-    static __UniformBuffer perspectiveCamera;
+    static _UniformBuffer orthoCamera;
+    static _UniformBuffer perspectiveCamera;
 };
 
 }

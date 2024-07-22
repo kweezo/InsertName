@@ -119,11 +119,11 @@ int main(){
     Renderer::Init();
 
 
-    std::shared_ptr<__Shader> modelShader = __ShaderManager::GetShader("basicMesh");
+    std::shared_ptr<_Shader> modelShader = _ShaderManager::GetShader("basicMesh");
 
-    __ModelCreateInfo modelCreateInfo{};
+    _ModelCreateInfo modelCreateInfo{};
     modelCreateInfo.path = dir + "res/models/teapot/teapot.fbx";
-    modelCreateInfo.shader = __ShaderManager::GetShader("basicMesh");
+    modelCreateInfo.shader = _ShaderManager::GetShader("basicMesh");
 
     ModelHandle teapot = ModelManager::Create(modelCreateInfo);
 
@@ -150,7 +150,7 @@ int main(){
 
         Renderer::Update();
     }
-    vkDeviceWaitIdle(__Device::GetDevice());
+    vkDeviceWaitIdle(_Device::GetDevice());
 
 
     Renderer::Cleanup();

@@ -24,50 +24,50 @@
 
 namespace renderer{
 
-class __StaticModelInstance;
+class _StaticModelInstance;
 
 
-typedef struct __StaticModelData{
+typedef struct _StaticModelData{
     ModelHandle model;
-    __DataBuffer instanceBuffer;
+    _DataBuffer instanceBuffer;
 
-    std::array<__CommandBuffer, MAX_FRAMES_IN_FLIGHT> commandBuffers = {};
+    std::array<_CommandBuffer, MAX_FRAMES_IN_FLIGHT> commandBuffers = {};
 
     uint32_t drawCount = 0;
-    std::vector<std::shared_ptr<__StaticModelInstance>> instanceList = {};
-} __StaticModelData;
+    std::vector<std::shared_ptr<_StaticModelInstance>> instanceList = {};
+} _StaticModelData;
 
 
-class __StaticModelInstance{
+class _StaticModelInstance{
 protected:
     static void StaticInit();
     static void StaticUpdate();
+    static void StaticUpdateCleanup();
     static void StaticCleanup();
 
     static VkSemaphore GetStaticRenderFinishedSemaphore(uint32_t imageIndex);
 
-    static void StaticDraw(uint32_t imageIndex, __Semaphore presentSemaphor, __Fence inFlightFences);
+    static void StaticDraw(uint32_t frameInFlight, _Semaphore presentSemaphor, _Fence inFlightFences);
 
     virtual bool GetShouldDraw() = 0;
     virtual glm::mat4 GetModelMatrix() = 0;
 
-    static boost::container::flat_map<ModelHandle, __StaticModelData> staticModelInstanceMap;
+    static boost::container::flat_map<ModelHandle, _StaticModelData> staticModelInstanceMap;
 
-    static void InitializeStaticInstanceData(__StaticModelData& instanceData, ModelHandle model);
+    static void InitializeStaticInstanceData(_StaticModelData& instanceData, ModelHandle model);
 private:
-    static void RecordStaticCommandBuffer(__StaticModelData& instances, uint32_t imageIndex, uint32_t threadsIndex);
-    static void UploadDataToInstanceBuffer(__StaticModelData& instances, uint32_t threadIndex);
+    static void RecordStaticCommandBuffer(_StaticModelData& instances, uint32_t imageIndex, uint32_t threadsIndex);
+    static void UploadDataToInstanceBuffer(_StaticModelData& instances, uint32_t threadIndex);
 
     static void RecordCommandBuffers();
-    static void UpdateCleanup();
 
-    static std::array<boost::container::flat_map<std::shared_ptr<__Shader>, std::vector<VkCommandBuffer>>, MAX_FRAMES_IN_FLIGHT> InitializeInstanceData();
+    static std::array<boost::container::flat_map<std::shared_ptr<_Shader>, std::vector<VkCommandBuffer>>, MAX_FRAMES_IN_FLIGHT> InitializeInstanceData();
     static void HandleThreads();
 
     const static __VertexInputDescriptions baseStaticInstanceDescriptions;
 
-    static std::array<__Semaphore, MAX_FRAMES_IN_FLIGHT> renderFinishedSemaphores;
-    static std::array<boost::container::flat_map<std::shared_ptr<__Shader>, std::vector<VkCommandBuffer>>, MAX_FRAMES_IN_FLIGHT> commandBuffers;
+    static std::array<_Semaphore, MAX_FRAMES_IN_FLIGHT> renderFinishedSemaphores;
+    static std::array<boost::container::flat_map<std::shared_ptr<_Shader>, std::vector<VkCommandBuffer>>, MAX_FRAMES_IN_FLIGHT> commandBuffers;
 
     static std::vector<std::thread> dataUploadThreads;
     static std::vector<std::thread> commandBufferThreads;

@@ -14,7 +14,7 @@
 
 namespace renderer{
 
-struct __UniformBufferCreateInfo{
+struct _UniformBufferCreateInfo{
     VkDescriptorSet descriptorSet;
     uint32_t binding;
     uint32_t threadIndex;
@@ -24,14 +24,14 @@ struct __UniformBufferCreateInfo{
 };
 
 
-class __UniformBuffer{
+class _UniformBuffer{
 public:
-    __UniformBuffer();
-    __UniformBuffer(__UniformBufferCreateInfo createInfo);
+    _UniformBuffer();
+    _UniformBuffer(_UniformBufferCreateInfo createInfo);
 
-    __UniformBuffer(const __UniformBuffer& other);
-    __UniformBuffer operator=(const __UniformBuffer& other);
-    ~__UniformBuffer();
+    _UniformBuffer(const _UniformBuffer& other);
+    _UniformBuffer operator=(const _UniformBuffer& other);
+    ~_UniformBuffer();
 
 
     void UpdateData(void* data, size_t size, uint32_t threadIndex);
@@ -40,8 +40,9 @@ public:
 
     VkWriteDescriptorSet GetWriteDescriptorSet();
 private:
+    void Destructor();
 
-    __DataBuffer dataBuffer;
+    _DataBuffer dataBuffer;
 
     size_t size;
     uint32_t binding;

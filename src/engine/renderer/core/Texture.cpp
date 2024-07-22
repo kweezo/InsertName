@@ -8,10 +8,10 @@ namespace renderer{
 
 //TODO delete image contents
 
-__Texture::__Texture(){
+_Texture::_Texture(){
 }
 
-__Texture::__Texture(__TextureCreateInfo createInfo): descriptorSet(createInfo.descriptorSet), binding(createInfo.binding) {
+_Texture::_Texture(_TextureCreateInfo createInfo): descriptorSet(createInfo.descriptorSet), binding(createInfo.binding) {
     LoadImageFile(createInfo.path);
     CreateImage();
     CreateSampler();
@@ -21,7 +21,7 @@ __Texture::__Texture(__TextureCreateInfo createInfo): descriptorSet(createInfo.d
     useCount = std::make_shared<uint32_t>(1);
 }
 
-void __Texture::LoadImageFile(const std::string path){
+void _Texture::LoadImageFile(const std::string path){
     data = stbi_load(path.c_str(), &width, &height,
      &channels, STBI_rgb_alpha);
 
@@ -30,8 +30,8 @@ void __Texture::LoadImageFile(const std::string path){
     }  
 }
 
-void __Texture::CreateImage(){
-    __ImageCreateInfo createInfo{};
+void _Texture::CreateImage(){
+    _ImageCreateInfo createInfo{};
 
     createInfo.layout = VK_IMAGE_LAYOUT_UNDEFINED;
     createInfo.format = VK_FORMAT_R8G8B8A8_SRGB; 
@@ -42,12 +42,12 @@ void __Texture::CreateImage(){
     createInfo.data = data;
     createInfo.copyToLocalDeviceMemory = true;
 
-    image = __Image(createInfo);
+    image = _Image(createInfo);
 
     image.TransitionLayout(VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
 }
 
-void __Texture::CreateSampler(){
+void _Texture::CreateSampler(){
     VkSamplerCreateInfo samplerInfo{};
     samplerInfo.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
     samplerInfo.magFilter = VK_FILTER_LINEAR;
@@ -56,7 +56,7 @@ void __Texture::CreateSampler(){
     samplerInfo.addressModeV = VK_SAMPLER_ADDRESS_MODE_REPEAT;
     samplerInfo.addressModeW = VK_SAMPLER_ADDRESS_MODE_REPEAT;
     samplerInfo.anisotropyEnable = Settings::GetInstance().anisotropyEnable;
-    samplerInfo.maxAnisotropy = std::min((float)Settings::GetInstance().anisotropy, (float)__Device::GetPhysicalDeviceProperties().limits.maxSamplerAnisotropy);
+    samplerInfo.maxAnisotropy = std::min((float)Settings::GetInstance().anisotropy, (float)_Device::GetPhysicalDeviceProperties().limits.maxSamplerAnisotropy);
     samplerInfo.borderColor = VK_BORDER_COLOR_INT_OPAQUE_BLACK;
     samplerInfo.unnormalizedCoordinates = VK_FALSE;
     samplerInfo.compareEnable = VK_FALSE;
@@ -66,12 +66,12 @@ void __Texture::CreateSampler(){
     samplerInfo.minLod = 0.0f;
     samplerInfo.maxLod = 0.0f;
 
-    if(vkCreateSampler(__Device::GetDevice(), &samplerInfo, nullptr, &sampler) != VK_SUCCESS){
+    if(vkCreateSampler(_Device::GetDevice(), &samplerInfo, nullptr, &sampler) != VK_SUCCESS){
         throw std::runtime_error("Failed to create texture sampler");
     }
 }
 
-VkWriteDescriptorSet __Texture::GetWriteDescriptorSet(){
+VkWriteDescriptorSet _Texture::GetWriteDescriptorSet(){
     static VkDescriptorImageInfo imageInfo{};
     imageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
     imageInfo.imageView = image.GetImageView();
@@ -89,11 +89,11 @@ VkWriteDescriptorSet __Texture::GetWriteDescriptorSet(){
     return writeDescriptorSet;
 }
 
-void __Texture::Update(){
-    __Image::Update();
+void _Texture::Update(){
+    _Image::Update();
 }
 
-__Texture::__Texture(const __Texture& other){
+_Texture::_Texture(const _Texture& other){
     if(other.useCount.get() == nullptr){
         return;
     }
@@ -111,7 +111,7 @@ __Texture::__Texture(const __Texture& other){
     (*useCount.get())++;
 }
 
-__Texture __Texture::operator=(const __Texture& other){
+_Texture _Texture::operator=(const _Texture& other){
     if(this == &other){
         return *this;
     }
@@ -119,6 +119,8 @@ __Texture __Texture::operator=(const __Texture& other){
     if(other.useCount.get() == nullptr){
         return *this;
     }
+    
+    Destruct();
 
     width = other.width;
     height = other.height;
@@ -135,19 +137,24 @@ __Texture __Texture::operator=(const __Texture& other){
     return *this;
 }
 
-__Texture::~__Texture(){
+void _Texture::Destruct(){
     if(useCount.get() == nullptr){
         return;
     }
 
     if(*useCount.get() == 1){
-        vkDestroySampler(__Device::GetDevice(), sampler, nullptr);
+        vkDestroySampler(_Device::GetDevice(), sampler, nullptr);
 
         useCount.reset();
         return;
     }
 
     (*useCount.get())--;
+
+}
+
+_Texture::~_Texture(){
+    Destruct();
 }
 
 }

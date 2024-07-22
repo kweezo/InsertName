@@ -10,17 +10,17 @@
 
 namespace renderer{
 
-typedef struct __QueueFamilyInfo{
+typedef struct _QueueFamilyInfo{
     bool graphicsFamilyFound = false;
     bool transferFamilyFound = false;
 
 
     VkDeviceQueueCreateInfo graphicsQueueCreateInfo{};
     VkDeviceQueueCreateInfo transferQueueCreateInfo{};
-} __QueueFamilyInfo;
+} _QueueFamilyInfo;
 
 
-class __Device{
+class _Device{
 public:
     static void Init();
     static void Cleanup();
@@ -31,7 +31,7 @@ public:
     static VkQueue GetGraphicsQueue();
     static VkQueue GetTransferQueue();
 
-    static __QueueFamilyInfo GetQueueFamilyInfo();
+    static _QueueFamilyInfo GetQueueFamilyInfo();
     static VkPhysicalDeviceProperties GetPhysicalDeviceProperties();
 
     static bool DeviceMemoryFree();
@@ -55,7 +55,7 @@ private:
     static bool deviceMemoryFree;
     static bool initialized;
 
-    static __QueueFamilyInfo queueFamilyInfo;
+    static _QueueFamilyInfo queueFamilyInfo;
 
     static void PickPhysicalDevice();
     static void CreateLogicalDevice();

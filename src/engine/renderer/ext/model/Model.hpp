@@ -23,41 +23,41 @@
 
 #include "Mesh.hpp"
 
-#define ModelHandle std::shared_ptr<__Model>
+#define ModelHandle std::shared_ptr<_Model>
 
 namespace renderer{
 
-class __Model;
+class _Model;
 
-struct __ModelCreateInfo{
+struct _ModelCreateInfo{
     std::string path;
-    std::shared_ptr<__Shader> shader;
+    std::shared_ptr<_Shader> shader;
     std::function<void(void)> extraDrawCalls;
 };
 
 class ModelManager{
 public:
-    static ModelHandle Create(__ModelCreateInfo createInfo);
+    static ModelHandle Create(_ModelCreateInfo createInfo);
     static void Destoy(ModelHandle handle);
 
     static void Cleanup();
 private:
-    static boost::container::flat_map<ModelHandle, std::shared_ptr<__Model>> models;
+    static boost::container::flat_map<ModelHandle, std::shared_ptr<_Model>> models;
 };
 
 
-class __Model{
+class _Model{
 public:
-    __Model(__ModelCreateInfo createInfo);
+    _Model(_ModelCreateInfo createInfo);
 
-    __Model(const __Model& other) = delete;
-    __Model(__Model&& other) = delete;
-    __Model& operator=(const __Model& other) = delete;
-    __Model& operator=(__Model&& other) = delete;
+    _Model(const _Model& other) = delete;
+    _Model(_Model&& other) = delete;
+    _Model& operator=(const _Model& other) = delete;
+    _Model& operator=(_Model&& other) = delete;
 
-    void RecordDrawCommands(__CommandBuffer& commandBuffer, uint32_t instanceCount);
+    void RecordDrawCommands(_CommandBuffer& commandBuffer, uint32_t instanceCount);
     
-    std::shared_ptr<__Shader> GetShader();
+    std::shared_ptr<_Shader> GetShader();
     std::function<void(void)> GetExtraDrawCommands();
 
 
@@ -65,12 +65,12 @@ private: //copied from learnopengl.com *mostly* shamelessly
     void LoadModelFile();
     void ProcessNode(aiNode* node, const aiScene* scene);
 
-    std::vector<__Mesh> meshes;
-    std::unordered_map<std::string, __Texture> loadedTextures;
+    std::vector<_Mesh> meshes;
+    std::unordered_map<std::string, _Texture> loadedTextures;
 
     __VertexInputDescriptions extraDescriptions;
 
-    __ModelCreateInfo createInfo;
+    _ModelCreateInfo createInfo;
 
 };
 

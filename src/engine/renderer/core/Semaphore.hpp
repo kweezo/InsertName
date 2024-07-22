@@ -12,23 +12,25 @@
 
 namespace renderer{
 
-struct __SemaphoreCreateInfo{
+struct _SemaphoreCreateInfo{
 
 };
 
-class __Semaphore{
+class _Semaphore{
 public:
-    __Semaphore();
-    __Semaphore(__SemaphoreCreateInfo createInfo);
-    ~__Semaphore();
+    _Semaphore();
+    _Semaphore(_SemaphoreCreateInfo createInfo);
+    ~_Semaphore();
 
-    __Semaphore(const __Semaphore& other);
-    __Semaphore& operator=(const __Semaphore& other);
+    _Semaphore(const _Semaphore& other);
+    _Semaphore& operator=(const _Semaphore& other);
 
     bool IsInitialized() const;
 
     VkSemaphore GetSemaphore() const;
 private:
+    void Destruct();
+
     VkSemaphore semaphore = VK_NULL_HANDLE;
     std::shared_ptr<uint32_t> useCount;
 };

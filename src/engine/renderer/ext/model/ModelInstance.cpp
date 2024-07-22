@@ -14,7 +14,7 @@ ModelInstance::ModelInstance(ModelInstanceCreateInfo& createInfo){
 
     if(!createInfo.isDynamic){
         if(staticModelInstanceMap.find(createInfo.model) == staticModelInstanceMap.end()){
-            __StaticModelData instanceData{};
+            _StaticModelData instanceData{};
             instanceData.instanceList.emplace_back(this);
 
             InitializeStaticInstanceData(instanceData, createInfo.model);
@@ -22,7 +22,7 @@ ModelInstance::ModelInstance(ModelInstanceCreateInfo& createInfo){
             staticModelInstanceMap[createInfo.model] = instanceData;
         }
         else{
-            __StaticModelData& instanceData =  staticModelInstanceMap[createInfo.model];
+            _StaticModelData& instanceData =  staticModelInstanceMap[createInfo.model];
             instanceData.instanceList.emplace_back(this);
         }
 
@@ -39,8 +39,12 @@ void ModelInstance::__Update(){
     StaticUpdate();
 }
 
-void ModelInstance::__Draw(uint32_t imageIndex, __Semaphore presentSemaphore, std::array<__Fence, 2> inFlightFences){
-    StaticDraw(imageIndex, presentSemaphore, inFlightFences[0]);
+void ModelInstance::__UpdateCleanup(){
+    StaticUpdateCleanup();
+}
+
+void ModelInstance::__Draw(uint32_t frameInFlight, _Semaphore presentSemaphore, std::array<_Fence, 2> inFlightFences){
+    StaticDraw(frameInFlight, presentSemaphore, inFlightFences[0]);
 }
 
 void ModelInstance::__Cleanup(){

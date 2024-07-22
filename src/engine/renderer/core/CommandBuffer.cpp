@@ -2,17 +2,17 @@
 namespace renderer
 {
 
-std::deque<std::mutex> __CommandBuffer::poolMutexes = {};
+std::deque<std::mutex> _CommandBuffer::poolMutexes = {};
 
-void __CommandBuffer::Init(){
-    poolMutexes.resize(__CommandBufferType::size * std::thread::hardware_concurrency());
+void _CommandBuffer::Init(){
+    poolMutexes.resize(_CommandBufferType::size * std::thread::hardware_concurrency());
 }
 
-__CommandBuffer::__CommandBuffer() : commandBuffer(VK_NULL_HANDLE){
+_CommandBuffer::_CommandBuffer() : commandBuffer(VK_NULL_HANDLE){
     flags = 0;
 }
 
-__CommandBuffer::__CommandBuffer(__CommandBufferCreateInfo createInfo): flags(createInfo.flags), level(createInfo.level){
+_CommandBuffer::_CommandBuffer(_CommandBufferCreateInfo createInfo): flags(createInfo.flags), level(createInfo.level){
 
     poolID = createInfo.type * std::thread::hardware_concurrency() + createInfo.threadIndex; 
 
@@ -23,7 +23,7 @@ __CommandBuffer::__CommandBuffer(__CommandBufferCreateInfo createInfo): flags(cr
 
     if(flags & COMMAND_BUFFER_GRAPHICS_FLAG == COMMAND_BUFFER_GRAPHICS_FLAG){
 
-        allocInfo.commandPool = __CommandPool::GetGraphicsCommandPool(poolID);
+        allocInfo.commandPool = _CommandPool::GetGraphicsCommandPool(poolID);
         if(level == VK_COMMAND_BUFFER_LEVEL_PRIMARY){
             flags |= VK_SUBPASS_CONTENTS_SECONDARY_COMMAND_BUFFERS;
         }else{
@@ -31,10 +31,10 @@ __CommandBuffer::__CommandBuffer(__CommandBufferCreateInfo createInfo): flags(cr
         }
         
     }else{
-        allocInfo.commandPool = __CommandPool::GetTransferCommandPool(poolID);
+        allocInfo.commandPool = _CommandPool::GetTransferCommandPool(poolID);
     }
 
-    if (vkAllocateCommandBuffers(__Device::GetDevice(), &allocInfo, &commandBuffer) != VK_SUCCESS){
+    if (vkAllocateCommandBuffers(_Device::GetDevice(), &allocInfo, &commandBuffer) != VK_SUCCESS){
         throw std::runtime_error("Failed to allocate command buffers");
     }
 
@@ -42,12 +42,12 @@ __CommandBuffer::__CommandBuffer(__CommandBufferCreateInfo createInfo): flags(cr
 
 }
 
-void __CommandBuffer::ResetCommandBuffer(){
+void _CommandBuffer::ResetCommandBuffer(){
     vkResetCommandBuffer(commandBuffer, 0);
 }
 
 
-void __CommandBuffer::BeginCommandBuffer(VkCommandBufferInheritanceInfo *inheritanceInfo, bool reset){
+void _CommandBuffer::BeginCommandBuffer(VkCommandBufferInheritanceInfo *inheritanceInfo, bool reset){
     //    if(level == VK_COMMAND_BUFFER_LEVEL_SECONDARY){
     //        throw std::runtime_error("Tried to record a secondary command buffer, aborting!");
     //    }
@@ -84,7 +84,7 @@ void __CommandBuffer::BeginCommandBuffer(VkCommandBufferInheritanceInfo *inherit
 
 }
 
-void __CommandBuffer::EndCommandBuffer(){
+void _CommandBuffer::EndCommandBuffer(){
     if (vkEndCommandBuffer(commandBuffer) != VK_SUCCESS){
         throw std::runtime_error("Failed to record command buffer");
     }
@@ -92,16 +92,16 @@ void __CommandBuffer::EndCommandBuffer(){
     lock.reset();
 }
 
-void __CommandBuffer::ResetPools(__CommandBufferType type, uint32_t threadIndex){
-    __CommandPool::ResetPool(type * std::thread::hardware_concurrency() + threadIndex);
+void _CommandBuffer::ResetPools(_CommandBufferType type, uint32_t threadIndex){
+    _CommandPool::ResetPool(type * std::thread::hardware_concurrency() + threadIndex);
 
 }
 
-VkCommandBuffer __CommandBuffer::GetCommandBuffer(){
+VkCommandBuffer _CommandBuffer::GetCommandBuffer(){
     return commandBuffer;
 }
 
-__CommandBuffer::__CommandBuffer(const __CommandBuffer &other){
+_CommandBuffer::_CommandBuffer(const _CommandBuffer &other){
     if(other.useCount.get() == nullptr){
         return;
     }
@@ -116,7 +116,7 @@ __CommandBuffer::__CommandBuffer(const __CommandBuffer &other){
     (*useCount.get())++;
 }
 
-__CommandBuffer __CommandBuffer::operator=(const __CommandBuffer &other){
+_CommandBuffer _CommandBuffer::operator=(const _CommandBuffer &other){
     if (this == &other){
         return *this;
     }
@@ -124,6 +124,8 @@ __CommandBuffer __CommandBuffer::operator=(const __CommandBuffer &other){
     if(other.useCount.get() == nullptr){
         return *this;
     }
+
+    Destruct();
 
     commandBuffer = other.commandBuffer;
     useCount = other.useCount;
@@ -136,23 +138,27 @@ __CommandBuffer __CommandBuffer::operator=(const __CommandBuffer &other){
     return *this;
 }
 
-__CommandBuffer::~__CommandBuffer(){
+void _CommandBuffer::Destruct(){
     if (useCount.get() == nullptr){
         return;
     }
 
     if (*useCount == 1){
         if ((flags & COMMAND_BUFFER_GRAPHICS_FLAG) == COMMAND_BUFFER_GRAPHICS_FLAG){
-            vkFreeCommandBuffers(__Device::GetDevice(), __CommandPool::GetGraphicsCommandPool(poolID), 1, &commandBuffer);
+            vkFreeCommandBuffers(_Device::GetDevice(), _CommandPool::GetGraphicsCommandPool(poolID), 1, &commandBuffer);
         }
         else{
-            vkFreeCommandBuffers(__Device::GetDevice(), __CommandPool::GetTransferCommandPool(poolID), 1, &commandBuffer);
+            vkFreeCommandBuffers(_Device::GetDevice(), _CommandPool::GetTransferCommandPool(poolID), 1, &commandBuffer);
         }
         useCount.reset();
     }
     else{
         (*useCount.get())--;
     }
+}
+
+_CommandBuffer::~_CommandBuffer(){
+   Destruct();
 }
 
 }

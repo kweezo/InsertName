@@ -6,8 +6,8 @@ glm::mat4 Camera::view = {};
 glm::mat4 Camera::perspectiveProjection = {};
 glm::mat4 Camera::orthoProjection = {};
 
-__UniformBuffer Camera::orthoCamera = {};
-__UniformBuffer Camera::perspectiveCamera = {};
+_UniformBuffer Camera::orthoCamera = {};
+_UniformBuffer Camera::perspectiveCamera = {};
 
 void Camera::__Init(){
     VkExtent2D extent = Window::GetExtent();
@@ -17,7 +17,7 @@ void Camera::__Init(){
     glm::mat4 perspectiveProjection = glm::perspective(glm::radians(45.0f), (float)extent.width / extent.height, 0.1f, 100.0f);
     glm::mat4 orthoProjection = glm::ortho(0.0f, (float)extent.width, 0.0f, (float)extent.height, 0.1f, 100.0f);
 
-    __UniformBufferCreateInfo createInfo{};
+    _UniformBufferCreateInfo createInfo{};
 
     createInfo.binding = 0;
     createInfo.data = &orthoProjection;
@@ -25,12 +25,12 @@ void Camera::__Init(){
     createInfo.threadIndex = 0;
     createInfo.descriptorSet = VK_NULL_HANDLE; // TODO
 
-    orthoCamera = __UniformBuffer(createInfo);
+    orthoCamera = _UniformBuffer(createInfo);
 
     createInfo.binding = 1;
     createInfo.data = &perspectiveProjection;
 
-    perspectiveCamera = __UniformBuffer(createInfo);
+    perspectiveCamera = _UniformBuffer(createInfo);
 }
 
 
@@ -54,8 +54,8 @@ VkWriteDescriptorSet Camera::__GetWriteDescriptorSetOrtho(uint32_t binding){
 }
 
 void Camera::__Cleanup(){
-    orthoCamera.~__UniformBuffer();
-    perspectiveCamera.~__UniformBuffer();
+    orthoCamera.~_UniformBuffer();
+    perspectiveCamera.~_UniformBuffer();
 }
 
 }

@@ -12,7 +12,7 @@
 
 namespace renderer{
 
-class __Instance{
+class _Instance{
 public:
     static void Init();
     static void Cleanup();

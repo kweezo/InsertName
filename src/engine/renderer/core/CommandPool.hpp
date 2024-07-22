@@ -12,12 +12,12 @@
 
 namespace renderer{
 
-typedef struct __CommandPoolSet{
+typedef struct _CommandPoolSet{
     VkCommandPool transferCommandPool;
     VkCommandPool graphicsCommandPool;
-}__CommandPoolSet;
+}_CommandPoolSet;
 
-enum __CommandBufferType{ // necessary evil :(
+enum _CommandBufferType{ // necessary evil :(
     GENERIC = 0,
     IMAGE = 1,
     DATA = 2,
@@ -28,7 +28,7 @@ enum __CommandBufferType{ // necessary evil :(
 };
 
 
-class __CommandPool{
+class _CommandPool{
 public:
     static void Init();
     static void Cleanup();
@@ -39,7 +39,7 @@ public:
 
     static VkCommandPool ResetPool(uint32_t poolID);// TODO implement lol
 private:
-    static std::vector<__CommandPoolSet> commandPools;
+    static std::vector<_CommandPoolSet> commandPools;
 
     static void CreateCommandPool(uint32_t poolID);
 };

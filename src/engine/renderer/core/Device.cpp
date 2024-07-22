@@ -17,11 +17,11 @@ VKAPI_ATTR VkBool32 VKAPI_CALL debugCallback(
     static const char* MEMORY_ERR = "VK_ERROR_OUT_OF_DEVICE_MEMORY";
 
     if(!strcmp(pCallbackData->pMessage, MEMORY_ERR)){
-        __Device::SetDeviceMemoryFull();
+        _Device::SetDeviceMemoryFull();
     }
 
     if(messageSeverity >= VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT){
-        throw std::runtime_error("Validation error too severe, aborting");
+   //     throw std::runtime_error("Validation error too severe, aborting");
     }
 
     return VK_FALSE;
@@ -31,18 +31,18 @@ const std::vector<const char*> deviceExtensions = {
     VK_KHR_SWAPCHAIN_EXTENSION_NAME,
 };
 
-VkDevice __Device::device = VK_NULL_HANDLE;
-VkPhysicalDevice __Device::physicalDevice = VK_NULL_HANDLE;
-__QueueFamilyInfo __Device::queueFamilyInfo = {};
-std::vector<VkQueue> __Device::graphicsQueues = {};
-std::vector<VkQueue> __Device::transferQueues = {};
-uint32_t __Device::graphicsQueueFamilyIndex = 0;
-uint32_t __Device::transferQueueFamilyIndex = 0;
-bool __Device::deviceMemoryFree = false;
-VkPhysicalDeviceProperties __Device::physicalDeviceProperties = {};
-bool __Device::initialized = false;
+VkDevice _Device::device = VK_NULL_HANDLE;
+VkPhysicalDevice _Device::physicalDevice = VK_NULL_HANDLE;
+_QueueFamilyInfo _Device::queueFamilyInfo = {};
+std::vector<VkQueue> _Device::graphicsQueues = {};
+std::vector<VkQueue> _Device::transferQueues = {};
+uint32_t _Device::graphicsQueueFamilyIndex = 0;
+uint32_t _Device::transferQueueFamilyIndex = 0;
+bool _Device::deviceMemoryFree = false;
+VkPhysicalDeviceProperties _Device::physicalDeviceProperties = {};
+bool _Device::initialized = false;
 
-void __Device::Init(){
+void _Device::Init(){
     PickPhysicalDevice();
     CreateQueueCreateInfos();
     CreateLogicalDevice();
@@ -50,16 +50,16 @@ void __Device::Init(){
     initialized = true;
 }
 
-void __Device::PickPhysicalDevice(){
+void _Device::PickPhysicalDevice(){
     uint32_t deviceCount = 0;
-    vkEnumeratePhysicalDevices(__Instance::GetInstance(), &deviceCount, nullptr);
+    vkEnumeratePhysicalDevices(_Instance::GetInstance(), &deviceCount, nullptr);
 
     if(deviceCount == 0){
         throw std::runtime_error("Failed to find GPUs with Vulkan support!");
     }
 
     std::vector<VkPhysicalDevice> devices(deviceCount);
-    vkEnumeratePhysicalDevices(__Instance::GetInstance(), &deviceCount, devices.data());
+    vkEnumeratePhysicalDevices(_Instance::GetInstance(), &deviceCount, devices.data());
 
     physicalDevice = devices[0];
 
@@ -86,7 +86,7 @@ void __Device::PickPhysicalDevice(){
     }
 }
 
-VkPhysicalDeviceFeatures __Device::GetAvailableDeviceFeatures(){
+VkPhysicalDeviceFeatures _Device::GetAvailableDeviceFeatures(){
     VkPhysicalDeviceFeatures availableFeatures{};
     vkGetPhysicalDeviceFeatures(physicalDevice, &availableFeatures);
 
@@ -103,18 +103,18 @@ VkPhysicalDeviceFeatures __Device::GetAvailableDeviceFeatures(){
     return wantedFeatures;
 }
 
-bool __Device::DeviceMemoryFree(){
+bool _Device::DeviceMemoryFree(){
     return deviceMemoryFree;
 }
-void __Device::SetDeviceMemoryFull(){
+void _Device::SetDeviceMemoryFull(){
     deviceMemoryFree = false;
 }
 
-VkPhysicalDeviceProperties __Device::GetPhysicalDeviceProperties(){
+VkPhysicalDeviceProperties _Device::GetPhysicalDeviceProperties(){
     return physicalDeviceProperties;
 }
 
-void __Device::CreateLogicalDevice(){
+void _Device::CreateLogicalDevice(){
     if(queueFamilyInfo.graphicsFamilyFound == false){
         throw std::runtime_error("Failed to find a suitable queue family!");
     }
@@ -149,7 +149,7 @@ void __Device::CreateLogicalDevice(){
 
 }
 
-void __Device::CreateQueueCreateInfos(){
+void _Device::CreateQueueCreateInfos(){
     uint32_t queueFamilyCount = 0;
     vkGetPhysicalDeviceQueueFamilyProperties(physicalDevice, &queueFamilyCount, nullptr);
 
@@ -172,7 +172,7 @@ void __Device::CreateQueueCreateInfos(){
     }
 }
 
-void __Device::GetQueues(){
+void _Device::GetQueues(){
     for(int i = 0; i < queueFamilyInfo.graphicsQueueCreateInfo.queueCount; i++){
         VkQueue queue;
         vkGetDeviceQueue(device, queueFamilyInfo.graphicsQueueCreateInfo.queueFamilyIndex, i, &queue);
@@ -188,14 +188,14 @@ void __Device::GetQueues(){
     }
 }
 
-VkQueue __Device::GetGraphicsQueue(){ 
+VkQueue _Device::GetGraphicsQueue(){ 
     VkQueue &queue = graphicsQueues[graphicsQueueFamilyIndex];
     graphicsQueueFamilyIndex = (graphicsQueueFamilyIndex + 1) % graphicsQueues.size();
 
     return queue;
 }
 
-VkQueue __Device::GetTransferQueue(){
+VkQueue _Device::GetTransferQueue(){
     if(queueFamilyInfo.transferFamilyFound == false){
         return GetGraphicsQueue();
     }
@@ -206,23 +206,23 @@ VkQueue __Device::GetTransferQueue(){
     return queue;
 }
 
-__QueueFamilyInfo __Device::GetQueueFamilyInfo(){
+_QueueFamilyInfo _Device::GetQueueFamilyInfo(){
     return queueFamilyInfo;
 }
 
-VkPhysicalDevice __Device::GetPhysicalDevice(){
+VkPhysicalDevice _Device::GetPhysicalDevice(){
     return physicalDevice;
 }
 
-VkDevice __Device::GetDevice(){
+VkDevice _Device::GetDevice(){
     return device;
 }
 
-bool __Device::IsInitialized(){
+bool _Device::IsInitialized(){
     return initialized;
 }
 
-void __Device::Cleanup(){
+void _Device::Cleanup(){
     vkDestroyDevice(device, nullptr);
 }
 

@@ -3,33 +3,33 @@
 
 namespace renderer{
 
-__UniformBuffer::__UniformBuffer(){
+_UniformBuffer::_UniformBuffer(){
 }
 
-__UniformBuffer::__UniformBuffer(__UniformBufferCreateInfo createInfo): size(createInfo.size), binding(createInfo.binding), 
+_UniformBuffer::_UniformBuffer(_UniformBufferCreateInfo createInfo): size(createInfo.size), binding(createInfo.binding), 
 descriptorSet(createInfo.descriptorSet) {
 
-    __DataBufferCreateInfo dataBufferCreateInfo{};
+    _DataBufferCreateInfo dataBufferCreateInfo{};
     dataBufferCreateInfo.size = size;
     dataBufferCreateInfo.data = createInfo.data;
     dataBufferCreateInfo.transferToLocalDeviceMemory = true;
     dataBufferCreateInfo.usage = VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT;
     dataBufferCreateInfo.isDynamic = true;
 
-    dataBuffer = __DataBuffer(dataBufferCreateInfo);
+    dataBuffer = _DataBuffer(dataBufferCreateInfo);
 
     useCount = std::make_shared<uint32_t>(1);
 }
 
-void __UniformBuffer::SetDescriptorSet(VkDescriptorSet descriptorSet){
+void _UniformBuffer::SetDescriptorSet(VkDescriptorSet descriptorSet){
     this->descriptorSet = descriptorSet;
 }
 
-void __UniformBuffer::SetBinding(uint32_t binding){
+void _UniformBuffer::SetBinding(uint32_t binding){
     this->binding = binding;
 }
 
-void __UniformBuffer::UpdateData(void* data, size_t size, uint32_t threadIndex){
+void _UniformBuffer::UpdateData(void* data, size_t size, uint32_t threadIndex){
     if(this->size != size){
         throw std::runtime_error("Data size mismatch when trying to update uniform buffer data, expected size: " +
          std::to_string(this->size) + " actual size: " + std::to_string(size));
@@ -38,7 +38,7 @@ void __UniformBuffer::UpdateData(void* data, size_t size, uint32_t threadIndex){
     dataBuffer.UpdateData(data, size, threadIndex);
 }
 
-VkWriteDescriptorSet __UniformBuffer::GetWriteDescriptorSet(){
+VkWriteDescriptorSet _UniformBuffer::GetWriteDescriptorSet(){
     VkWriteDescriptorSet writeDescriptorSet = {};
     writeDescriptorSet.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
     writeDescriptorSet.dstSet = descriptorSet;
@@ -57,7 +57,7 @@ VkWriteDescriptorSet __UniformBuffer::GetWriteDescriptorSet(){
     return writeDescriptorSet;
 }
 
-__UniformBuffer::__UniformBuffer(const __UniformBuffer& other){
+_UniformBuffer::_UniformBuffer(const _UniformBuffer& other){
     if(other.useCount.get() == nullptr){
         return;
     }
@@ -71,7 +71,7 @@ __UniformBuffer::__UniformBuffer(const __UniformBuffer& other){
     (*useCount.get())++;
 }
 
-__UniformBuffer  __UniformBuffer::operator=(const __UniformBuffer& other){
+_UniformBuffer  _UniformBuffer::operator=(const _UniformBuffer& other){
     if(this == &other){
         return *this;
     }
@@ -79,6 +79,8 @@ __UniformBuffer  __UniformBuffer::operator=(const __UniformBuffer& other){
     if(other.useCount.get() == nullptr){
         return *this;
     }
+
+    Destructor();
 
     dataBuffer = other.dataBuffer;
     size = other.size;
@@ -90,13 +92,14 @@ __UniformBuffer  __UniformBuffer::operator=(const __UniformBuffer& other){
 
     return *this;
 }
-__UniformBuffer::~__UniformBuffer(){
+
+void _UniformBuffer::Destructor(){
     if(useCount.get() == nullptr){
         return;
     }
 
-    if(*useCount.get() == 1){
-        dataBuffer.~__DataBuffer();
+    if(*useCount.get() <= 1){
+        dataBuffer.~_DataBuffer();
 
         useCount.reset();
 
@@ -104,6 +107,10 @@ __UniformBuffer::~__UniformBuffer(){
     }
 
     (*useCount.get())--;
+}
+
+_UniformBuffer::~_UniformBuffer(){
+    Destructor();
 }
 
 

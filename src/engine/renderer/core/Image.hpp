@@ -16,7 +16,7 @@
 
 namespace renderer{
 
-struct __ImageCreateInfo{
+struct _ImageCreateInfo{
     VkImageLayout layout;
     VkFormat format;
     VkImageAspectFlags aspectMask;
@@ -31,17 +31,17 @@ struct __ImageCreateInfo{
     uint32_t threadIndex;
 };
 
-class __Image{
+class _Image{
 public:
     static void Init();
     static void Update();
     static void Cleanup();
 
-    __Image();
-    __Image(__ImageCreateInfo createInfo);
-    __Image operator=(const __Image& other);
-    __Image(const __Image& other);
-    ~__Image();
+    _Image();
+    _Image(_ImageCreateInfo createInfo);
+    _Image operator=(const _Image& other);
+    _Image(const _Image& other);
+    ~_Image();
 
     static VkFormat GetSupportedFormat(std::vector<VkFormat> candidates, VkImageTiling tiling, VkFormatFeatureFlags features);
     static inline bool HasStencilComponent(VkFormat format);
@@ -52,21 +52,23 @@ public:
     VkImageView GetImageView();
 
 private:
+    void Destruct();
+
     void CreateImage();
     void CreateImageView();
     void AllocateMemory();
 
     void CopyDataToDevice();
 
-    static __CommandBuffer GetFreeCommandBuffer(uint32_t threadIndex);
-    static std::vector<std::vector<std::pair<__CommandBuffer, bool>>> secondaryCommandBuffers;
+    static _CommandBuffer GetFreeCommandBuffer(uint32_t threadIndex);
+    static std::vector<std::vector<std::pair<_CommandBuffer, bool>>> secondaryCommandBuffers;
 
     static void SubmitCommandBuffers();
     static void UpdateCleanup();
 
     static void CreateCommmandBuffers();
 
-    static __Fence commandBuffersFinishedExecutionFence;
+    static _Fence commandBuffersFinishedExecutionFence;
     static std::set<uint32_t> commandPoolResetIndexes;
     static bool primaryCommandBufferRecorded;
 
@@ -74,13 +76,13 @@ private:
     VkImageView imageView;
     VkDeviceMemory memory;
 
-    std::unique_ptr<__DataBuffer> stagingBuffer;
+    std::unique_ptr<_DataBuffer> stagingBuffer;
 
-    __Semaphore waitSemaphore;
+    _Semaphore waitSemaphore;
 
-    __ImageCreateInfo createInfo;
+    _ImageCreateInfo createInfo;
 
-    static std::list<std::unique_ptr<__DataBuffer>> bufferCleanupQueue;
+    static std::list<std::unique_ptr<_DataBuffer>> bufferCleanupQueue;
 
 
     std::shared_ptr<uint32_t> useCount;

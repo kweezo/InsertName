@@ -22,29 +22,29 @@
 
 namespace renderer{
 
-typedef struct __BasicMeshVertex{
+typedef struct _BasicMeshVertex{
     glm::vec3 pos;
     glm::vec2 texCoord;
     glm::vec3 normal;
-}__BasicMeshVertex;
+}_BasicMeshVertex;
 
-typedef struct __TextureMaps{
-    std::shared_ptr<__Texture> diffuseMap{};
-    std::shared_ptr<__Texture> specularMap{};
-    std::shared_ptr<__Texture> normalMap{};
-    std::shared_ptr<__Texture> albedoMap{};
-}__TextureMaps;
+typedef struct _TextureMaps{
+    std::shared_ptr<_Texture> diffuseMap{};
+    std::shared_ptr<_Texture> specularMap{};
+    std::shared_ptr<_Texture> normalMap{};
+    std::shared_ptr<_Texture> albedoMap{};
+}_TextureMaps;
 
-class __Mesh{
+class _Mesh{
 public:
-    __Mesh(std::vector<__BasicMeshVertex>& vertices, std::vector<uint32_t>& indices, __TextureMaps textureMaps);
+    _Mesh(std::vector<_BasicMeshVertex>& vertices, std::vector<uint32_t>& indices, _TextureMaps textureMaps);
 
-    void RecordDrawCommands(__CommandBuffer& commandBuffer, uint32_t instanceCount);
+    void RecordDrawCommands(_CommandBuffer& commandBuffer, uint32_t instanceCount);
 private:
-    __DataBuffer vtnBuffer;
-    __DataBuffer indexBuffer;
+    _DataBuffer vtnBuffer;
+    _DataBuffer indexBuffer;
 
-    __TextureMaps textureMaps;
+    _TextureMaps textureMaps;
 
     uint32_t indexCount;
 

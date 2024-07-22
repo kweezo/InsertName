@@ -14,30 +14,32 @@
 
 namespace renderer{
 
-struct __TextureCreateInfo{
+struct _TextureCreateInfo{
     std::string path;
     uint32_t binding;
     VkDescriptorSet descriptorSet;
 };
 
-class __Texture{
+class _Texture{
 public:
     static void Update();
 
-    __Texture();
-    __Texture(__TextureCreateInfo createInfo);
-    __Texture(const __Texture& other);
-    __Texture operator=(const __Texture& other);
-    ~__Texture();
+    _Texture();
+    _Texture(_TextureCreateInfo createInfo);
+    _Texture(const _Texture& other);
+    _Texture operator=(const _Texture& other);
+    ~_Texture();
 
     VkWriteDescriptorSet GetWriteDescriptorSet();
 
 private:
+    void Destruct();
+
     void LoadImageFile(const std::string path);
     void CreateImage();
     void CreateSampler();
 
-    __Image image;
+    _Image image;
     VkSampler sampler;
     VkDescriptorSet descriptorSet;
     

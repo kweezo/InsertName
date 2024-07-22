@@ -43,11 +43,11 @@ private:
     static void Present();
     static void UpdateCleanup();
 
-    static std::array<__Semaphore, MAX_FRAMES_IN_FLIGHT> presentSemaphores;
-    static std::array<__Semaphore, MAX_FRAMES_IN_FLIGHT> renderSemaphores;
+    static std::array<_Semaphore, MAX_FRAMES_IN_FLIGHT> presentSemaphores;
+    static std::array<_Semaphore, MAX_FRAMES_IN_FLIGHT> renderSemaphores;
     static std::array<std::vector<VkCommandBuffer>, MAX_FRAMES_IN_FLIGHT> commandBuffers;
 
-    static std::array<std::array<__Fence, DRAW_QUEUE_SUBMIT_COUNT>, MAX_FRAMES_IN_FLIGHT> inFlightFences; //size is the number of draw operations, 1 for each queue submit
+    static std::array<std::array<_Fence, DRAW_QUEUE_SUBMIT_COUNT>, MAX_FRAMES_IN_FLIGHT> inFlightFences; //size is the number of draw operations, 1 for each queue submit
     static std::array<std::array<VkFence, DRAW_QUEUE_SUBMIT_COUNT>, MAX_FRAMES_IN_FLIGHT> inFlightFenceHandles;
 
 
