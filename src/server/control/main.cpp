@@ -32,5 +32,8 @@ int main() {
     adminConsoleThread.join();
 
     endwin(); // Close ncurses
+    #ifdef DEBUG
+        std::cerr << "Exiting main" << std::endl;
+    #endif
     return 0;
 }

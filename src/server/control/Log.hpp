@@ -12,7 +12,7 @@
 #include <pqxx/pqxx>
 
 struct LogEntry {
-    std::time_t timestamp;
+    double timestamp;
     int alertLevel;
     std::string message;
 };
@@ -26,6 +26,8 @@ public:
     static void SendLogsToDatabase();
 
 private:
+    static double GetCurrentTimestamp();
+
     static std::unique_ptr<pqxx::connection> c;
     static int logLevel;
     static int maxLogBufferSize;

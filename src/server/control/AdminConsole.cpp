@@ -427,7 +427,9 @@ void AdminConsole::ProcessKey(int key) {
                 line.insert(cursorPos, 1, key); // Insert character at cursor
                 cursorPos++;
             }
-            else{line+=std::to_string(key);cursorPos+=std::to_string(key).size();} // For debugging purposes
+            #ifdef DEBUG
+                else{std::string strKey=std::to_string(key);line+=strKey;cursorPos+=strKey.size();} // For debugging purposes
+            #endif
 
             selectionStart = std::string::npos;
             break;
