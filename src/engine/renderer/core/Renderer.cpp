@@ -29,7 +29,7 @@ void Renderer::SoftInit(){
 
     for(uint32_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++){
         for(uint32_t y = 0; y < DRAW_QUEUE_SUBMIT_COUNT; y++){
-            inFlightFences[i][y] = _Fence(true);
+            inFlightFences[i][y] = _Fence((i == 0));
             inFlightFenceHandles[i][y] = inFlightFences[i][y].GetFence(); 
         }
     }
@@ -52,8 +52,9 @@ void Renderer::SoftInit(){
 void Renderer::UpdatePrepare(){
 
     vkWaitForFences(_Device::GetDevice(), inFlightFenceHandles[_Swapchain::GetFrameInFlight()].size()-1, &inFlightFenceHandles[_Swapchain::GetFrameInFlight()][0], VK_TRUE, std::numeric_limits<uint64_t>::max());
-        vkResetFences(_Device::GetDevice(), inFlightFenceHandles[_Swapchain::GetFrameInFlight()].size(), inFlightFenceHandles[_Swapchain::GetFrameInFlight()].data());
+    vkResetFences(_Device::GetDevice(), inFlightFenceHandles[_Swapchain::GetFrameInFlight()].size(), inFlightFenceHandles[_Swapchain::GetFrameInFlight()].data());
 
+    _Swapchain::IncrementCurrentFrameInFlight();
 
     _Swapchain::IncrementCurrentFrameIndex(presentSemaphores[_Swapchain::GetFrameInFlight()]);
 }
@@ -113,8 +114,6 @@ void Renderer::Present(){
     if(vkQueuePresentKHR(_Device::GetGraphicsQueue(), &presentInfo) != VK_SUCCESS){
         throw std::runtime_error("Failed to present to screen");
     }
-
-    _Swapchain::IncrementCurrentFrameInFlight();
 }
 
 void Renderer::UpdateCleanup(){

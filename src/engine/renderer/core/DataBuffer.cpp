@@ -31,7 +31,7 @@ void _DataBuffer::CreateCommandBuffers(){
 
         commandBuffers.resize(TARGET_STAGING_BUFFER_COUNT_PER_THREAD);
         for(uint32_t y = 0; y < TARGET_STAGING_BUFFER_COUNT_PER_THREAD; y++){
-            commandBuffers[y] = {__CommandBuffer(stagingCommandBufferInfo), true, __Semaphore()};
+            commandBuffers[y] = {_CommandBuffer(stagingCommandBufferInfo), true, _Semaphore()};
         }
 
         i = (i + 1) % std::thread::hardware_concurrency();
@@ -253,7 +253,7 @@ _CommandBuffer _DataBuffer::RetrieveFreeStagingCommandBuffer(uint32_t threadInde
     stagingCommandBufferInfo.flags = COMMAND_POOL_TYPE_TRANSFER | COMMAND_BUFFER_ONE_TIME_SUBMIT_FLAG;
     stagingCommandBufferInfo.threadIndex = threadIndex;
 
-    stagingCommandBuffers[threadIndex].push_back({__CommandBuffer(stagingCommandBufferInfo), false, signalSemaphore});
+    stagingCommandBuffers[threadIndex].push_back({_CommandBuffer(stagingCommandBufferInfo), false, signalSemaphore});
     return stagingCommandBuffers[threadIndex].back().commandBuffer;
 }
 

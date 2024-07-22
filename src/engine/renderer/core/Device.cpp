@@ -21,7 +21,7 @@ VKAPI_ATTR VkBool32 VKAPI_CALL debugCallback(
     }
 
     if(messageSeverity >= VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT){
-   //     throw std::runtime_error("Validation error too severe, aborting");
+   //     throw std::runtime_error("Validation error too severe, aborting. Please write me with the error message (jakob.tadej.vrtacnik@students.vegova.si).");
     }
 
     return VK_FALSE;

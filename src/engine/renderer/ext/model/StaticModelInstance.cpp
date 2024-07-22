@@ -110,7 +110,6 @@ void _StaticModelInstance::UploadDataToInstanceBuffer(_StaticModelData& instance
     createInfo.usage = VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
     createInfo.transferToLocalDeviceMemory = true;
 
-    instances.instanceBuffer.~_DataBuffer();
     instances.instanceBuffer = _DataBuffer(createInfo);
 
     for(uint32_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++){
@@ -174,12 +173,9 @@ void _StaticModelInstance::StaticDraw(uint32_t frameInFlight, _Semaphore present
     submitInfo.signalSemaphoreCount = signalSemaphores.size();
     submitInfo.pSignalSemaphores = signalSemaphores.data();
 
-//    std::cout << frameInFlight << "\n";
-
     if(vkQueueSubmit(_Device::GetGraphicsQueue(), 1, &submitInfo, inFlightFence.GetFence()) != VK_SUCCESS){
         throw std::runtime_error("Failed to submit drawing command buffers for static instances");
     }
-    
 }
 
 VkSemaphore _StaticModelInstance::GetStaticRenderFinishedSemaphore(uint32_t imageIndex){
