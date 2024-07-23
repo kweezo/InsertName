@@ -2,17 +2,20 @@
 
 namespace renderer{
 
-boost::container::flat_map<ModelHandle, std::shared_ptr<_Model>> ModelManager::models;
+std::vector<std::shared_ptr<_Model>> ModelManager::models = {};
 
 ModelHandle ModelManager::Create(_ModelCreateInfo createInfo){
-    std::shared_ptr<_Model> model = std::make_shared<_Model>(createInfo);
-    models[static_cast<ModelHandle>(model.get())] = model;
+    models.emplace_back(std::make_shared<_Model>(createInfo));
 
-    return model;
+    return models.back();
 }
 
 void ModelManager::Destoy(ModelHandle handle){
-    models.erase(handle);
+    std::vector<std::shared_ptr<_Model>>::iterator it = std::find(models.begin(), models.end(), handle.lock());
+    if(it == models.end()){
+        throw std::runtime_error("Tried to erase a nonexistent model!");
+    }
+    models.erase(it);
 }
 
 void ModelManager::Cleanup(){
@@ -21,7 +24,6 @@ void ModelManager::Cleanup(){
 
 _Model::_Model(_ModelCreateInfo createInfo): createInfo(createInfo){
     LoadModelFile();
-
 }
 
 void _Model::LoadModelFile(){
@@ -70,7 +72,10 @@ void _Model::ProcessNode(aiNode* node, const aiScene* scene){
                 _TextureCreateInfo createInfo;
                 createInfo.binding = 0;
                 createInfo.path = std::string(path.C_Str());
-                createInfo.descriptorSet = this->createInfo.shader->GetDescriptorSet();
+                {
+                    std::shared_ptr<_Shader> shader = this->createInfo.shader.lock();
+                    createInfo.descriptorSet = shader->GetDescriptorSet();
+                }
 
                 textureMaps.albedoMap = std::make_shared<_Texture>(createInfo);
             }
@@ -99,8 +104,12 @@ std::function<void(void)> _Model::GetExtraDrawCommands(){
     return createInfo.extraDrawCalls;
 }
 
-std::shared_ptr<_Shader> _Model::GetShader(){
+std::weak_ptr<_Shader> _Model::GetShader(){
     return createInfo.shader;
+}
+
+std::string _Model::GetName(){
+    return createInfo.name;
 }
 
 }

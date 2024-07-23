@@ -3,12 +3,12 @@
 
 namespace renderer{
 
-boost::container::flat_map<ModelHandle, _StaticModelData> _StaticModelInstance::staticModelInstanceMap = {};
+boost::container::flat_map<std::string, std::shared_ptr<_StaticModelData>> _StaticModelInstance::staticModelInstanceMap = {};
 std::array<_Semaphore, MAX_FRAMES_IN_FLIGHT> _StaticModelInstance::renderFinishedSemaphores = {};
 uint32_t _StaticModelInstance::threadIndex = 0;
 std::vector<std::thread> _StaticModelInstance::dataUploadThreads = {};
 std::vector<std::thread> _StaticModelInstance::commandBufferThreads = {};
-std::array<boost::container::flat_map<std::shared_ptr<_Shader>, std::vector<VkCommandBuffer>>, MAX_FRAMES_IN_FLIGHT> _StaticModelInstance::commandBuffers = {};
+std::array<boost::container::flat_map<std::string, std::vector<VkCommandBuffer>>, MAX_FRAMES_IN_FLIGHT> _StaticModelInstance::commandBuffers = {};
 
 
 const __VertexInputDescriptions _StaticModelInstance::baseStaticInstanceDescriptions = {{
@@ -42,8 +42,8 @@ void _StaticModelInstance::InitializeStaticInstanceData(_StaticModelData& instan
 
 void _StaticModelInstance::HandleThreads(){
     uint32_t threadIndex = 0;
-    for(auto& [modelHandle, instances] : staticModelInstanceMap){
-        dataUploadThreads.push_back(std::thread(&UploadDataToInstanceBuffer, std::ref(instances), threadIndex));
+    for(auto& [modelName, instances] : staticModelInstanceMap){
+        dataUploadThreads.push_back(std::thread(&UploadDataToInstanceBuffer, instances, threadIndex));
         threadIndex = (threadIndex + 1) % std::thread::hardware_concurrency();
     }
 
@@ -64,9 +64,12 @@ void _StaticModelInstance::HandleThreads(){
 void _StaticModelInstance::RecordCommandBuffers(){
     HandleThreads();
     for(uint32_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++){
-        for(auto& [modelHandle, instanceData] : staticModelInstanceMap){
-            VkCommandBuffer commandBuffer = instanceData.commandBuffers[i].GetCommandBuffer();
-            commandBuffers[i][instanceData.model->GetShader()].push_back(commandBuffer);
+        for(auto& [modelName, instanceData] : staticModelInstanceMap){
+            VkCommandBuffer commandBuffer = instanceData->commandBuffers[i].GetCommandBuffer();
+            {
+                std::shared_ptr<_Shader> shader = instanceData->model.lock()->GetShader().lock();
+                commandBuffers[i][shader->GetName()].push_back(commandBuffer);
+            }
         }
     }
 }
@@ -87,17 +90,19 @@ void _StaticModelInstance::StaticUpdate(){
     RecordCommandBuffers();
 }
 
-void _StaticModelInstance::UploadDataToInstanceBuffer(_StaticModelData& instances, uint32_t threadIndex){
-    
-    for(std::shared_ptr<_StaticModelInstance> instance : instances.instanceList){
-        instances.drawCount += instance->GetShouldDraw();
+void _StaticModelInstance::UploadDataToInstanceBuffer(std::weak_ptr<_StaticModelData> instances, uint32_t threadIndex){
+
+    std::shared_ptr<_StaticModelData> instancesShared = instances.lock();
+
+    for(std::shared_ptr<_StaticModelInstance> instance : instancesShared->instanceList){
+        instancesShared->drawCount += instance->GetShouldDraw();
     }
 
 
-    std::vector<glm::mat4> instanceModels(instances.drawCount);
+    std::vector<glm::mat4> instanceModels(instances.lock()->drawCount);
 
     uint32_t i = 0;
-    for(std::shared_ptr<_StaticModelInstance> instance : instances.instanceList){
+    for(std::shared_ptr<_StaticModelInstance> instance : instancesShared->instanceList){
         if(instance->GetShouldDraw()){
             instanceModels[i] = instance->GetModelMatrix();
             i++;
@@ -110,7 +115,7 @@ void _StaticModelInstance::UploadDataToInstanceBuffer(_StaticModelData& instance
     createInfo.usage = VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
     createInfo.transferToLocalDeviceMemory = true;
 
-    instances.instanceBuffer = _DataBuffer(createInfo);
+    instancesShared->instanceBuffer = _DataBuffer(createInfo);
 
     for(uint32_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++){
 
@@ -120,15 +125,15 @@ void _StaticModelInstance::UploadDataToInstanceBuffer(_StaticModelData& instance
         createInfo.threadIndex = threadIndex;
         createInfo.type = _CommandBufferType::INSTANCE;
 
-        instances.commandBuffers[i] = _CommandBuffer(createInfo);
+        instancesShared->commandBuffers[i] = _CommandBuffer(createInfo);
 
-        commandBufferThreads.push_back(std::thread(&RecordStaticCommandBuffer, std::ref(instances), i, threadIndex));
+        commandBufferThreads.push_back(std::thread(&RecordStaticCommandBuffer, instances, i, threadIndex));
 
         threadIndex = (threadIndex + 1) % std::thread::hardware_concurrency();
     }
 }
 
-void _StaticModelInstance::RecordStaticCommandBuffer(_StaticModelData& instances, uint32_t imageIndex, uint32_t threadsIndex){
+void _StaticModelInstance::RecordStaticCommandBuffer(std::weak_ptr<_StaticModelData> instances, uint32_t imageIndex, uint32_t threadsIndex){
     __VertexInputDescriptions allDescriptions;
     std::get<0>(allDescriptions).insert(std::get<0>(allDescriptions).end(), std::get<0>(baseStaticInstanceDescriptions).begin(),
      std::get<0>(baseStaticInstanceDescriptions).end());
@@ -136,15 +141,20 @@ void _StaticModelInstance::RecordStaticCommandBuffer(_StaticModelData& instances
      std::get<1>(baseStaticInstanceDescriptions).end());
 
 
+    {
+        std::shared_ptr<_StaticModelData> instancesShared = instances.lock(); 
+        std::shared_ptr<_Model> model = instancesShared->model.lock();
+        std::shared_ptr<_Shader> shader = model->GetShader().lock();
 
-    instances.commandBuffers[imageIndex].BeginCommandBuffer(nullptr, false);
-    instances.model->GetShader()->GetGraphicsPipeline()->BeginRenderPassAndBindPipeline(imageIndex, instances.commandBuffers[imageIndex].GetCommandBuffer());
-        
-    instances.model->GetExtraDrawCommands();
-    instances.model->RecordDrawCommands(instances.commandBuffers[imageIndex], instances.drawCount);
+        instancesShared->commandBuffers[imageIndex].BeginCommandBuffer(nullptr, false);
+        shader->GetGraphicsPipeline()->BeginRenderPassAndBindPipeline(imageIndex, instancesShared->commandBuffers[imageIndex].GetCommandBuffer());
 
-    instances.model->GetShader()->GetGraphicsPipeline()->EndRenderPass(instances.commandBuffers[imageIndex].GetCommandBuffer());
-    instances.commandBuffers[imageIndex].EndCommandBuffer();
+        model->GetExtraDrawCommands();
+        model->RecordDrawCommands(instancesShared->commandBuffers[imageIndex], instancesShared->drawCount);
+
+        shader->GetGraphicsPipeline()->EndRenderPass(instancesShared->commandBuffers[imageIndex].GetCommandBuffer());
+        instancesShared->commandBuffers[imageIndex].EndCommandBuffer();
+    }
 }
 
 void _StaticModelInstance::StaticDraw(uint32_t frameInFlight, _Semaphore presentSemaphore, _Fence inFlightFence){
@@ -187,8 +197,8 @@ void _StaticModelInstance::StaticCleanup(){
         semaphore.~_Semaphore();
     }
 
-    for(auto& [modelHandle, instanceDat] : staticModelInstanceMap){
-        instanceDat.instanceBuffer.~_DataBuffer();
+    for(auto& [modelName, instanceDat] : staticModelInstanceMap){
+        instanceDat->instanceBuffer.~_DataBuffer();
     }
 
     staticModelInstanceMap.clear();

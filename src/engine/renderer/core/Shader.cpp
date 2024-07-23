@@ -106,7 +106,7 @@ void _ShaderManager::Init(){
     stream.close();
 }
 
-std::shared_ptr<_Shader> _ShaderManager::GetShader(std::string name){
+std::weak_ptr<_Shader> _ShaderManager::GetShader(std::string name){
     if(shaders.find(name) == shaders.end()){
         throw std::runtime_error("Attempting to get nonexistent shader with name " + name);
     }

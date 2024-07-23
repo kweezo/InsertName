@@ -119,11 +119,12 @@ int main(){
     Renderer::Init();
 
 
-    std::shared_ptr<_Shader> modelShader = _ShaderManager::GetShader("basicMesh");
+    std::weak_ptr<_Shader> modelShader = _ShaderManager::GetShader("basicMesh");
 
     _ModelCreateInfo modelCreateInfo{};
     modelCreateInfo.path = dir + "res/models/teapot/teapot.fbx";
     modelCreateInfo.shader = _ShaderManager::GetShader("basicMesh");
+    modelCreateInfo.name = "teapot";
 
     ModelHandle teapot = ModelManager::Create(modelCreateInfo);
 

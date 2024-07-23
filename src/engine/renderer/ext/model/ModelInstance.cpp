@@ -13,17 +13,17 @@ ModelInstance::ModelInstance(ModelInstanceCreateInfo& createInfo){
     //todo, face your enemies (rotation)
 
     if(!createInfo.isDynamic){
-        if(staticModelInstanceMap.find(createInfo.model) == staticModelInstanceMap.end()){
+        if(staticModelInstanceMap.find(createInfo.model.lock()->GetName()) == staticModelInstanceMap.end()){
             _StaticModelData instanceData{};
             instanceData.instanceList.emplace_back(this);
 
             InitializeStaticInstanceData(instanceData, createInfo.model);
 
-            staticModelInstanceMap[createInfo.model] = instanceData;
+            staticModelInstanceMap.insert({createInfo.model.lock()->GetName(), std::make_shared<_StaticModelData>(instanceData)});
         }
         else{
-            _StaticModelData& instanceData =  staticModelInstanceMap[createInfo.model];
-            instanceData.instanceList.emplace_back(this);
+            std::weak_ptr<_StaticModelData> instanceData = staticModelInstanceMap[createInfo.model.lock()->GetName()];
+            instanceData.lock()->instanceList.emplace_back(this);
         }
 
     }

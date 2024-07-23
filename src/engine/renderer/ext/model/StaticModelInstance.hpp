@@ -52,22 +52,22 @@ protected:
     virtual bool GetShouldDraw() = 0;
     virtual glm::mat4 GetModelMatrix() = 0;
 
-    static boost::container::flat_map<ModelHandle, _StaticModelData> staticModelInstanceMap;
+    static boost::container::flat_map<std::string, std::shared_ptr<_StaticModelData>> staticModelInstanceMap;
 
     static void InitializeStaticInstanceData(_StaticModelData& instanceData, ModelHandle model);
 private:
-    static void RecordStaticCommandBuffer(_StaticModelData& instances, uint32_t imageIndex, uint32_t threadsIndex);
-    static void UploadDataToInstanceBuffer(_StaticModelData& instances, uint32_t threadIndex);
+    static void RecordStaticCommandBuffer(std::weak_ptr<_StaticModelData> instances, uint32_t imageIndex, uint32_t threadsIndex);
+    static void UploadDataToInstanceBuffer(std::weak_ptr<_StaticModelData> instances, uint32_t threadIndex);
 
     static void RecordCommandBuffers();
 
-    static std::array<boost::container::flat_map<std::shared_ptr<_Shader>, std::vector<VkCommandBuffer>>, MAX_FRAMES_IN_FLIGHT> InitializeInstanceData();
+    static std::array<boost::container::flat_map<std::string, std::vector<VkCommandBuffer>>, MAX_FRAMES_IN_FLIGHT> InitializeInstanceData();
     static void HandleThreads();
 
     const static __VertexInputDescriptions baseStaticInstanceDescriptions;
 
     static std::array<_Semaphore, MAX_FRAMES_IN_FLIGHT> renderFinishedSemaphores;
-    static std::array<boost::container::flat_map<std::shared_ptr<_Shader>, std::vector<VkCommandBuffer>>, MAX_FRAMES_IN_FLIGHT> commandBuffers;
+    static std::array<boost::container::flat_map<std::string, std::vector<VkCommandBuffer>>, MAX_FRAMES_IN_FLIGHT> commandBuffers;
 
     static std::vector<std::thread> dataUploadThreads;
     static std::vector<std::thread> commandBufferThreads;

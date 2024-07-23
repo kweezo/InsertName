@@ -35,7 +35,7 @@ public:
     static void Init();
     static void Cleanup();
 
-    static std::shared_ptr<_Shader> GetShader(std::string name);
+    static std::weak_ptr<_Shader> GetShader(std::string name);
 
 private:
 

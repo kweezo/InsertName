@@ -16,6 +16,8 @@
 
 #include <glm/glm.hpp>
 
+#include <boost/container/flat_map.hpp>
+
 #include "engine/renderer/core/Texture.hpp"
 #include "engine/renderer/core/Shader.hpp"
 #include "engine/renderer/core/CommandBuffer.hpp"
@@ -23,7 +25,7 @@
 
 #include "Mesh.hpp"
 
-#define ModelHandle std::shared_ptr<_Model>
+#define ModelHandle std::weak_ptr<_Model>
 
 namespace renderer{
 
@@ -31,7 +33,8 @@ class _Model;
 
 struct _ModelCreateInfo{
     std::string path;
-    std::shared_ptr<_Shader> shader;
+    std::string name;
+    std::weak_ptr<_Shader> shader;
     std::function<void(void)> extraDrawCalls;
 };
 
@@ -42,7 +45,7 @@ public:
 
     static void Cleanup();
 private:
-    static boost::container::flat_map<ModelHandle, std::shared_ptr<_Model>> models;
+    static std::vector<std::shared_ptr<_Model>> models;
 };
 
 
@@ -57,8 +60,9 @@ public:
 
     void RecordDrawCommands(_CommandBuffer& commandBuffer, uint32_t instanceCount);
     
-    std::shared_ptr<_Shader> GetShader();
+    std::weak_ptr<_Shader> GetShader();
     std::function<void(void)> GetExtraDrawCommands();
+    std::string GetName();
 
 
 private: //copied from learnopengl.com *mostly* shamelessly
