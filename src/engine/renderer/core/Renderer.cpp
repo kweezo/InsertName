@@ -19,13 +19,13 @@ void Renderer::HardInit(){
     _CommandBuffer::Init();
     _DataBuffer::Init();
     _Image::Init();
-    Camera::__Init();
 }
 
 void Renderer::SoftInit(){
     _Swapchain::Init();
     _GraphicsPipeline::Init();
     _ShaderManager::Init();
+    Camera::__Init();
 
     for(uint32_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++){
         for(uint32_t y = 0; y < DRAW_QUEUE_SUBMIT_COUNT; y++){
@@ -62,6 +62,7 @@ void Renderer::UpdatePrepare(){
 void Renderer::UpdateComponents(){
     _UniformBuffer::Update();
     _Texture::Update();
+    _Image::Update();
     Camera::__Update();
 
 
@@ -76,7 +77,6 @@ void Renderer::UpdateComponents(){
         }
     }
 
-    ModelInstance::__Update();   
 }
 
 void Renderer::Update(){

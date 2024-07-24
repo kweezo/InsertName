@@ -13,9 +13,10 @@
 #include "Device.hpp"
 #include "CommandBuffer.hpp"
 #include "Fence.hpp"
-#include "Shader.hpp"
 
 namespace renderer{
+
+class _Shader; //IM SORRY OKAY I HAD TO or else the dependencies go WEEEEEEEEEWOOOOOWEEEEWOOOO
 
 struct _ImageCreateInfo{
     VkImageLayout layout;
@@ -87,6 +88,7 @@ private:
     _ImageCreateInfo createInfo;
 
     static std::list<std::unique_ptr<_DataBuffer>> bufferCleanupQueue;
+    static std::vector<VkWriteDescriptorSet> writeDescriptorSetsQueue;
 
 
     std::shared_ptr<uint32_t> useCount;

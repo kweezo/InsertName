@@ -5,12 +5,14 @@
 #include <stdexcept>
 #include <unordered_map>
 #include <memory>
+#include <list>
 
 #include "../core/DataBuffer.hpp"
 #include "../core/Device.hpp"
-#include "../core/Image.hpp"
 #include "../core/DescriptorManager.hpp"
 #include "client/account/Settings.hpp"
+#include "../core/Image.hpp"
+#include "../core/Shader.hpp"
 
 namespace renderer{
 
@@ -58,6 +60,7 @@ private:
 
 
     static std::vector<VkWriteDescriptorSet> writeDescriptorSetsQueue;
+    static std::list<VkDescriptorImageInfo> imageInfoList;
 };
 
 }

@@ -10,8 +10,8 @@
 
 #include "../window/Window.hpp"
 #include "Device.hpp"
-#include "Image.hpp"
 #include "Semaphore.hpp"
+#include "Image.hpp"
 
 #define MAX_FRAMES_IN_FLIGHT 2
 

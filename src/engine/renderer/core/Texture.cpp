@@ -6,6 +6,7 @@
 namespace renderer{
 
 std::vector<VkWriteDescriptorSet> _Texture::writeDescriptorSetsQueue = {};
+std::list<VkDescriptorImageInfo> _Texture::imageInfoList = {};
 
 //TODO delete image contents
 
@@ -18,6 +19,8 @@ _Texture::_Texture(_TextureCreateInfo createInfo): shaders(createInfo.shaders), 
     CreateSampler();
 
     image.TransitionLayout(VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+
+    SetBinding(createInfo.binding);
 
     useCount = std::make_shared<uint32_t>(1);
 }
@@ -85,6 +88,10 @@ void _Texture::SetBinding(uint32_t binding){
     imageInfo.imageView = image.GetImageView();
     imageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 
+    imageInfoList.push_front(imageInfo);
+
+    writeDescriptorSet.pImageInfo = &imageInfoList.front();
+
     for(std::weak_ptr<_Shader> shader : shaders){
         writeDescriptorSet.dstSet = shader.lock()->GetDescriptorSet();
         writeDescriptorSetsQueue.push_back(writeDescriptorSet);
@@ -94,6 +101,7 @@ void _Texture::SetBinding(uint32_t binding){
 void _Texture::Update(){
     vkUpdateDescriptorSets(_Device::GetDevice(), writeDescriptorSetsQueue.size(), writeDescriptorSetsQueue.data(), 0, nullptr);
     writeDescriptorSetsQueue.clear();
+    imageInfoList.clear();
 
     _Image::Update();
 }

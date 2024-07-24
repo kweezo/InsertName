@@ -7,6 +7,7 @@
 #include <memory>
 #include <tuple>
 #include <thread>
+#include <list>
 
 #include <vulkan/vulkan.h>
 
@@ -41,10 +42,9 @@ public:
     _UniformBuffer& operator=(const _UniformBuffer& other);
     ~_UniformBuffer();
 
-    void UpdateDescriptorSet(uint32_t binding);
+    void SetBinding(uint32_t binding);
 
     void UpdateData(void* data, size_t size, uint32_t threadIndex);
-    void SetBinding(uint32_t binding);
 private:
     void Destructor();
 
@@ -57,6 +57,7 @@ private:
     std::shared_ptr<uint32_t> useCount;
 
     static std::vector<VkWriteDescriptorSet> writeDescriptorSetsQueue;
+    static std::list<VkDescriptorBufferInfo> bufferInfoList;
 };
 
 }

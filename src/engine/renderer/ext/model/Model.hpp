@@ -25,6 +25,8 @@
 
 #include "Mesh.hpp"
 
+#define MISSING_TEXTURE_PATH "./client_data/res/textures/no_texture.png"
+
 #define ModelHandle std::weak_ptr<_Model>
 
 namespace renderer{

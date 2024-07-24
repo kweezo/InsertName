@@ -58,6 +58,9 @@ _Mesh::_Mesh(std::vector<_BasicMeshVertex>& vertices, std::vector<uint32_t>& ind
         indexBuffer = _DataBuffer(vtnCreateInfo);
 
         indexBuffer = _DataBuffer(indexCreateInfo);
+
+
+        indexCount = indices.size();
 }
 
 void _Mesh::RecordDrawCommands(_CommandBuffer& commandBuffer, uint32_t instanceCount){//TODO turn into secondary command buffer

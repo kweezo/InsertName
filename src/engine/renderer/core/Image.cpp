@@ -155,6 +155,7 @@ _Image::_Image(_ImageCreateInfo createInfo): createInfo(createInfo) {
         bufferCreateInfo.isDynamic = false;
         bufferCreateInfo.signalSemaphore = waitSemaphore;
         bufferCreateInfo.transferToLocalDeviceMemory = false;
+        bufferCreateInfo.usage = VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
 
        stagingBuffer = std::make_unique<_DataBuffer>(_DataBuffer(bufferCreateInfo));
 
@@ -301,7 +302,6 @@ void _Image::TransitionLayout(VkImageLayout oldLayout, VkImageLayout newLayout){
     _CommandBuffer commandBuffer = GetFreeCommandBuffer(createInfo.threadIndex);
 
     commandBuffer.BeginCommandBuffer(&inheritanceInfo, false); 
-
 
     vkCmdPipelineBarrier(commandBuffer.GetCommandBuffer(), VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
     VK_PIPELINE_STAGE_TRANSFER_BIT, 0, 0, nullptr, 0, nullptr, 1, &imageMemoryBarrier);

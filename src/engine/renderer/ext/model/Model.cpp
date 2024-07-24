@@ -70,17 +70,21 @@ void _Model::ProcessNode(aiNode* node, const aiScene* scene){
                 material->GetTexture(aiTextureType_BASE_COLOR, 0, &path);
 
                 _TextureCreateInfo createInfo;
-                createInfo.binding = 0;
+                createInfo.binding = 1;
                 createInfo.path = std::string(path.C_Str());
-                {
-                    std::shared_ptr<_Shader> shader = this->createInfo.shader.lock();
-                    createInfo.descriptorSet = shader->GetDescriptorSet();
-                }
+                createInfo.shaders = _ShaderManager::GetShaderCategory("models");
 
                 textureMaps.albedoMap = std::make_shared<_Texture>(createInfo);
             }
             else{
-                std::runtime_error("No texture found for mesh or there is more than one, neither is supported");
+                std::cerr << "No texture found for mesh or there is more than one, neither is supported (yet) for model: " << createInfo.path << "\n";
+
+                _TextureCreateInfo createInfo;
+                createInfo.binding = 1;
+                createInfo.path = std::string(MISSING_TEXTURE_PATH);
+                createInfo.shaders = _ShaderManager::GetShaderCategory("models");
+
+                textureMaps.albedoMap = std::make_shared<_Texture>(createInfo);
             }
             //TODO: add support for other maps
         }
