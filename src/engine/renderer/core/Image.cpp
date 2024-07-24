@@ -9,6 +9,7 @@ _Fence _Image::commandBuffersFinishedExecutionFence ={};
 std::set<uint32_t> _Image::commandPoolResetIndexes = {};
 std::list<std::unique_ptr<_DataBuffer>> _Image::bufferCleanupQueue = { };
 bool _Image::primaryCommandBufferRecorded = false;
+std::vector<VkWriteDescriptorSet> _Image::writeDescriptorSetsQueue = {};
 
 
 void _Image::Init(){
@@ -307,6 +308,7 @@ void _Image::TransitionLayout(VkImageLayout oldLayout, VkImageLayout newLayout){
 
     commandBuffer.EndCommandBuffer();
 }
+
 
 VkImage _Image::GetImage(){
     return image;

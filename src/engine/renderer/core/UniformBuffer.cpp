@@ -6,10 +6,9 @@ namespace renderer{
 std::vector<VkWriteDescriptorSet> _UniformBuffer::writeDescriptorSetsQueue = {};
 
 void _UniformBuffer::Update(){
-    if(!writeDescriptorSetsQueue.empty()){
-        vkUpdateDescriptorSets(_Device::GetDevice(), writeDescriptorSetsQueue.size(), writeDescriptorSetsQueue.data(),
-        0, nullptr);
-    }
+    vkUpdateDescriptorSets(_Device::GetDevice(), writeDescriptorSetsQueue.size(), writeDescriptorSetsQueue.data(),
+    0, nullptr);
+    writeDescriptorSetsQueue.clear();
 }
 
 _UniformBuffer::_UniformBuffer(){
@@ -17,7 +16,7 @@ _UniformBuffer::_UniformBuffer(){
 }
 
 _UniformBuffer::_UniformBuffer(_UniformBufferCreateInfo createInfo): size(createInfo.size), binding(createInfo.binding), 
-descriptorSet(createInfo.descriptorSet) {
+shaders(createInfo.shaders) {
 
     _DataBufferCreateInfo dataBufferCreateInfo{};
     dataBufferCreateInfo.size = size;
@@ -33,10 +32,6 @@ descriptorSet(createInfo.descriptorSet) {
     useCount = std::make_shared<uint32_t>(1);
 }
 
-void _UniformBuffer::SetDescriptorSet(VkDescriptorSet descriptorSet){
-    this->descriptorSet = descriptorSet;
-}
-
 void _UniformBuffer::SetBinding(uint32_t binding){
     this->binding = binding;
 }
@@ -50,10 +45,9 @@ void _UniformBuffer::UpdateData(void* data, size_t size, uint32_t threadIndex){
     dataBuffer.UpdateData(data, size, threadIndex);
 }
 
-VkWriteDescriptorSet _UniformBuffer::GetWriteDescriptorSet(){
+void _UniformBuffer::UpdateDescriptorSet(uint32_t binding){
     VkWriteDescriptorSet writeDescriptorSet = {};
     writeDescriptorSet.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-    writeDescriptorSet.dstSet = descriptorSet;
     writeDescriptorSet.dstBinding = binding;
     writeDescriptorSet.dstArrayElement = 0;
     writeDescriptorSet.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
@@ -66,16 +60,12 @@ VkWriteDescriptorSet _UniformBuffer::GetWriteDescriptorSet(){
 
     writeDescriptorSet.pBufferInfo = &bufferInfo;
 
-    return writeDescriptorSet;
-}
+    for(std::weak_ptr<_Shader> shader : shaders){
+        writeDescriptorSet.dstSet = shader.lock()->GetDescriptorSet();
+        writeDescriptorSetsQueue.push_back(writeDescriptorSet);
+    }
 
-void _UniformBuffer::UpdateDescriptorSet(uint32_t binding){
     this->binding = binding;
-    writeDescriptorSetsQueue.push_back(GetWriteDescriptorSet());
-}
-
-VkDescriptorSet _UniformBuffer::GetDescriptorSet(){
-    return descriptorSet;
 }
 
 _UniformBuffer::_UniformBuffer(const _UniformBuffer& other){
@@ -86,7 +76,7 @@ _UniformBuffer::_UniformBuffer(const _UniformBuffer& other){
     dataBuffer = other.dataBuffer;
     size = other.size;
     binding = other.binding;
-    descriptorSet = other.descriptorSet;
+    shaders = other.shaders;
 
     useCount = other.useCount;
     (*useCount.get())++;
@@ -106,7 +96,7 @@ _UniformBuffer&  _UniformBuffer::operator=(const _UniformBuffer& other){
     dataBuffer = other.dataBuffer;
     size = other.size;
     binding = other.binding;
-    descriptorSet = other.descriptorSet;
+    shaders = other.shaders;
 
     useCount = other.useCount;
     (*useCount.get())++;

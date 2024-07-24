@@ -150,7 +150,7 @@ void _StaticModelInstance::RecordStaticCommandBuffer(std::weak_ptr<_StaticModelD
 
         std::array<VkBuffer, 1> vertexBuffers = {instancesShared->instanceBuffer.GetBuffer()};
         std::array<VkDeviceSize, 1> offsets = {0};
-        std::array<VkDescriptorSet, 1> descriptorSets = {Camera::__GetDescriptorSet()};
+        std::array<VkDescriptorSet, 1> descriptorSets = {shader->GetDescriptorSet()};
 
         vkCmdBindVertexBuffers(instancesShared->commandBuffers[_Swapchain::GetFrameInFlight()].GetCommandBuffer(), 1, vertexBuffers.size(), vertexBuffers.data(), offsets.data());
 

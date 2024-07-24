@@ -35,11 +35,14 @@ public:
     static void Init();
     static void Cleanup();
 
+    static std::vector<std::weak_ptr<_Shader>> GetShaderCategory(std::string category);
+
     static std::weak_ptr<_Shader> GetShader(std::string name);
 
 private:
 
     static boost::container::flat_map<std::string, std::shared_ptr<_Shader>> shaders;
+    static boost::container::flat_map<std::string, std::vector<std::weak_ptr<_Shader>>> shadersByCategory;
 };
 
 

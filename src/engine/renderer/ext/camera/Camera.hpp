@@ -16,8 +16,6 @@ public:
     static void __Update();
     static void __Cleanup();
 
-    static VkDescriptorSet __GetDescriptorSet();
-
 private:
     static glm::mat4 view;
     static glm::mat4 perspectiveProjection;

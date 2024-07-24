@@ -13,6 +13,7 @@
 #include "Device.hpp"
 #include "CommandBuffer.hpp"
 #include "Fence.hpp"
+#include "Shader.hpp"
 
 namespace renderer{
 
@@ -24,6 +25,7 @@ struct _ImageCreateInfo{
     VkExtent2D imageExtent;
 
     bool copyToLocalDeviceMemory;
+
 
     size_t size;
     void* data;
@@ -42,6 +44,7 @@ public:
     _Image operator=(const _Image& other);
     _Image(const _Image& other);
     ~_Image();
+
 
     static VkFormat GetSupportedFormat(std::vector<VkFormat> candidates, VkImageTiling tiling, VkFormatFeatureFlags features);
     static inline bool HasStencilComponent(VkFormat format);
@@ -71,6 +74,7 @@ private:
     static _Fence commandBuffersFinishedExecutionFence;
     static std::set<uint32_t> commandPoolResetIndexes;
     static bool primaryCommandBufferRecorded;
+
 
     VkImage image;
     VkImageView imageView;

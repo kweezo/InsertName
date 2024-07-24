@@ -6,6 +6,7 @@ const std::string shaderPath = "client_data/shaders/bin/";
 
 std::vector<_ShaderBindingInfo> _Shader::shaderBindings = {};
 boost::container::flat_map<std::string, std::shared_ptr<_Shader>> _ShaderManager::shaders = {};
+boost::container::flat_map<std::string, std::vector<std::weak_ptr<_Shader>>> _ShaderManager::shadersByCategory = {};
 
 void _ShaderManager::Init(){
     std::ifstream stream("client_data/shaders/shaders.json");
@@ -28,6 +29,7 @@ void _ShaderManager::Init(){
         std::string vertexPath = shader["vertexPath"].asString();
         std::string fragmentPath = shader["fragmentPath"].asString();
         std::string name = shader["name"].asString();
+        std::string category = shader["category"].asString();
 
         const Json::Value& bindings = shader["bindings"];
         for (const Json::Value& binding : bindings){
@@ -93,8 +95,11 @@ void _ShaderManager::Init(){
 
         __VertexInputDescriptions inputDescriptions = {attributeDescriptions, bindingDescriptions};
 
-        _ShaderManager::shaders.emplace(name, std::make_shared<_Shader>(vertexPath, fragmentPath,
-        name, descriptorBindings, inputDescriptions));
+
+        std::shared_ptr<_Shader> shaderPtr = std::make_shared<_Shader>(vertexPath, fragmentPath, name, descriptorBindings, inputDescriptions);
+
+        _ShaderManager::shaders[name] = shaderPtr;
+        shadersByCategory[category].push_back(shaderPtr);
     }
 
     _Shader::CreateDescriptorSets();
@@ -111,6 +116,10 @@ std::weak_ptr<_Shader> _ShaderManager::GetShader(std::string name){
         throw std::runtime_error("Attempting to get nonexistent shader with name " + name);
     }
     return shaders[name];
+}
+
+std::vector<std::weak_ptr<_Shader>> _ShaderManager::GetShaderCategory(std::string category){
+    return shadersByCategory[category];
 }
 
 void _ShaderManager::Cleanup(){
@@ -152,6 +161,7 @@ void _Shader::Bind(VkCommandBuffer commandBuffer, VkPipelineLayout pipelineLayou
 void _Shader::SetDescriptorSet(VkDescriptorSet descriptorSet){
     this->descriptorSet = descriptorSet;
 }
+
 
 _GraphicsPipeline* _Shader::GetGraphicsPipeline(){
     return &graphicsPipeline;

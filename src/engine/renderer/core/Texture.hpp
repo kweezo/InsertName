@@ -17,8 +17,10 @@ namespace renderer{
 struct _TextureCreateInfo{
     std::string path;
     uint32_t binding;
-    VkDescriptorSet descriptorSet;
+
+    std::vector<std::weak_ptr<_Shader>> shaders;
 };
+
 
 class _Texture{
 public:
@@ -30,7 +32,7 @@ public:
     _Texture operator=(const _Texture& other);
     ~_Texture();
 
-    VkWriteDescriptorSet GetWriteDescriptorSet();
+    void SetBinding(uint32_t binding);
 
 private:
     void Destruct();
@@ -48,9 +50,14 @@ private:
     int channels;
     void* data;
 
+    std::vector<std::weak_ptr<_Shader>> shaders;
+
     uint32_t binding;
 
     std::shared_ptr<uint32_t> useCount;
+
+
+    static std::vector<VkWriteDescriptorSet> writeDescriptorSetsQueue;
 };
 
 }

@@ -5,13 +5,14 @@
 
 namespace renderer{
 
+std::vector<VkWriteDescriptorSet> _Texture::writeDescriptorSetsQueue = {};
 
 //TODO delete image contents
 
 _Texture::_Texture(){
 }
 
-_Texture::_Texture(_TextureCreateInfo createInfo): descriptorSet(createInfo.descriptorSet), binding(createInfo.binding) {
+_Texture::_Texture(_TextureCreateInfo createInfo): shaders(createInfo.shaders), binding(createInfo.binding) {
     LoadImageFile(createInfo.path);
     CreateImage();
     CreateSampler();
@@ -71,25 +72,29 @@ void _Texture::CreateSampler(){
     }
 }
 
-VkWriteDescriptorSet _Texture::GetWriteDescriptorSet(){
-    static VkDescriptorImageInfo imageInfo{};
-    imageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-    imageInfo.imageView = image.GetImageView();
-    imageInfo.sampler = sampler;
-
+void _Texture::SetBinding(uint32_t binding){
     VkWriteDescriptorSet writeDescriptorSet{};
-    writeDescriptorSet.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-    writeDescriptorSet.dstSet = descriptorSet;
-    writeDescriptorSet.dstBinding = binding;
-    writeDescriptorSet.dstArrayElement = 0;
-    writeDescriptorSet.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-    writeDescriptorSet.descriptorCount = 1;
-    writeDescriptorSet.pImageInfo = &imageInfo;
 
-    return writeDescriptorSet;
+    writeDescriptorSet.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+    writeDescriptorSet.dstBinding = binding;
+    writeDescriptorSet.descriptorCount = 1;
+    writeDescriptorSet.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+
+    VkDescriptorImageInfo imageInfo{};
+    imageInfo.sampler = sampler;
+    imageInfo.imageView = image.GetImageView();
+    imageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+
+    for(std::weak_ptr<_Shader> shader : shaders){
+        writeDescriptorSet.dstSet = shader.lock()->GetDescriptorSet();
+        writeDescriptorSetsQueue.push_back(writeDescriptorSet);
+    }
 }
 
 void _Texture::Update(){
+    vkUpdateDescriptorSets(_Device::GetDevice(), writeDescriptorSetsQueue.size(), writeDescriptorSetsQueue.data(), 0, nullptr);
+    writeDescriptorSetsQueue.clear();
+
     _Image::Update();
 }
 

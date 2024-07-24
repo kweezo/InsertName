@@ -43,6 +43,7 @@
         "vertexPath": "basicMesh.vert.spv",
         "fragmentPath": "basicMesh.frag.spv",
         "name": "basicMesh",
+        "category": "models",
         "bindings": [
             {
                 "binding": 0,

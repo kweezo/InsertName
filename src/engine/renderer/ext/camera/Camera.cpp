@@ -17,18 +17,21 @@ void Camera::__Init(){
     glm::mat4 perspectiveProjection = glm::perspective(glm::radians(45.0f), (float)extent.width / extent.height, 0.1f, 100.0f);
     glm::mat4 orthoProjection = glm::ortho(0.0f, (float)extent.width, 0.0f, (float)extent.height, 0.1f, 100.0f);
 
+
+    std::vector<std::weak_ptr<_Shader>> shaders = _ShaderManager::GetShaderCategory("models");
+
     _UniformBufferCreateInfo createInfo{};
 
     createInfo.binding = 0;
     createInfo.data = &orthoProjection;
     createInfo.size = sizeof(glm::mat4);
     createInfo.threadIndex = 0;
-    createInfo.descriptorSet = VK_NULL_HANDLE; // TODO
 
     orthoCamera = _UniformBuffer(createInfo);
 
     createInfo.binding = 1;
     createInfo.data = &perspectiveProjection;
+    createInfo.shaders = shaders;
 
     perspectiveCamera = _UniformBuffer(createInfo);
 }
@@ -45,14 +48,9 @@ void Camera::__Update(){
     perspectiveCamera.UpdateData(&perspectiveProjection, sizeof(glm::mat4), 0);
 }
 
-
 void Camera::__Cleanup(){
     orthoCamera.~_UniformBuffer();
     perspectiveCamera.~_UniformBuffer();
-}
-
-VkDescriptorSet Camera::__GetDescriptorSet(){
-    return perspectiveCamera.GetDescriptorSet();//TODO: add support for ortho
 }
 
 }

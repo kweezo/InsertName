@@ -61,6 +61,7 @@ void Renderer::UpdatePrepare(){
 
 void Renderer::UpdateComponents(){
     _UniformBuffer::Update();
+    _Texture::Update();
     Camera::__Update();
 
 
