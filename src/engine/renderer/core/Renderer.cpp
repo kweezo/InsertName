@@ -19,7 +19,7 @@ void Renderer::HardInit(){
     _CommandBuffer::Init();
     _DataBuffer::Init();
     _Image::Init();
-    //Camera::__Init();
+    Camera::__Init();
 }
 
 void Renderer::SoftInit(){
@@ -60,7 +60,8 @@ void Renderer::UpdatePrepare(){
 }
 
 void Renderer::UpdateComponents(){
-    //Camera::__Update();
+    _UniformBuffer::Update();
+    Camera::__Update();
 
 
     std::array<std::thread, 2> threads = {

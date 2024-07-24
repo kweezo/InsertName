@@ -46,16 +46,13 @@ void Camera::__Update(){
 }
 
 
-VkWriteDescriptorSet Camera::__GetWriteDescriptorSetPerspective(uint32_t binding){
-    return perspectiveCamera.GetWriteDescriptorSet();
-}
-VkWriteDescriptorSet Camera::__GetWriteDescriptorSetOrtho(uint32_t binding){
-    return orthoCamera.GetWriteDescriptorSet();
-}
-
 void Camera::__Cleanup(){
     orthoCamera.~_UniformBuffer();
     perspectiveCamera.~_UniformBuffer();
+}
+
+VkDescriptorSet Camera::__GetDescriptorSet(){
+    return perspectiveCamera.GetDescriptorSet();//TODO: add support for ortho
 }
 
 }

@@ -14,6 +14,7 @@
 
 
 #include "Model.hpp"
+#include "../camera/Camera.hpp"
 #include "engine/renderer/core/DataBuffer.hpp"
 #include "engine/types/Transform.hpp"
 #include "engine/renderer/core/GraphicsPipeline.hpp"

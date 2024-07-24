@@ -6,7 +6,7 @@
 
 #include "engine/types/Transform.hpp"
 #include "engine/renderer/window/Window.hpp"
-#include <engine/renderer/core/UniformBuffer.hpp>
+#include "engine/renderer/core/UniformBuffer.hpp"
 
 namespace renderer{
 
@@ -16,8 +16,8 @@ public:
     static void __Update();
     static void __Cleanup();
 
-    static VkWriteDescriptorSet __GetWriteDescriptorSetPerspective(uint32_t binding);
-    static VkWriteDescriptorSet __GetWriteDescriptorSetOrtho(uint32_t binding);
+    static VkDescriptorSet __GetDescriptorSet();
+
 private:
     static glm::mat4 view;
     static glm::mat4 perspectiveProjection;

@@ -3,7 +3,17 @@
 
 namespace renderer{
 
+std::vector<VkWriteDescriptorSet> _UniformBuffer::writeDescriptorSetsQueue = {};
+
+void _UniformBuffer::Update(){
+    if(!writeDescriptorSetsQueue.empty()){
+        vkUpdateDescriptorSets(_Device::GetDevice(), writeDescriptorSetsQueue.size(), writeDescriptorSetsQueue.data(),
+        0, nullptr);
+    }
+}
+
 _UniformBuffer::_UniformBuffer(){
+
 }
 
 _UniformBuffer::_UniformBuffer(_UniformBufferCreateInfo createInfo): size(createInfo.size), binding(createInfo.binding), 
@@ -17,6 +27,8 @@ descriptorSet(createInfo.descriptorSet) {
     dataBufferCreateInfo.isDynamic = true;
 
     dataBuffer = _DataBuffer(dataBufferCreateInfo);
+
+    UpdateDescriptorSet(binding);
 
     useCount = std::make_shared<uint32_t>(1);
 }
@@ -57,6 +69,15 @@ VkWriteDescriptorSet _UniformBuffer::GetWriteDescriptorSet(){
     return writeDescriptorSet;
 }
 
+void _UniformBuffer::UpdateDescriptorSet(uint32_t binding){
+    this->binding = binding;
+    writeDescriptorSetsQueue.push_back(GetWriteDescriptorSet());
+}
+
+VkDescriptorSet _UniformBuffer::GetDescriptorSet(){
+    return descriptorSet;
+}
+
 _UniformBuffer::_UniformBuffer(const _UniformBuffer& other){
     if(other.useCount.get() == nullptr){
         return;
@@ -71,7 +92,7 @@ _UniformBuffer::_UniformBuffer(const _UniformBuffer& other){
     (*useCount.get())++;
 }
 
-_UniformBuffer  _UniformBuffer::operator=(const _UniformBuffer& other){
+_UniformBuffer&  _UniformBuffer::operator=(const _UniformBuffer& other){
     if(this == &other){
         return *this;
     }

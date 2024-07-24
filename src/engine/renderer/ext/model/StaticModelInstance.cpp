@@ -148,6 +148,16 @@ void _StaticModelInstance::RecordStaticCommandBuffer(std::weak_ptr<_StaticModelD
         instancesShared->commandBuffers[_Swapchain::GetFrameInFlight()].BeginCommandBuffer(nullptr, false);
         shader->GetGraphicsPipeline()->BeginRenderPassAndBindPipeline(instancesShared->commandBuffers[_Swapchain::GetFrameInFlight()].GetCommandBuffer());
 
+        std::array<VkBuffer, 1> vertexBuffers = {instancesShared->instanceBuffer.GetBuffer()};
+        std::array<VkDeviceSize, 1> offsets = {0};
+        std::array<VkDescriptorSet, 1> descriptorSets = {Camera::__GetDescriptorSet()};
+
+        vkCmdBindVertexBuffers(instancesShared->commandBuffers[_Swapchain::GetFrameInFlight()].GetCommandBuffer(), 1, vertexBuffers.size(), vertexBuffers.data(), offsets.data());
+
+        vkCmdBindDescriptorSets(instancesShared->commandBuffers[_Swapchain::GetFrameInFlight()].GetCommandBuffer(),
+         VK_PIPELINE_BIND_POINT_GRAPHICS, shader->GetGraphicsPipeline()->GetPipelineLayout(), 0,
+          descriptorSets.size(), descriptorSets.data(), 0, nullptr);
+
         model->GetExtraDrawCommands();
         model->RecordDrawCommands(instancesShared->commandBuffers[_Swapchain::GetFrameInFlight()], instancesShared->drawCount);
 

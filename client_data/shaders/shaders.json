@@ -102,7 +102,7 @@
         "bindingDescriptions": [
             {
                 "binding": 0,
-                "stride": 30,
+                "stride": 32,
                 "inputRate": 0
             },
             {
