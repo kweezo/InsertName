@@ -1,59 +1,96 @@
 #include "Auth.hpp"
 
+UserRegistration Auth::userRegistration;
+std::unique_ptr<pqxx::connection> Auth::c;
 
-pqxx::connection* Auth::conn = nullptr;
 
-bool Auth::Init() {
-    conn = new pqxx::connection("dbname=postgres user=postgres password=postgres hostaddr=127.0.0.1 port=5432");
+void Auth::Init() {
+    try {
+        std::string connString = settings.dbConnString;
+        c = std::make_unique<pqxx::connection>("dbname=mydb user=myuser password=mypassword");
+        if (!c->is_open()) {
+            throw std::runtime_error("Failed to open database connection");
+        }
+    } catch (const std::exception &e) {
+        throw std::runtime_error("Failed to initialize Auth module: " + std::string(e.what()));
+    }
+}
 
+bool Auth::RegisterUser(const std::string& username, const std::string& password, const std::string& email) {
+    // Implement registration logic
     return true;
 }
 
-int Auth::RegisterUser(const std::string& username, const std::string& password, const std::string& email) {
-    try {
-        pqxx::work W(*conn);
+bool Auth::LoginUser(int uid, const std::string& password) {
+    // Implement login logic
+    return true;
+}
 
-        std::string sql = "SELECT * FROM Users WHERE Username = $1 OR Email = $2;";
-        pqxx::result R = W.exec_params(sql, username, email);
-        if (!R.empty()) {
-            return 1;
-        }
+bool Auth::LoginUser(int uid) {
+    // Implement login logic
+    return true;
+}
 
-        std::string salt = GenerateSalt();
-        std::string passwordHash = HashPassword(password, salt);
+void Auth::LogoutUser(int uid) {
+    // Implement logout logic
+}
 
-        // Get current time
-        auto now = std::chrono::system_clock::now();
-        auto duration = now.time_since_epoch();
+bool Auth::ChangePassword(int uid, const std::string& oldPassword, const std::string& newPassword) {
+    // Implement password change logic
+    return true;
+}
 
-        // Convert to total microseconds
-        auto microseconds = std::chrono::duration_cast<std::chrono::microseconds>(duration).count();
+bool Auth::VerifyPassword(int uid, const std::string& password) {
+    // Implement password verification logic
+    return true;
+}
 
-        // Calculate days and fractional day with maximum precision
-        double days = static_cast<double>(microseconds) / 86400000000.0; // Total days with maximum precision
-        double creationDate = days;
+bool Auth::VerifyEmail(const std::string& email) {
+    // Implement email verification logic
+    return true;
+}
 
-        sql = "INSERT INTO Users (UID, Username, PasswordHash, Salt, CreationDate) VALUES (DEFAULT, $1, $2, $3, $4) RETURNING UID;";
-        R = W.exec_params(sql, username, passwordHash, salt, creationDate);
-        W.commit();
+bool Auth::CheckUsername(const std::string& username) {
+    // Implement username check logic
+    return true;
+}
 
-        return 0;
+bool Auth::CheckPassword(const std::string& password) {
+    // Implement password check logic
+    return true;
+}
 
-    } catch (const std::exception &e) {
-        return -1;
-    }
+bool Auth::CheckEmail(const std::string& email) {
+    // Implement email check logic
+    return true;
+}
 
+bool Auth::SendReloginToken(int uid) {
+    // Implement relogin token sending logic
+    return true;
+}
+
+bool Auth::VerifyReloginToken(int uid, const std::string& token) {
+    // Implement relogin token verification logic
+    return true;
+}
+
+bool Auth::SendLoginToken(int uid) {
+    // Implement login token sending logic
+    return true;
+}
+
+int Auth::GetUID(const std::string& username) {
+    // Implement UID retrieval logic
     return -1;
 }
 
-bool Auth::LoginUser(const std::string& username, const std::string& password) {
-    return true;
-}
-
 std::string Auth::HashPassword(const std::string& password, const std::string& salt) {
-    return password;
+    // Implement password hashing logic
+    return "";
 }
 
 std::string Auth::GenerateSalt() {
-    return "salt";
+    // Implement salt generation logic
+    return "";
 }

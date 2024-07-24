@@ -7,6 +7,7 @@ std::mutex ClientServiceLink::bufferMutex;
 std::vector<std::string> ClientServiceLink::sendBuffer;
 std::mutex ClientServiceLink::sendBufferMutex;
 int ClientServiceLink::serviceId = 0;
+std::function<void(const std::string&)> ClientServiceLink::messageHandler = nullptr;
 
 
 bool ClientServiceLink::ConnectToTcpServer(const std::string& ip, int port) {
@@ -140,6 +141,7 @@ void ClientServiceLink::StartClient(const std::string& dir) {
 
         DisconnectFromTcpServer();
         std::cerr << "Disconnected from serice link server.\n";
+        std::this_thread::sleep_for(std::chrono::milliseconds(250));
     }
 
     messageThread.join();
@@ -161,6 +163,12 @@ void ClientServiceLink::ProcessMessages() {
     }
 }
 
-void ClientServiceLink::HandleMessageContent(const std::string& message) {
-    return;
+void ClientServiceLink::SetMessageHandler(std::function<void(const std::string&)> handler) {
+    messageHandler = handler;
+}
+
+void ClientServiceLink::HandleMessageContent(const std::string& msg) {
+    if (messageHandler) {
+        messageHandler(msg);
+    }
 }

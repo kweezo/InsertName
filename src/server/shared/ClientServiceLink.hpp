@@ -7,6 +7,7 @@
 #include <stdexcept>
 #include <vector>
 #include <mutex>
+#include <functional>
 #ifdef _WIN32
     #include <winsock2.h>
     #include <ws2tcpip.h>
@@ -25,6 +26,8 @@ class ClientServiceLink{
 public:
     static void StartClient(const std::string& dir);
     static void DisconnectFromTcpServer();
+
+    static void SetMessageHandler(std::function<void(const std::string&)> handler);
 
     template<typename... Args>
     static void SendData(const Args&... args);
@@ -52,6 +55,7 @@ private:
     static std::vector<std::string> sendBuffer;
     static std::mutex sendBufferMutex;
     static int serviceId;
+    static std::function<void(const std::string&)> messageHandler;
 };
 
 // ---------------------------- Template functions ---------------------------- //
