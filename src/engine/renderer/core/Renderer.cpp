@@ -61,9 +61,8 @@ void Renderer::UpdatePrepare(){
 
 void Renderer::UpdateComponents(){
     _UniformBuffer::Update();
-    _Texture::Update();
-    _Image::Update();
     Camera::__Update();
+    _Texture::Update();
 
 
     std::array<std::thread, 2> threads = {
@@ -76,7 +75,7 @@ void Renderer::UpdateComponents(){
             thread.join(); // TODO if proper sync we don't have to wait???
         }
     }
-
+    ModelInstance::__Update();
 }
 
 void Renderer::Update(){

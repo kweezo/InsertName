@@ -8,7 +8,7 @@ std::vector<std::vector<std::pair<_CommandBuffer, bool>>> _Image::secondaryComma
 _Fence _Image::commandBuffersFinishedExecutionFence ={};
 std::set<uint32_t> _Image::commandPoolResetIndexes = {};
 std::list<std::unique_ptr<_DataBuffer>> _Image::bufferCleanupQueue = { };
-bool _Image::primaryCommandBufferRecorded = false;
+bool _Image::anyCommandBuffersRecorded = false;
 std::vector<VkWriteDescriptorSet> _Image::writeDescriptorSetsQueue = {};
 
 
@@ -49,9 +49,10 @@ inline bool _Image::HasStencilComponent(VkFormat format){
 
 
 void _Image::SubmitCommandBuffers(){
-    if(!primaryCommandBufferRecorded){
+    if(!anyCommandBuffersRecorded){
         return;
     }
+
 
     VkFence finishedCopyingFenceRaw = commandBuffersFinishedExecutionFence.GetFence();
 
@@ -82,12 +83,14 @@ void _Image::UpdateCleanup(){
     for(uint32_t i : commandPoolResetIndexes){
         _CommandBuffer::ResetPools(_CommandBufferType::IMAGE, i); 
     }
-    primaryCommandBufferRecorded = false;
+    anyCommandBuffersRecorded = false;
 
     bufferCleanupQueue.clear();
 }
 
 _CommandBuffer _Image::GetFreeCommandBuffer(uint32_t threadIndex){
+    anyCommandBuffersRecorded = true; // TODO CHECK ON THIS FUNCTION SHOULDNT BE WORKING
+
     for(std::pair<_CommandBuffer, bool>& commandBuffer : secondaryCommandBuffers[threadIndex]){
         if(std::get<bool>(commandBuffer)){
             std::get<bool>(commandBuffer) = false;
@@ -95,10 +98,11 @@ _CommandBuffer _Image::GetFreeCommandBuffer(uint32_t threadIndex){
         }
     }
 
+
     _CommandBufferCreateInfo secondaryCommandBufferInfo;
     secondaryCommandBufferInfo.type = _CommandBufferType::IMAGE;
-    secondaryCommandBufferInfo.level = VK_COMMAND_BUFFER_LEVEL_SECONDARY;
-    secondaryCommandBufferInfo.flags = COMMAND_POOL_TYPE_TRANSFER | COMMAND_BUFFER_ONE_TIME_SUBMIT_FLAG;
+    secondaryCommandBufferInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+    secondaryCommandBufferInfo.flags = COMMAND_POOL_TYPE_TRANSFER;
     secondaryCommandBufferInfo.threadIndex = threadIndex;
 
     secondaryCommandBuffers[threadIndex].push_back({_CommandBuffer(secondaryCommandBufferInfo), false});
@@ -112,8 +116,8 @@ void _Image::CreateCommmandBuffers(){
 
         _CommandBufferCreateInfo stagingCommandBufferInfo;
         stagingCommandBufferInfo.type = _CommandBufferType::IMAGE;
-        stagingCommandBufferInfo.level = VK_COMMAND_BUFFER_LEVEL_SECONDARY;
-        stagingCommandBufferInfo.flags = COMMAND_POOL_TYPE_TRANSFER | COMMAND_BUFFER_ONE_TIME_SUBMIT_FLAG;
+        stagingCommandBufferInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+        stagingCommandBufferInfo.flags = COMMAND_POOL_TYPE_TRANSFER; 
         stagingCommandBufferInfo.threadIndex = i;
 
         commandBuffers = std::vector<std::pair<_CommandBuffer, bool>>(TARGET_SECONDARY_BUFFER_COUNT_PER_THREAD);

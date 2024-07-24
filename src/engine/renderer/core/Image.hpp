@@ -74,7 +74,7 @@ private:
 
     static _Fence commandBuffersFinishedExecutionFence;
     static std::set<uint32_t> commandPoolResetIndexes;
-    static bool primaryCommandBufferRecorded;
+    static bool anyCommandBuffersRecorded;
 
 
     VkImage image;

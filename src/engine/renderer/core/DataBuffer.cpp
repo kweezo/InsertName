@@ -31,7 +31,7 @@ void _DataBuffer::CreateCommandBuffers(){
 
         commandBuffers.resize(TARGET_STAGING_BUFFER_COUNT_PER_THREAD);
         for(uint32_t y = 0; y < TARGET_STAGING_BUFFER_COUNT_PER_THREAD; y++){
-            commandBuffers[y] = {_CommandBuffer(stagingCommandBufferInfo), true, _Semaphore()};
+            commandBuffers[y] = {_CommandBuffer(stagingCommandBufferInfo), true, _Semaphore(_SemaphoreCreateInfo{})};
         }
 
         i = (i + 1) % std::thread::hardware_concurrency();
@@ -239,6 +239,8 @@ void _DataBuffer::UploadDataToMemory(VkDeviceMemory memory, void* data, size_t s
 }
 
 _CommandBuffer _DataBuffer::RetrieveFreeStagingCommandBuffer(uint32_t threadIndex, _Semaphore signalSemaphore){
+    anyCommandBuffersRecorded = true;
+
     for(_DataBufferStagingCommandBuferData& commandBuffer : stagingCommandBuffers[threadIndex]){
         if(commandBuffer.free){
             commandBuffer.free = false;
@@ -246,6 +248,7 @@ _CommandBuffer _DataBuffer::RetrieveFreeStagingCommandBuffer(uint32_t threadInde
             return commandBuffer.commandBuffer;
         }
     }
+
 
     _CommandBufferCreateInfo stagingCommandBufferInfo;
     stagingCommandBufferInfo.type = _CommandBufferType::DATA;
@@ -329,6 +332,7 @@ void _DataBuffer::SubmitCommandBuffers(){
     }
 
     vkWaitForFences(_Device::GetDevice(), 1, &finishedCopyingFenceHandle, VK_TRUE, std::numeric_limits<uint64_t>::max());
+    vkResetFences(_Device::GetDevice(), 1, &finishedCopyingFenceHandle);
 }
 
 void _DataBuffer::UpdateCleanup(){
