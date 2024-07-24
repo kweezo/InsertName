@@ -50,7 +50,7 @@ public:
 
     static std::array<VkSemaphore, 2> GetRenderFinishedSemaphores(uint32_t imageIndex);
 
-    static void __Draw(uint32_t frameInFlight, _Semaphore presentSemaphore, std::array<_Fence, 2> inFlightFences);
+    static void __Draw(_Semaphore presentSemaphore, std::array<_Fence, 2> inFlightFences);
 
     bool GetShouldDraw() override;
     void SetShouldDraw(bool shouldDraw);

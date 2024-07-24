@@ -91,7 +91,7 @@ void Renderer::Update(){
 void Renderer::Submit(){
     std::array<_Fence, 2> instanceFences = {inFlightFences[_Swapchain::GetFrameInFlight()][0], inFlightFences[_Swapchain::GetFrameInFlight()][1]};
 
-    ModelInstance::__Draw(_Swapchain::GetFrameInFlight(), presentSemaphores[_Swapchain::GetFrameInFlight()], instanceFences);
+    ModelInstance::__Draw(presentSemaphores[_Swapchain::GetFrameInFlight()], instanceFences);
 }
 
 void Renderer::Present(){

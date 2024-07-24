@@ -61,9 +61,10 @@ void _StaticModelInstance::HandleThreads(){
     commandBufferThreads.clear();
 }
 
-void _StaticModelInstance::RecordCommandBuffers(){
+void _StaticModelInstance::PrepareCommandBuffers(){
     HandleThreads();
     for(uint32_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++){
+        commandBuffers[i].clear();
         for(auto& [modelName, instanceData] : staticModelInstanceMap){
             VkCommandBuffer commandBuffer = instanceData->commandBuffers[i].GetCommandBuffer();
             {
@@ -87,13 +88,13 @@ void _StaticModelInstance::StaticUpdateCleanup(){
 }
 
 void _StaticModelInstance::StaticUpdate(){
-    RecordCommandBuffers();
+    PrepareCommandBuffers();
 }
 
 void _StaticModelInstance::UploadDataToInstanceBuffer(std::weak_ptr<_StaticModelData> instances, uint32_t threadIndex){
 
     std::shared_ptr<_StaticModelData> instancesShared = instances.lock();
-
+    instancesShared->drawCount = 0;
     for(std::shared_ptr<_StaticModelInstance> instance : instancesShared->instanceList){
         instancesShared->drawCount += instance->GetShouldDraw();
     }
@@ -108,32 +109,30 @@ void _StaticModelInstance::UploadDataToInstanceBuffer(std::weak_ptr<_StaticModel
             i++;
         }
     }
-    _DataBufferCreateInfo createInfo{};
-    createInfo.data = instanceModels.data();
-    createInfo.size = instanceModels.size() * sizeof(glm::mat4);
-    createInfo.threadIndex = threadIndex;
-    createInfo.usage = VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
-    createInfo.transferToLocalDeviceMemory = true;
+    _DataBufferCreateInfo dataBufferInfo{};
+    dataBufferInfo.data = instanceModels.data();
+    dataBufferInfo.size = instanceModels.size() * sizeof(glm::mat4);
+    dataBufferInfo.threadIndex = threadIndex;
+    dataBufferInfo.usage = VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
+    dataBufferInfo.transferToLocalDeviceMemory = true;
 
-    instancesShared->instanceBuffer = _DataBuffer(createInfo);
+    instancesShared->instanceBuffer = _DataBuffer(dataBufferInfo);
 
-    for(uint32_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++){
 
-        _CommandBufferCreateInfo createInfo{};
-        createInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-        createInfo.flags = COMMAND_BUFFER_GRAPHICS_FLAG;
-        createInfo.threadIndex = threadIndex;
-        createInfo.type = _CommandBufferType::INSTANCE;
+    _CommandBufferCreateInfo commandBufferInfo{};
+    commandBufferInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+    commandBufferInfo.flags = COMMAND_BUFFER_GRAPHICS_FLAG;
+    commandBufferInfo.threadIndex = threadIndex;
+    commandBufferInfo.type = _CommandBufferType::INSTANCE;
 
-        instancesShared->commandBuffers[i] = _CommandBuffer(createInfo);
+    instancesShared->commandBuffers[_Swapchain::GetFrameInFlight()] = _CommandBuffer(commandBufferInfo);
 
-        commandBufferThreads.push_back(std::thread(&RecordStaticCommandBuffer, instances, i, threadIndex));
+    commandBufferThreads.push_back(std::thread(&RecordStaticCommandBuffer, instances, threadIndex));
 
-        threadIndex = (threadIndex + 1) % std::thread::hardware_concurrency();
-    }
+    threadIndex = (threadIndex + 1) % std::thread::hardware_concurrency();
 }
 
-void _StaticModelInstance::RecordStaticCommandBuffer(std::weak_ptr<_StaticModelData> instances, uint32_t imageIndex, uint32_t threadsIndex){
+void _StaticModelInstance::RecordStaticCommandBuffer(std::weak_ptr<_StaticModelData> instances, uint32_t threadsIndex){
     __VertexInputDescriptions allDescriptions;
     std::get<0>(allDescriptions).insert(std::get<0>(allDescriptions).end(), std::get<0>(baseStaticInstanceDescriptions).begin(),
      std::get<0>(baseStaticInstanceDescriptions).end());
@@ -146,26 +145,26 @@ void _StaticModelInstance::RecordStaticCommandBuffer(std::weak_ptr<_StaticModelD
         std::shared_ptr<_Model> model = instancesShared->model.lock();
         std::shared_ptr<_Shader> shader = model->GetShader().lock();
 
-        instancesShared->commandBuffers[imageIndex].BeginCommandBuffer(nullptr, false);
-        shader->GetGraphicsPipeline()->BeginRenderPassAndBindPipeline(imageIndex, instancesShared->commandBuffers[imageIndex].GetCommandBuffer());
+        instancesShared->commandBuffers[_Swapchain::GetFrameInFlight()].BeginCommandBuffer(nullptr, false);
+        shader->GetGraphicsPipeline()->BeginRenderPassAndBindPipeline(instancesShared->commandBuffers[_Swapchain::GetFrameInFlight()].GetCommandBuffer());
 
         model->GetExtraDrawCommands();
-        model->RecordDrawCommands(instancesShared->commandBuffers[imageIndex], instancesShared->drawCount);
+        model->RecordDrawCommands(instancesShared->commandBuffers[_Swapchain::GetFrameInFlight()], instancesShared->drawCount);
 
-        shader->GetGraphicsPipeline()->EndRenderPass(instancesShared->commandBuffers[imageIndex].GetCommandBuffer());
-        instancesShared->commandBuffers[imageIndex].EndCommandBuffer();
+        shader->GetGraphicsPipeline()->EndRenderPass(instancesShared->commandBuffers[_Swapchain::GetFrameInFlight()].GetCommandBuffer());
+        instancesShared->commandBuffers[_Swapchain::GetFrameInFlight()].EndCommandBuffer();
     }
 }
 
-void _StaticModelInstance::StaticDraw(uint32_t frameInFlight, _Semaphore presentSemaphore, _Fence inFlightFence){
+void _StaticModelInstance::StaticDraw( _Semaphore presentSemaphore, _Fence inFlightFence){
 
     std::vector<VkCommandBuffer> toSubmitCommandBuffers;
 
-    for(auto& [shader, commandBuffers] : commandBuffers[frameInFlight]){
+    for(auto& [shader, commandBuffers] : commandBuffers[_Swapchain::GetFrameInFlight()]){
         std::copy(commandBuffers.begin(), commandBuffers.end(), std::back_inserter(toSubmitCommandBuffers));
     }
 
-    std::array<VkSemaphore, 1> signalSemaphores = {renderFinishedSemaphores[frameInFlight].GetSemaphore()};
+    std::array<VkSemaphore, 1> signalSemaphores = {renderFinishedSemaphores[_Swapchain::GetFrameInFlight()].GetSemaphore()};
     std::array<VkSemaphore, 1> waitSemaphores = {presentSemaphore.GetSemaphore()};
 
     std::array<VkPipelineStageFlags, waitSemaphores.size()> waitDstStageMaks = {VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT};

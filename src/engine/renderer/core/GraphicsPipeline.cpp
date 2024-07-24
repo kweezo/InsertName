@@ -211,17 +211,16 @@ _GraphicsPipeline::_GraphicsPipeline(_GraphicsPipelineCreateInfo createInfo){
     useCount = std::make_shared<uint32_t>(1);
 }
 
-void _GraphicsPipeline::BeginRenderPassAndBindPipeline(uint32_t imageIndex, VkCommandBuffer commandBuffer){
+void _GraphicsPipeline::BeginRenderPassAndBindPipeline(VkCommandBuffer commandBuffer){
     VkRenderPassBeginInfo renderPassInfo{};
     renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
     renderPassInfo.renderPass = renderPass;
-    renderPassInfo.framebuffer = framebuffers[imageIndex];
+    renderPassInfo.framebuffer = framebuffers[_Swapchain::GetImageIndex()];
     renderPassInfo.renderArea.offset = {0, 0};
     renderPassInfo.renderArea.extent = _Swapchain::GetExtent();
     if(renderPassInfo.renderArea.extent.width == -1 || renderPassInfo.renderArea.extent.height == -1){
         glfwGetWindowSize(Window::GetGLFWwindow(), (int*)&renderPassInfo.renderArea.extent.width, (int*)&renderPassInfo.renderArea.extent.height);
     }
-
     std::vector<VkClearValue> clearValues = {VkClearValue{1.0f, 0.0f, 0.0f, 1.0f}, VkClearValue{1.0f, 0}};
 
     renderPassInfo.clearValueCount = clearValues.size();

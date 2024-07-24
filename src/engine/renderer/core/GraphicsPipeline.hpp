@@ -34,7 +34,7 @@ public:
     _GraphicsPipeline(const _GraphicsPipeline& other);
     _GraphicsPipeline operator=(const _GraphicsPipeline& other);
 
-    void BeginRenderPassAndBindPipeline(uint32_t imageIndex, VkCommandBuffer commandBuffer);
+    void BeginRenderPassAndBindPipeline(VkCommandBuffer commandBuffer);
     void EndRenderPass(VkCommandBuffer commandBuffer);
 
     VkPipelineLayout GetPipelineLayout();

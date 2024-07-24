@@ -47,7 +47,7 @@ protected:
 
     static VkSemaphore GetStaticRenderFinishedSemaphore(uint32_t imageIndex);
 
-    static void StaticDraw(uint32_t frameInFlight, _Semaphore presentSemaphor, _Fence inFlightFences);
+    static void StaticDraw(_Semaphore presentSemaphor, _Fence inFlightFences);
 
     virtual bool GetShouldDraw() = 0;
     virtual glm::mat4 GetModelMatrix() = 0;
@@ -56,10 +56,10 @@ protected:
 
     static void InitializeStaticInstanceData(_StaticModelData& instanceData, ModelHandle model);
 private:
-    static void RecordStaticCommandBuffer(std::weak_ptr<_StaticModelData> instances, uint32_t imageIndex, uint32_t threadsIndex);
+    static void RecordStaticCommandBuffer(std::weak_ptr<_StaticModelData> instances, uint32_t threadsIndex);
     static void UploadDataToInstanceBuffer(std::weak_ptr<_StaticModelData> instances, uint32_t threadIndex);
 
-    static void RecordCommandBuffers();
+    static void PrepareCommandBuffers();
 
     static std::array<boost::container::flat_map<std::string, std::vector<VkCommandBuffer>>, MAX_FRAMES_IN_FLIGHT> InitializeInstanceData();
     static void HandleThreads();

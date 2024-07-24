@@ -85,7 +85,7 @@ void _Model::ProcessNode(aiNode* node, const aiScene* scene){
             //TODO: add support for other maps
         }
 
-        _Mesh meshObj = _Mesh(vertices, indices, textureMaps);
+         meshes.emplace_back(vertices, indices, textureMaps);
     }
 
     for(uint32_t i = 0; i < node->mNumChildren; i++){

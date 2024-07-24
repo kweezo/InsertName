@@ -43,8 +43,8 @@ void ModelInstance::__UpdateCleanup(){
     StaticUpdateCleanup();
 }
 
-void ModelInstance::__Draw(uint32_t frameInFlight, _Semaphore presentSemaphore, std::array<_Fence, 2> inFlightFences){
-    StaticDraw(frameInFlight, presentSemaphore, inFlightFences[0]);
+void ModelInstance::__Draw(_Semaphore presentSemaphore, std::array<_Fence, 2> inFlightFences){
+    StaticDraw(presentSemaphore, inFlightFences[0]);
 }
 
 void ModelInstance::__Cleanup(){
