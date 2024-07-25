@@ -150,7 +150,7 @@ void _StaticModelInstance::RecordStaticCommandBuffer(std::weak_ptr<_StaticModelD
         std::array<VkDeviceSize, 1> offsets = {0};
         std::array<VkDescriptorSet, 1> descriptorSets = {shader->GetDescriptorSet()};
 
-        vkCmdBindVertexBuffers(instancesShared->commandBuffers[_Swapchain::GetFrameInFlight()].GetCommandBuffer(), 1, 4, vertexBuffers.data(), offsets.data());
+        vkCmdBindVertexBuffers(instancesShared->commandBuffers[_Swapchain::GetFrameInFlight()].GetCommandBuffer(), 1, 1, vertexBuffers.data(), offsets.data());
 
         vkCmdBindDescriptorSets(instancesShared->commandBuffers[_Swapchain::GetFrameInFlight()].GetCommandBuffer(),
          VK_PIPELINE_BIND_POINT_GRAPHICS, shader->GetGraphicsPipeline()->GetPipelineLayout(), 0,

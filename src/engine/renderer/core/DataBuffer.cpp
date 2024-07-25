@@ -74,6 +74,7 @@ _DataBuffer::_DataBuffer(_DataBufferCreateInfo createInfo) : createInfo(createIn
         AllocateMemory(memory, buffer, createInfo.size, VK_MEMORY_PROPERTY_HOST_COHERENT_BIT | VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT);
 
         UploadDataToMemory(memory, createInfo.data, createInfo.size);
+        std::cerr << "fewfe\n";
     }
 
     if(!createInfo.signalSemaphore.IsInitialized()){

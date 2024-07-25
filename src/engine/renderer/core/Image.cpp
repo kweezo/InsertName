@@ -186,6 +186,10 @@ void _Image::CreateImage(){
         imageInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
     }
 
+    if(!_Device::DeviceMemoryFree()){
+        createInfo.copyToLocalDeviceMemory = false;
+    }
+
     imageInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
     imageInfo.imageType = VK_IMAGE_TYPE_2D;
     imageInfo.extent.width = createInfo.imageExtent.width;
@@ -211,9 +215,6 @@ void _Image::AllocateMemory(){
     VkPhysicalDeviceMemoryProperties memProperties;
     vkGetPhysicalDeviceMemoryProperties(_Device::GetPhysicalDevice(), &memProperties);
 
-    if(!_Device::DeviceMemoryFree()){
-        createInfo.copyToLocalDeviceMemory = false;
-    }
 
     VkMemoryPropertyFlags memoryProperties = createInfo.copyToLocalDeviceMemory ? 
       VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT :
