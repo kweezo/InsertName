@@ -81,13 +81,13 @@ private:
     VkImageView imageView;
     VkDeviceMemory memory;
 
-    std::unique_ptr<_DataBuffer> stagingBuffer;
+    std::shared_ptr<_DataBuffer> stagingBuffer;
 
     _Semaphore waitSemaphore;
 
     _ImageCreateInfo createInfo;
 
-    static std::list<std::unique_ptr<_DataBuffer>> bufferCleanupQueue;
+    static std::list<std::shared_ptr<_DataBuffer>> bufferCleanupQueue;
     static std::vector<VkWriteDescriptorSet> writeDescriptorSetsQueue;
 
 

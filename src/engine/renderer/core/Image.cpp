@@ -7,7 +7,7 @@ const uint32_t TARGET_SECONDARY_BUFFER_COUNT_PER_THREAD = 5;
 std::vector<std::vector<std::pair<_CommandBuffer, bool>>> _Image::secondaryCommandBuffers = {};
 _Fence _Image::commandBuffersFinishedExecutionFence ={};
 std::set<uint32_t> _Image::commandPoolResetIndexes = {};
-std::list<std::unique_ptr<_DataBuffer>> _Image::bufferCleanupQueue = { };
+std::list<std::shared_ptr<_DataBuffer>> _Image::bufferCleanupQueue = { };
 bool _Image::anyCommandBuffersRecorded = false;
 std::vector<VkWriteDescriptorSet> _Image::writeDescriptorSetsQueue = {};
 
@@ -77,6 +77,7 @@ void _Image::SubmitCommandBuffers(){
 
     vkWaitForFences(_Device::GetDevice(), 1, &finishedCopyingFenceRaw, VK_TRUE, std::numeric_limits<uint64_t>::max());
     vkResetFences(_Device::GetDevice(), 1, &finishedCopyingFenceRaw);
+    
 }
 
 void _Image::UpdateCleanup(){
@@ -150,7 +151,7 @@ _Image::_Image(_ImageCreateInfo createInfo): createInfo(createInfo) {
     }
 
     if(_Device::DeviceMemoryFree() && createInfo.copyToLocalDeviceMemory){
-    
+        
         waitSemaphore = _Semaphore(_SemaphoreCreateInfo{});
 
         _DataBufferCreateInfo bufferCreateInfo{};
@@ -161,7 +162,7 @@ _Image::_Image(_ImageCreateInfo createInfo): createInfo(createInfo) {
         bufferCreateInfo.transferToLocalDeviceMemory = false;
         bufferCreateInfo.usage = VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
 
-       stagingBuffer = std::make_unique<_DataBuffer>(_DataBuffer(bufferCreateInfo));
+        stagingBuffer = std::make_shared<_DataBuffer>(_DataBuffer(bufferCreateInfo));
 
         CopyDataToDevice();
     }else{
@@ -278,7 +279,7 @@ void _Image::CopyDataToDevice(){
     vkCmdCopyBufferToImage(commandBuffer.GetCommandBuffer(), stagingBuffer->GetBuffer(), image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &copyRegion);
     commandBuffer.EndCommandBuffer();
 
-    bufferCleanupQueue.push_front(std::move(stagingBuffer));
+    bufferCleanupQueue.push_front(stagingBuffer);
 }
 
 void _Image::TransitionLayout(VkImageLayout oldLayout, VkImageLayout newLayout){

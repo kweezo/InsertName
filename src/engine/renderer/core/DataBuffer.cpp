@@ -60,7 +60,7 @@ _DataBuffer::_DataBuffer(_DataBufferCreateInfo createInfo) : createInfo(createIn
 
     if(createInfo.transferToLocalDeviceMemory){
         CreateBuffer(buffer, createInfo.usage | VK_BUFFER_USAGE_TRANSFER_DST_BIT, createInfo.size);
-        AllocateMemory(memory, buffer, size, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+        AllocateMemory(memory, buffer, createInfo.size, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
 
         CreateBuffer(stagingBuffer, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, createInfo.size);
         AllocateMemory(stagingMemory, stagingBuffer, createInfo.size, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
@@ -291,6 +291,8 @@ void _DataBuffer::SubmitCommandBuffers(){
 
     std::vector<_Fence> fences{};
 
+    std::list<std::pair<VkCommandBuffer, VkSemaphore>> submitInfoReferenceList{};
+
     for(std::vector<_DataBufferStagingCommandBuferData>& commandBuffers : stagingCommandBuffers){
         for(_DataBufferStagingCommandBuferData& commandBuffer : commandBuffers){
             if(!commandBuffer.free){
@@ -299,17 +301,17 @@ void _DataBuffer::SubmitCommandBuffers(){
                     signalSemaphores.push_back(commandBuffer.signalSemaphore.GetSemaphore());
                 }
                 else{
-                    VkCommandBuffer commandBufferHandle = commandBuffer.commandBuffer.GetCommandBuffer();
-                    VkSemaphore signalSemaphoreHandle = commandBuffer.signalSemaphore.GetSemaphore();
+                    submitInfoReferenceList.push_front({commandBuffer.commandBuffer.GetCommandBuffer(),
+                     commandBuffer.signalSemaphore.GetSemaphore()});
 
                     VkSubmitInfo submitInfo{};
                     submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
 
                     submitInfo.commandBufferCount = 1;
-                    submitInfo.pCommandBuffers = &commandBufferHandle;
+                    submitInfo.pCommandBuffers = &submitInfoReferenceList.front().first;
 
                     submitInfo.signalSemaphoreCount = 1;
-                    submitInfo.pSignalSemaphores = &signalSemaphoreHandle;
+                    submitInfo.pSignalSemaphores = &submitInfoReferenceList.front().second;
 
                     submitInfos.push_back(submitInfo);
                 }
@@ -327,11 +329,12 @@ void _DataBuffer::SubmitCommandBuffers(){
 
     VkFence finishedCopyingFenceHandle = finishedCopyingFence.GetFence();
 
-    if(vkQueueSubmit(_Device::GetTransferQueue(), 1, &submitInfo, finishedCopyingFenceHandle) != VK_SUCCESS){
+    if(vkQueueSubmit(_Device::GetTransferQueue(), submitInfos.size(), submitInfos.data(), finishedCopyingFenceHandle) != VK_SUCCESS){
         throw std::runtime_error("Failed to submit data buffer command buffer");
     }
-
+    std::cerr << "AAA\n";
     vkWaitForFences(_Device::GetDevice(), 1, &finishedCopyingFenceHandle, VK_TRUE, std::numeric_limits<uint64_t>::max());
+    std::cerr << "AAAA\n";
     vkResetFences(_Device::GetDevice(), 1, &finishedCopyingFenceHandle);
 }
 
