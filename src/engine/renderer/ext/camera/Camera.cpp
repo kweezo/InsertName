@@ -49,7 +49,7 @@ void Camera::__Init(){
 void Camera::__Update(){
     VkExtent2D extent = Window::GetExtent();
 
-    glm::mat4 view = glm::mat4(1.0f);
+    glm::mat4 view = glm::translate(view, glm::vec3(0.0f, 0.0f, -1.0f));
     glm::mat4 perspectiveProjection = glm::perspective(glm::radians(45.0f), (float)extent.width / extent.height, 0.1f, 100.0f);
     glm::mat4 orthoProjection = glm::ortho(0.0f, (float)extent.width, 0.0f, (float)extent.height, 0.1f, 100.0f);
 

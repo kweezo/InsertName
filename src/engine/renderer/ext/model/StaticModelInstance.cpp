@@ -13,18 +13,16 @@ std::array<boost::container::flat_map<std::string, std::vector<VkCommandBuffer>>
 
 const __VertexInputDescriptions _StaticModelInstance::baseStaticInstanceDescriptions = {{
     {0, 0, VK_FORMAT_R32G32B32_SFLOAT, 0},
-    {1, 1, VK_FORMAT_R32G32B32A32_SFLOAT, 0},
-    {2, 1, VK_FORMAT_R32G32B32A32_SFLOAT, sizeof(glm::vec4)},
-    {3, 1, VK_FORMAT_R32G32B32A32_SFLOAT, 2 * sizeof(glm::vec4)},
-    {4, 1, VK_FORMAT_R32G32B32A32_SFLOAT, 3 * sizeof(glm::vec4)},
-    {5, 2, VK_FORMAT_R32G32_SFLOAT, 0},
-    {6, 3, VK_FORMAT_R32G32B32_SFLOAT, 0},
+    {1, 0, VK_FORMAT_R32G32_SFLOAT, 0},
+    {2, 0, VK_FORMAT_R32G32B32_SFLOAT, 0},
+    {3, 1, VK_FORMAT_R32G32B32A32_SFLOAT, 0},
+    {4, 1, VK_FORMAT_R32G32B32A32_SFLOAT, sizeof(glm::vec4)},
+    {5, 1, VK_FORMAT_R32G32B32A32_SFLOAT, 2 * sizeof(glm::vec4)},
+    {6, 1, VK_FORMAT_R32G32B32A32_SFLOAT, 3 * sizeof(glm::vec4)},
 },
 {
-    {0, sizeof(glm::vec3), VK_VERTEX_INPUT_RATE_VERTEX},
+    {0, sizeof(glm::vec3) * 2 + sizeof(glm::vec2), VK_VERTEX_INPUT_RATE_VERTEX},
     {1, sizeof(glm::mat4), VK_VERTEX_INPUT_RATE_INSTANCE},
-    {2, sizeof(glm::vec2), VK_VERTEX_INPUT_RATE_VERTEX},
-    {3, sizeof(glm::vec3), VK_VERTEX_INPUT_RATE_VERTEX},
 }
 };
 
@@ -152,7 +150,7 @@ void _StaticModelInstance::RecordStaticCommandBuffer(std::weak_ptr<_StaticModelD
         std::array<VkDeviceSize, 1> offsets = {0};
         std::array<VkDescriptorSet, 1> descriptorSets = {shader->GetDescriptorSet()};
 
-        vkCmdBindVertexBuffers(instancesShared->commandBuffers[_Swapchain::GetFrameInFlight()].GetCommandBuffer(), 1, vertexBuffers.size(), vertexBuffers.data(), offsets.data());
+        vkCmdBindVertexBuffers(instancesShared->commandBuffers[_Swapchain::GetFrameInFlight()].GetCommandBuffer(), 1, 4, vertexBuffers.data(), offsets.data());
 
         vkCmdBindDescriptorSets(instancesShared->commandBuffers[_Swapchain::GetFrameInFlight()].GetCommandBuffer(),
          VK_PIPELINE_BIND_POINT_GRAPHICS, shader->GetGraphicsPipeline()->GetPipelineLayout(), 0,

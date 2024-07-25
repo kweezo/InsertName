@@ -211,6 +211,10 @@ void _Image::AllocateMemory(){
     VkPhysicalDeviceMemoryProperties memProperties;
     vkGetPhysicalDeviceMemoryProperties(_Device::GetPhysicalDevice(), &memProperties);
 
+    if(!_Device::DeviceMemoryFree()){
+        createInfo.copyToLocalDeviceMemory = false;
+    }
+
     VkMemoryPropertyFlags memoryProperties = createInfo.copyToLocalDeviceMemory ? 
       VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT :
      (VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
