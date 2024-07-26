@@ -333,9 +333,7 @@ void _DataBuffer::SubmitCommandBuffers(){
     if(vkQueueSubmit(_Device::GetTransferQueue(), submitInfos.size(), submitInfos.data(), finishedCopyingFenceHandle) != VK_SUCCESS){
         throw std::runtime_error("Failed to submit data buffer command buffer");
     }
-    std::cerr << "AAA\n";
     vkWaitForFences(_Device::GetDevice(), 1, &finishedCopyingFenceHandle, VK_TRUE, std::numeric_limits<uint64_t>::max());
-    std::cerr << "AAAA\n";
     vkResetFences(_Device::GetDevice(), 1, &finishedCopyingFenceHandle);
 }
 

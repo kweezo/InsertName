@@ -8,10 +8,10 @@ VKAPI_ATTR VkBool32 VKAPI_CALL debugCallback(
     const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData,
     void* pUserData) {
 
-    if(messageSeverity < VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT){
+ /*   if(messageSeverity < VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT){
         return VK_FALSE;
     }
-
+*/
     std::cerr << pCallbackData->pMessage << std::endl;
 
     static const char* MEMORY_ERR = "VK_ERROR_OUT_OF_DEVICE_MEMORY";
