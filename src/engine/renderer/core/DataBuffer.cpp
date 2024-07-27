@@ -52,6 +52,8 @@ void _DataBuffer::Cleanup(){
 _DataBuffer::_DataBuffer(){
 }
 
+/// @brief 
+/// @param createInfo 
 _DataBuffer::_DataBuffer(_DataBufferCreateInfo createInfo) : createInfo(createInfo), stagingBuffer(VK_NULL_HANDLE), stagingMemory(VK_NULL_HANDLE){
 
     if(!_Device::DeviceMemoryFree()){
@@ -320,13 +322,16 @@ void _DataBuffer::SubmitCommandBuffers(){
         }
     }
 
-    VkSubmitInfo submitInfo{};
-    submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+    if(!recordedCommandBuffers.empty()){
+        VkSubmitInfo submitInfo{};
+        submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
 
-    submitInfo.commandBufferCount = recordedCommandBuffers.size();
-    submitInfo.pCommandBuffers = recordedCommandBuffers.data();
+        submitInfo.commandBufferCount = recordedCommandBuffers.size();
+        submitInfo.pCommandBuffers = recordedCommandBuffers.data();
 
-    submitInfos.push_back(submitInfo);
+        submitInfos.push_back(submitInfo);
+    }
+
 
     VkFence finishedCopyingFenceHandle = finishedCopyingFence.GetFence();
 
@@ -334,6 +339,7 @@ void _DataBuffer::SubmitCommandBuffers(){
         throw std::runtime_error("Failed to submit data buffer command buffer");
     }
     vkWaitForFences(_Device::GetDevice(), 1, &finishedCopyingFenceHandle, VK_TRUE, std::numeric_limits<uint64_t>::max());
+
     vkResetFences(_Device::GetDevice(), 1, &finishedCopyingFenceHandle);
 }
 

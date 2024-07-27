@@ -46,7 +46,7 @@ void Window::Init(){
         createInfo.hwnd = glfwGetWin32Window(window);
         createInfo.hinstance = GetModuleHandle(nullptr);
 
-        if (vkCreateWin32SurfaceKHR(renderer::__Instance::GetInstance(), &createInfo, nullptr, &surface) != VK_SUCCESS) {
+        if (vkCreateWin32SurfaceKHR(renderer::_Instance::GetInstance(), &createInfo, nullptr, &surface) != VK_SUCCESS) {
             throw std::runtime_error("failed to create window surface!");
         }
     #else
