@@ -33,10 +33,46 @@ VkResult CreateDebugUtilsMessengerEXT(VkInstance instance, const VkDebugUtilsMes
     }
 }
 
+void OnGpuCrashDump(const void* pGpuCrashDump, const uint32_t gpuCrashDumpSize, void* userData){
+    std::ofstream out(GPU_CRASH_LOG_FILE, std::ios::out | std::ios::binary);
+
+    if(!out.is_open()){
+        throw std::runtime_error("Failed to open file for gpu dump");
+    }
+    out.write(reinterpret_cast<const char*>(pGpuCrashDump), gpuCrashDumpSize);
+    out.close();
+}
+
+void OnShaderDebugInfo(const void* pShaderDebugInfo, const uint32_t shaderDebugInfoSize, void* pUserData){
+
+}
+
+void OnDescription(PFN_GFSDK_Aftermath_AddGpuCrashDumpDescription addDescription, void* userData){
+
+}
+
+void OnResolveMarker(const void* pMarkerData, const uint32_t markerDataSize, void* pUserData, void** ppResolvedMarkerData, uint32_t* pResolvedMarkerDataSize){
+
+}
+
+
 VkInstance _Instance::instance = VK_NULL_HANDLE;
 VkDebugUtilsMessengerEXT _Instance::debugMessenger = VK_NULL_HANDLE;
 
 void _Instance::Init(){
+#ifdef NDEBUG
+    GFSDK_Aftermath_Result result = GFSDK_Aftermath_EnableGpuCrashDumps(
+        GFSDK_Aftermath_Version_API,
+        GFSDK_Aftermath_GpuCrashDumpWatchedApiFlags_Vulkan,
+        GFSDK_Aftermath_GpuCrashDumpFeatureFlags_Default,
+        OnGpuCrashDump,
+        OnShaderDebugInfo,
+        OnDescription,
+        OnResolveMarker,
+        nullptr
+    );
+#endif
+
     if (instance != VK_NULL_HANDLE) {
         throw std::runtime_error("Vulkan instance already created");
     }

@@ -3,6 +3,7 @@
 
 #include <iostream>
 #include <vector>
+#include <list>
 #include <cstdint>
 #include <string>
 #include <memory>
@@ -71,7 +72,7 @@ private: //copied from learnopengl.com *mostly* shamelessly
     void LoadModelFile();
     void ProcessNode(aiNode* node, const aiScene* scene);
 
-    std::vector<_Mesh> meshes;
+    std::list<_Mesh> meshes;
     std::unordered_map<std::string, _Texture> loadedTextures;
 
     __VertexInputDescriptions extraDescriptions;

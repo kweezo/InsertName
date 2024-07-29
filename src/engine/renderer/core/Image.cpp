@@ -74,7 +74,6 @@ void _Image::SubmitCommandBuffers(){
     if(vkQueueSubmit(_Device::GetTransferQueue(), 1, &submitInfo, commandBuffersFinishedExecutionFence.GetFence()) != VK_SUCCESS){
         throw std::runtime_error("Failed to submit data buffer command buffer");
     }
-
     vkWaitForFences(_Device::GetDevice(), 1, &finishedCopyingFenceRaw, VK_TRUE, std::numeric_limits<uint64_t>::max());
     vkResetFences(_Device::GetDevice(), 1, &finishedCopyingFenceRaw);
     
@@ -158,7 +157,6 @@ _Image::_Image(_ImageCreateInfo createInfo): createInfo(createInfo) {
         bufferCreateInfo.data = createInfo.data;
         bufferCreateInfo.size = createInfo.size;
         bufferCreateInfo.isDynamic = false;
-        bufferCreateInfo.signalSemaphore = waitSemaphore;
         bufferCreateInfo.transferToLocalDeviceMemory = false;
         bufferCreateInfo.usage = VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
 

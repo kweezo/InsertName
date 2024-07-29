@@ -218,6 +218,7 @@ if(BUILD_ENGINE)
         target_link_libraries(engine PUBLIC assimp)
         target_link_libraries(engine PUBLIC vulkan)
         target_link_libraries(engine PUBLIC boost_container)
+        target_link_libraries(engine PUBLIC GFSDK_Aftermath_Lib.x64)
     endif()
 endif()
 

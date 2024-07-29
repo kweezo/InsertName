@@ -4,11 +4,19 @@
 #include <iostream>
 #include <stdexcept>
 #include <cstring>
+#include <fstream>
 
 #include <vulkan/vulkan.h>
+
 #include <GLFW/glfw3.h>
 
+#include <NVIDIA_Nsight_Aftermath/GFSDK_Aftermath.h>
+#include <NVIDIA_Nsight_Aftermath/GFSDK_Aftermath_GpuCrashDump.h>
+#include <NVIDIA_Nsight_Aftermath/GFSDK_Aftermath_Defines.h>
+
 #include "../window/Window.hpp"
+
+#define GPU_CRASH_LOG_FILE "./client_data/log/gpu_dump.nv-gpudmp"
 
 namespace renderer{
 

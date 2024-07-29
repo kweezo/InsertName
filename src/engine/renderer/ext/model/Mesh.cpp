@@ -45,8 +45,6 @@ _Mesh::_Mesh(std::vector<_BasicMeshVertex>& vertices, std::vector<uint32_t>& ind
         vtnCreateInfo.threadIndex = GetCurrentThreadIndex();
         vtnCreateInfo.isDynamic = false;
 
-        vtnBuffer = _DataBuffer(vtnCreateInfo);
-
         _DataBufferCreateInfo indexCreateInfo{};
         indexCreateInfo.size = sizeof(uint32_t) * indices.size();
         indexCreateInfo.data = indices.data();

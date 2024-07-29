@@ -1,6 +1,5 @@
 #pragma once
 
-#include <vector>
 #include <stdexcept>
 #include <cstring>
 #include <memory>
@@ -9,6 +8,8 @@
 #include <limits>
 #include <set>
 #include <list>
+#include <mutex>
+#include <format>
 
 #include <vulkan/vulkan.h>
 
@@ -35,6 +36,7 @@ struct _DataBufferCreateInfo{
 
 struct _DataBufferStagingCommandBuferData{
     _CommandBuffer commandBuffer;
+    std::weak_ptr<std::mutex> mutex;
     bool free;
     _Semaphore signalSemaphore;
 };
@@ -68,7 +70,7 @@ private:
     void Destruct();
 
     static void CreateCommandBuffers();
-    static _CommandBuffer RetrieveFreeStagingCommandBuffer(uint32_t threadIndex, _Semaphore signalSemaphore);
+    static _CommandBuffer RetrieveFreeStagingCommandBuffer(uint32_t threadIndex, _Semaphore signalSemaphore, std::weak_ptr<std::mutex> mutex);
 
     static void RecordPrimaryCommandBuffer();
     static void SubmitCommandBuffers();
@@ -78,13 +80,14 @@ private:
 
     _DataBufferCreateInfo createInfo;
 
+    std::shared_ptr<std::mutex>/*a minescule amount of tomfoolery*/ bufferMutex;
     VkBuffer buffer;
     VkDeviceMemory memory;
 
     VkBuffer stagingBuffer;
     VkDeviceMemory stagingMemory;
 
-    static std::vector<std::vector<_DataBufferStagingCommandBuferData>> stagingCommandBuffers;
+    static std::list<std::list<_DataBufferStagingCommandBuferData>> stagingCommandBuffers;
     static std::list<VkDeviceMemory> stagingMemoryDeleteQueue;
     static std::set<uint32_t> resetPoolIndexes;
     static _Fence finishedCopyingFence;
