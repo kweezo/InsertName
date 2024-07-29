@@ -232,8 +232,8 @@ if(BUILD_CLIENT)
     if(WIN32)
         target_link_libraries(client PUBLIC
             ws2_32
-            ${SSL_LIBRARY}
-            ${CRYPTO_LIBRARY}
+            # ${SSL_LIBRARY}
+            # ${CRYPTO_LIBRARY}
             engine
         )
     else()
