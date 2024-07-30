@@ -10,6 +10,7 @@
 #include <list>
 #include <mutex>
 #include <format>
+#include <tuple>
 
 #include <vulkan/vulkan.h>
 
@@ -88,7 +89,7 @@ private:
     VkDeviceMemory stagingMemory;
 
     static std::list<std::list<_DataBufferStagingCommandBuferData>> stagingCommandBuffers;
-    static std::list<VkDeviceMemory> stagingMemoryDeleteQueue;
+    static std::list<std::pair<VkBuffer, VkDeviceMemory>> stagingBufferAndMemoryDeleteQueue;
     static std::set<uint32_t> resetPoolIndexes;
     static _Fence finishedCopyingFence;
     static bool anyCommandBuffersRecorded;

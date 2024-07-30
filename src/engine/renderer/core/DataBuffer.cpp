@@ -7,7 +7,7 @@ const uint32_t TARGET_STAGING_BUFFER_COUNT_PER_THREAD = 5;
 const size_t FREE_STAGING_MEMORY_TRESHOLD = 1024;
 
 std::list<std::list<_DataBufferStagingCommandBuferData>> _DataBuffer::stagingCommandBuffers = {};
-std::list<VkDeviceMemory> _DataBuffer::stagingMemoryDeleteQueue = {};
+std::list<std::pair<VkBuffer, VkDeviceMemory>> _DataBuffer::stagingBufferAndMemoryDeleteQueue = {};
 _Fence _DataBuffer::finishedCopyingFence = {};
 std::set<uint32_t> _DataBuffer::resetPoolIndexes = {};
 bool _DataBuffer::anyCommandBuffersRecorded = false;
@@ -70,6 +70,7 @@ buffer(VK_NULL_HANDLE), memory(VK_NULL_HANDLE){
     if(!_Device::DeviceMemoryFree()){
         createInfo.transferToLocalDeviceMemory = false;
     }
+
 
     bufferMutex.reset(new std::mutex);
 
@@ -301,8 +302,9 @@ void _DataBuffer::RecordCopyCommandBuffer(uint32_t threadIndex, size_t size){
     commandBuffer.EndCommandBuffer();
 
     if(createInfo.isDynamic && size > FREE_STAGING_MEMORY_TRESHOLD){
-        stagingMemoryDeleteQueue.push_front(stagingMemory);
+        stagingBufferAndMemoryDeleteQueue.push_front(std::make_pair(stagingBuffer, stagingMemory));
         stagingMemory = VK_NULL_HANDLE;
+        stagingBuffer = VK_NULL_HANDLE;
     }
 }
 
@@ -315,7 +317,6 @@ void _DataBuffer::SubmitCommandBuffers(){
 
 
     std::vector<VkCommandBuffer> recordedCommandBuffers{};
-    std::vector<VkSemaphore> signalSemaphores{};
 
     std::vector<_Fence> fences{};
 
@@ -326,7 +327,6 @@ void _DataBuffer::SubmitCommandBuffers(){
             if(!commandBuffer.free){
                 if(!commandBuffer.signalSemaphore.IsInitialized()){
                     recordedCommandBuffers.push_back(commandBuffer.commandBuffer.GetCommandBuffer());
-                    signalSemaphores.push_back(commandBuffer.signalSemaphore.GetSemaphore());
                 }
                 else{
                     submitInfoReferenceList.push_front({commandBuffer.commandBuffer.GetCommandBuffer(),
@@ -338,8 +338,8 @@ void _DataBuffer::SubmitCommandBuffers(){
                     submitInfo.commandBufferCount = 1;
                     submitInfo.pCommandBuffers = &submitInfoReferenceList.front().first;
 
-                   /* submitInfo.signalSemaphoreCount = 1;
-                    submitInfo.pSignalSemaphores = &submitInfoReferenceList.front().second;TODO*/
+                    submitInfo.signalSemaphoreCount = 1;
+                    submitInfo.pSignalSemaphores = &submitInfoReferenceList.front().second;
 
                     submitInfos.push_back(submitInfo);
                 }
@@ -374,8 +374,6 @@ void _DataBuffer::UpdateCleanup(){
     }
     anyCommandBuffersRecorded = false;
 
-   stagingMemoryDeleteQueue.clear();
-
     for(std::list<_DataBufferStagingCommandBuferData>& commandBuffers : stagingCommandBuffers){
         commandBuffers.resize(TARGET_STAGING_BUFFER_COUNT_PER_THREAD);
         for(_DataBufferStagingCommandBuferData& commandBuffer : commandBuffers){
@@ -383,9 +381,11 @@ void _DataBuffer::UpdateCleanup(){
         }
     }
 
-    for(VkDeviceMemory stagingMemory : stagingMemoryDeleteQueue){
-        vkFreeMemory(_Device::GetDevice(), stagingMemory, nullptr);
+    for(std::pair<VkBuffer, VkDeviceMemory> stagingBufferAndMemory : stagingBufferAndMemoryDeleteQueue){
+        vkDestroyBuffer(_Device::GetDevice(), stagingBufferAndMemory.first, nullptr);
+        vkFreeMemory(_Device::GetDevice(), stagingBufferAndMemory.second, nullptr);
     }
+    stagingBufferAndMemoryDeleteQueue.clear();
 }
 
 void _DataBuffer::SetSignalSemaphore(_Semaphore signalSemaphore){
