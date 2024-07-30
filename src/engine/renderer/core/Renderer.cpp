@@ -75,6 +75,7 @@ void Renderer::UpdateComponents(){
             thread.join(); // TODO if proper sync we don't have to wait???
         }
     }
+
     ModelInstance::__Update();
 }
 

@@ -6,6 +6,7 @@
 #include <mutex>
 #include <array>
 #include <memory>
+#include <tuple>
 
 #include <boost/container/flat_map.hpp>
 
@@ -32,7 +33,10 @@ typedef struct _StaticModelData{
     ModelHandle model;
     _DataBuffer instanceBuffer;
 
+    _Semaphore modelInstanceDataUploadedSemaphore;
+
     std::array<_CommandBuffer, MAX_FRAMES_IN_FLIGHT> commandBuffers = {};
+
 
     uint32_t drawCount = 0;
     std::vector<std::shared_ptr<_StaticModelInstance>> instanceList = {};
@@ -68,12 +72,13 @@ private:
     const static __VertexInputDescriptions baseStaticInstanceDescriptions;
 
     static std::array<_Semaphore, MAX_FRAMES_IN_FLIGHT> renderFinishedSemaphores;
-    static std::array<boost::container::flat_map<std::string, std::vector<VkCommandBuffer>>, MAX_FRAMES_IN_FLIGHT> commandBuffers;
+    static std::array<boost::container::flat_map<std::string, std::vector<std::pair<VkCommandBuffer, std::vector<_Semaphore>>>>, MAX_FRAMES_IN_FLIGHT> commandBuffers;
 
     static std::vector<std::thread> dataUploadThreads;
     static std::vector<std::thread> commandBufferThreads;
     static uint32_t threadIndex;
     static std::mutex threadSpawnMutex;
+
 };
 
 }

@@ -330,7 +330,7 @@ void _DataBuffer::SubmitCommandBuffers(){
                 }
                 else{
                     submitInfoReferenceList.push_front({commandBuffer.commandBuffer.GetCommandBuffer(),
-                     commandBuffer.signalSemaphore.GetSemaphore()});
+                    commandBuffer.signalSemaphore.GetSemaphore()});
 
                     VkSubmitInfo submitInfo{};
                     submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;

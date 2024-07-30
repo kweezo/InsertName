@@ -8,7 +8,8 @@ std::array<_Semaphore, MAX_FRAMES_IN_FLIGHT> _StaticModelInstance::renderFinishe
 uint32_t _StaticModelInstance::threadIndex = 0;
 std::vector<std::thread> _StaticModelInstance::dataUploadThreads = {};
 std::vector<std::thread> _StaticModelInstance::commandBufferThreads = {};
-std::array<boost::container::flat_map<std::string, std::vector<VkCommandBuffer>>, MAX_FRAMES_IN_FLIGHT> _StaticModelInstance::commandBuffers = {};
+std::array<boost::container::flat_map<std::string, std::vector<std::pair<VkCommandBuffer, std::vector<_Semaphore>>>>,
+ MAX_FRAMES_IN_FLIGHT> _StaticModelInstance::commandBuffers = {};
 
 
 const __VertexInputDescriptions _StaticModelInstance::baseStaticInstanceDescriptions = {{
@@ -36,6 +37,7 @@ void _StaticModelInstance::StaticInit(){
     
 void _StaticModelInstance::InitializeStaticInstanceData(_StaticModelData& instanceData, ModelHandle model){
     instanceData.model = model;
+    instanceData.modelInstanceDataUploadedSemaphore = _Semaphore((_SemaphoreCreateInfo){});
 }
 
 void _StaticModelInstance::HandleThreads(){
@@ -67,7 +69,7 @@ void _StaticModelInstance::PrepareCommandBuffers(){
             VkCommandBuffer commandBuffer = instanceData->commandBuffers[i].GetCommandBuffer();
             {
                 std::shared_ptr<_Shader> shader = instanceData->model.lock()->GetShader().lock();
-                commandBuffers[i][shader->GetName()].push_back(commandBuffer);
+                commandBuffers[i][shader->GetName()].push_back(std::make_pair(commandBuffer, {}));
             }
         }
     }
@@ -112,9 +114,11 @@ void _StaticModelInstance::UploadDataToInstanceBuffer(std::weak_ptr<_StaticModel
     dataBufferInfo.size = instanceModels.size() * sizeof(glm::mat4);
     dataBufferInfo.threadIndex = threadIndex;
     dataBufferInfo.usage = VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
+    dataBufferInfo.signalSemaphore = instancesShared->modelInstanceDataUploadedSemaphore;
     dataBufferInfo.transferToLocalDeviceMemory = true;
 
     instancesShared->instanceBuffer = _DataBuffer(dataBufferInfo);
+
 
 
     _CommandBufferCreateInfo commandBufferInfo{};
@@ -167,30 +171,73 @@ void _StaticModelInstance::RecordStaticCommandBuffer(std::weak_ptr<_StaticModelD
 void _StaticModelInstance::StaticDraw( _Semaphore presentSemaphore, _Fence inFlightFence){
 
     std::vector<VkCommandBuffer> toSubmitCommandBuffers;
+    std::vector<VkSubmitInfo> submitInfos;
 
-    for(auto& [shader, commandBuffers] : commandBuffers[_Swapchain::GetFrameInFlight()]){
-        std::copy(commandBuffers.begin(), commandBuffers.end(), std::back_inserter(toSubmitCommandBuffers));
-    }
+    std::list<std::pair<std::array<VkSemaphore, 2>, std::array<VkPipelineStageFlags, 2>>> semaphoreReferences;
+    std::list<VkCommandBuffer> commandBufferReferences;
 
     std::array<VkSemaphore, 1> signalSemaphores = {renderFinishedSemaphores[_Swapchain::GetFrameInFlight()].GetSemaphore()};
+
+    for(auto& [shader, commandBuffers] : commandBuffers[_Swapchain::GetFrameInFlight()]){
+        for(std::pair<VkCommandBuffer, _Semaphore>& commandBuffer : commandBuffers){
+            if(commandBuffer.second.IsInitialized()){
+
+                semaphoreReferences.push_front(std::make_pair(std::array<VkSemaphore, 2>{presentSemaphore.GetSemaphore(), commandBuffer.second.GetSemaphore()},
+                std::array<VkPipelineStageFlags, 2>{VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, VK_PIPELINE_STAGE_VERTEX_INPUT_BIT}));
+
+                commandBuffer.second = {};
+
+                
+                commandBufferReferences.push_front(commandBuffer.first);
+
+
+
+                VkSubmitInfo submitInfo{};
+
+                submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+
+                submitInfo.waitSemaphoreCount = semaphoreReferences.front().first.size();
+                submitInfo.pWaitSemaphores = semaphoreReferences.front().first.data();
+                submitInfo.pWaitDstStageMask = semaphoreReferences.front().second.data();
+
+                submitInfo.commandBufferCount = 1;
+                submitInfo.pCommandBuffers = &commandBufferReferences.front();
+
+                submitInfo.signalSemaphoreCount = signalSemaphores.size();
+                submitInfo.pSignalSemaphores = signalSemaphores.data();
+
+                submitInfos.push_back(submitInfo);
+
+            }else{
+                toSubmitCommandBuffers.push_back(commandBuffer.first);
+            }
+        }
+    }
+
+
     std::array<VkSemaphore, 1> waitSemaphores = {presentSemaphore.GetSemaphore()};
 
-    std::array<VkPipelineStageFlags, waitSemaphores.size()> waitDstStageMaks = {VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT};
+    std::array<VkPipelineStageFlags, 1> waitDstStageMaks = {VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT};
 
-    VkSubmitInfo submitInfo{};
-    submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+    if(!toSubmitCommandBuffers.empty()){
+        VkSubmitInfo submitInfo{};
+        submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
 
-    submitInfo.commandBufferCount = toSubmitCommandBuffers.size();
-    submitInfo.pCommandBuffers = toSubmitCommandBuffers.data();
+        submitInfo.commandBufferCount = toSubmitCommandBuffers.size();
+        submitInfo.pCommandBuffers = toSubmitCommandBuffers.data();
 
-    submitInfo.waitSemaphoreCount = waitSemaphores.size();
-    submitInfo.pWaitSemaphores = waitSemaphores.data();
-    submitInfo.pWaitDstStageMask = waitDstStageMaks.data();
+        submitInfo.waitSemaphoreCount = waitSemaphores.size();
+        submitInfo.pWaitSemaphores = waitSemaphores.data();
+        submitInfo.pWaitDstStageMask = waitDstStageMaks.data();
 
-    submitInfo.signalSemaphoreCount = signalSemaphores.size();
-    submitInfo.pSignalSemaphores = signalSemaphores.data();
+        submitInfo.signalSemaphoreCount = signalSemaphores.size();
+        submitInfo.pSignalSemaphores = signalSemaphores.data();
 
-    if(vkQueueSubmit(_Device::GetGraphicsQueue(), 1, &submitInfo, inFlightFence.GetFence()) != VK_SUCCESS){
+        submitInfos.push_back(submitInfo);
+    }
+
+
+    if(vkQueueSubmit(_Device::GetGraphicsQueue(), submitInfos.size(), submitInfos.data(), inFlightFence.GetFence()) != VK_SUCCESS){
         throw std::runtime_error("Failed to submit drawing command buffers for static instances");
     }
 }
