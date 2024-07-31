@@ -10,9 +10,11 @@
 
 #include <GLFW/glfw3.h>
 
-#include <NVIDIA_Nsight_Aftermath/GFSDK_Aftermath.h>
+#ifdef NDEBUG
+/*#include <NVIDIA_Nsight_Aftermath/GFSDK_Aftermath.h>
 #include <NVIDIA_Nsight_Aftermath/GFSDK_Aftermath_GpuCrashDump.h>
-#include <NVIDIA_Nsight_Aftermath/GFSDK_Aftermath_Defines.h>
+#include <NVIDIA_Nsight_Aftermath/GFSDK_Aftermath_Defines.h>*/
+#endif
 
 #include "../window/Window.hpp"
 

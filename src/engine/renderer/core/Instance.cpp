@@ -47,9 +47,9 @@ void OnShaderDebugInfo(const void* pShaderDebugInfo, const uint32_t shaderDebugI
 
 }
 
-void OnDescription(PFN_GFSDK_Aftermath_AddGpuCrashDumpDescription addDescription, void* userData){
+/*void OnDescription(PFN_GFSDK_Aftermath_AddGpuCrashDumpDescription addDescription, void* userData){
 
-}
+}*/
 
 void OnResolveMarker(const void* pMarkerData, const uint32_t markerDataSize, void* pUserData, void** ppResolvedMarkerData, uint32_t* pResolvedMarkerDataSize){
 
@@ -61,7 +61,7 @@ VkDebugUtilsMessengerEXT _Instance::debugMessenger = VK_NULL_HANDLE;
 
 void _Instance::Init(){
 #ifdef NDEBUG
-    GFSDK_Aftermath_Result result = GFSDK_Aftermath_EnableGpuCrashDumps(
+ /*   GFSDK_Aftermath_Result result = GFSDK_Aftermath_EnableGpuCrashDumps(
         GFSDK_Aftermath_Version_API,
         GFSDK_Aftermath_GpuCrashDumpWatchedApiFlags_Vulkan,
         GFSDK_Aftermath_GpuCrashDumpFeatureFlags_Default,
@@ -70,7 +70,7 @@ void _Instance::Init(){
         OnDescription,
         OnResolveMarker,
         nullptr
-    );
+    );*/
 #endif
 
     if (instance != VK_NULL_HANDLE) {
