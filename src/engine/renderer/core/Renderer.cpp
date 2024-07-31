@@ -64,6 +64,8 @@ void Renderer::UpdateComponents(){
     Camera::__Update();
     _Texture::Update();
 
+    ModelInstance::__Update();
+
 
     std::array<std::thread, 2> threads = {
         std::thread(_DataBuffer::Update),
@@ -76,7 +78,7 @@ void Renderer::UpdateComponents(){
         }
     }
 
-    ModelInstance::__Update();
+
 }
 
 void Renderer::Update(){

@@ -14,8 +14,8 @@ std::array<boost::container::flat_map<std::string, std::vector<std::pair<VkComma
 
 const __VertexInputDescriptions _StaticModelInstance::baseStaticInstanceDescriptions = {{
     {0, 0, VK_FORMAT_R32G32B32_SFLOAT, 0},
-    {1, 0, VK_FORMAT_R32G32_SFLOAT, 0},
-    {2, 0, VK_FORMAT_R32G32B32_SFLOAT, 0},
+    {1, 0, VK_FORMAT_R32G32_SFLOAT, sizeof(glm::vec3)},
+    {2, 0, VK_FORMAT_R32G32B32_SFLOAT, sizeof(glm::vec3) + sizeof(glm::vec2)},
     {3, 1, VK_FORMAT_R32G32B32A32_SFLOAT, 0},
     {4, 1, VK_FORMAT_R32G32B32A32_SFLOAT, sizeof(glm::vec4)},
     {5, 1, VK_FORMAT_R32G32B32A32_SFLOAT, 2 * sizeof(glm::vec4)},
@@ -69,7 +69,7 @@ void _StaticModelInstance::PrepareCommandBuffers(){
             VkCommandBuffer commandBuffer = instanceData->commandBuffers[i].GetCommandBuffer();
             {
                 std::shared_ptr<_Shader> shader = instanceData->model.lock()->GetShader().lock();
-                commandBuffers[i][shader->GetName()].push_back(std::make_pair(commandBuffer, {}));
+                commandBuffers[i][shader->GetName()].push_back(std::make_pair(commandBuffer, (std::vector<_Semaphore>){instanceData.get()->modelInstanceDataUploadedSemaphore}));
             }
         }
     }
@@ -173,17 +173,25 @@ void _StaticModelInstance::StaticDraw( _Semaphore presentSemaphore, _Fence inFli
     std::vector<VkCommandBuffer> toSubmitCommandBuffers;
     std::vector<VkSubmitInfo> submitInfos;
 
-    std::list<std::pair<std::array<VkSemaphore, 2>, std::array<VkPipelineStageFlags, 2>>> semaphoreReferences;
+    std::list<std::pair<std::vector<VkSemaphore>, std::vector<VkPipelineStageFlags>>> semaphoreReferences;
     std::list<VkCommandBuffer> commandBufferReferences;
 
     std::array<VkSemaphore, 1> signalSemaphores = {renderFinishedSemaphores[_Swapchain::GetFrameInFlight()].GetSemaphore()};
 
     for(auto& [shader, commandBuffers] : commandBuffers[_Swapchain::GetFrameInFlight()]){
-        for(std::pair<VkCommandBuffer, _Semaphore>& commandBuffer : commandBuffers){
-            if(commandBuffer.second.IsInitialized()){
+        for(std::pair<VkCommandBuffer, std::vector<_Semaphore>>& commandBuffer : commandBuffers){
+            if(!commandBuffer.second.empty()){
 
-                semaphoreReferences.push_front(std::make_pair(std::array<VkSemaphore, 2>{presentSemaphore.GetSemaphore(), commandBuffer.second.GetSemaphore()},
-                std::array<VkPipelineStageFlags, 2>{VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, VK_PIPELINE_STAGE_VERTEX_INPUT_BIT}));
+                semaphoreReferences.push_front(std::make_pair(std::vector<VkSemaphore>{presentSemaphore.GetSemaphore()},
+                std::vector<VkPipelineStageFlags>{VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT}));
+
+                for(_Semaphore& semaphore : commandBuffer.second){
+                    if(semaphore.IsInitialized()){
+                        semaphoreReferences.front().first.push_back(semaphore.GetSemaphore());
+                        semaphoreReferences.front().second.push_back(VK_PIPELINE_STAGE_VERTEX_INPUT_BIT);
+                    }
+                    semaphore = _Semaphore();
+                }
 
                 commandBuffer.second = {};
 
