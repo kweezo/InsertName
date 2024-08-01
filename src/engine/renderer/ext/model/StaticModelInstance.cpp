@@ -69,7 +69,9 @@ void _StaticModelInstance::PrepareCommandBuffers(){
             VkCommandBuffer commandBuffer = instanceData->commandBuffers[i].GetCommandBuffer();
             {
                 std::shared_ptr<_Shader> shader = instanceData->model.lock()->GetShader().lock();
-                commandBuffers[i][shader->GetName()].push_back(std::make_pair(commandBuffer, (std::vector<_Semaphore>){instanceData.get()->modelInstanceDataUploadedSemaphore}));
+                commandBuffers[i][shader->GetName()].push_back(std::make_pair(commandBuffer, _Device::DeviceMemoryFree() ?
+                 (std::vector<_Semaphore>){instanceData.get()->modelInstanceDataUploadedSemaphore} :
+                 (std::vector<_Semaphore>){}));
             }
         }
     }

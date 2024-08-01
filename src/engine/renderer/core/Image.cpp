@@ -198,8 +198,11 @@ void _Image::CreateImage(){
     imageInfo.arrayLayers = 1;
     imageInfo.format = createInfo.format;
     imageInfo.tiling = createInfo.copyToLocalDeviceMemory ? VK_IMAGE_TILING_OPTIMAL : VK_IMAGE_TILING_LINEAR;
-    imageInfo.initialLayout = createInfo.layout;
     imageInfo.usage = VK_IMAGE_USAGE_TRANSFER_DST_BIT | createInfo.usage;
+    if((imageInfo.usage & VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT) == VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT){
+        imageInfo.tiling = VK_IMAGE_TILING_OPTIMAL;
+    }
+    imageInfo.initialLayout = createInfo.layout;
     imageInfo.samples = VK_SAMPLE_COUNT_1_BIT;
 
     if(vkCreateImage(_Device::GetDevice(), &imageInfo, nullptr, &image) != VK_SUCCESS){
