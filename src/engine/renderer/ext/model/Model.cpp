@@ -18,7 +18,7 @@ void ModelManager::Destoy(ModelHandle handle){
     models.erase(it);
 }
 
-void ModelManager::Cleanup(){
+void ModelManager::_Cleanup(){
     models.clear();
 }
 

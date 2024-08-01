@@ -153,6 +153,7 @@ int main(){
     }
     vkDeviceWaitIdle(_Device::GetDevice());
 
+    teapotInstance.reset();
 
     Renderer::Cleanup();
     Window::DestroyWindowContext();

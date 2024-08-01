@@ -46,7 +46,7 @@ public:
     static ModelHandle Create(_ModelCreateInfo createInfo);
     static void Destoy(ModelHandle handle);
 
-    static void Cleanup();
+    static void _Cleanup();
 private:
     static std::vector<std::shared_ptr<_Model>> models;
 };

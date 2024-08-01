@@ -142,6 +142,7 @@ void Renderer::Cleanup(){
     }
 
     ModelInstance::__Cleanup();
+    ModelManager::_Cleanup();
     _ShaderManager::Cleanup();
     _Swapchain::Cleanup();
     Camera::__Cleanup();

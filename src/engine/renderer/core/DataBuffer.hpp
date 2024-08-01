@@ -63,12 +63,14 @@ public:
 
     void SetSignalSemaphore(_Semaphore signalSemaphore);
 
+    void Destruct();
+
     static void CreateBuffer(VkBuffer& buffer, VkBufferUsageFlags usage, VkDeviceSize size);
     static void AllocateMemory(VkDeviceMemory& memory, VkBuffer buffer, size_t size, VkMemoryPropertyFlags properties);
     static void UploadDataToMemory(VkDeviceMemory memory, void* data, size_t size);
+
 private:
 
-    void Destruct();
 
     static void CreateCommandBuffers();
     static _CommandBuffer RetrieveFreeStagingCommandBuffer(uint32_t threadIndex, _Semaphore signalSemaphore, std::weak_ptr<std::mutex> mutex);

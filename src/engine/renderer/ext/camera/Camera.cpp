@@ -58,8 +58,8 @@ void Camera::__Update(){
 }
 
 void Camera::__Cleanup(){
-    orthoCamera.~_UniformBuffer();
-    perspectiveCamera.~_UniformBuffer();
+    orthoCamera.Destructor();
+    perspectiveCamera.Destructor();
 }
 
 }

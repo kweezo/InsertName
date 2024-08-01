@@ -45,8 +45,9 @@ public:
     void SetBinding(uint32_t binding);
 
     void UpdateData(void* data, size_t size, uint32_t threadIndex);
-private:
+
     void Destructor();
+private:
 
     _DataBuffer dataBuffer;
 
