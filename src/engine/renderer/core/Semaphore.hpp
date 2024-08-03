@@ -28,8 +28,9 @@ public:
     bool IsInitialized() const;
 
     VkSemaphore GetSemaphore() const;
-private:
+
     void Destruct();
+private:
 
     VkSemaphore semaphore = VK_NULL_HANDLE;
     std::shared_ptr<uint32_t> useCount;

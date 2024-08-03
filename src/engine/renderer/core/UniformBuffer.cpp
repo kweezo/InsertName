@@ -110,7 +110,7 @@ void _UniformBuffer::Destructor(){
     }
 
     if(*useCount.get() <= 1){
-        dataBuffer.~_DataBuffer();
+        dataBuffer.Destruct();
 
         useCount.reset();
 

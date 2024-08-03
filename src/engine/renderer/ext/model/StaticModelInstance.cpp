@@ -97,17 +97,18 @@ void _StaticModelInstance::UploadDataToInstanceBuffer(std::weak_ptr<_StaticModel
 
     std::shared_ptr<_StaticModelData> instancesShared = instances.lock();
     instancesShared->drawCount = 0;
-    for(std::shared_ptr<_StaticModelInstance> instance : instancesShared->instanceList){
-        instancesShared->drawCount += instance->GetShouldDraw();
+    for(std::weak_ptr<_StaticModelInstance> instance : instancesShared->instanceList){
+        instancesShared->drawCount += instance.lock()->GetShouldDraw();
     }
 
 
     std::vector<glm::mat4> instanceModels(instances.lock()->drawCount);
 
     uint32_t i = 0;
-    for(std::shared_ptr<_StaticModelInstance> instance : instancesShared->instanceList){
-        if(instance->GetShouldDraw()){
-            instanceModels[i] = instance->GetModelMatrix();
+    for(std::weak_ptr<_StaticModelInstance> instance : instancesShared->instanceList){
+        std::shared_ptr<_StaticModelInstance> instanceHandleShared = instance.lock();
+        if(instanceHandleShared->GetShouldDraw()){
+            instanceModels[i] = instanceHandleShared->GetModelMatrix();
             i++;
         }
     }

@@ -55,8 +55,8 @@ public:
     VkImage GetImage();
     VkImageView GetImageView();
 
-private:
     void Destruct();
+private:
 
     void CreateImage();
     void CreateImageView();

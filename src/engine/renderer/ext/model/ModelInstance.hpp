@@ -22,7 +22,8 @@
 #include "engine/renderer/core/Semaphore.hpp"
 
 
-#define ModelInstanceHandle std::shared_ptr<ModelInstance> 
+#define _ModelInstanceHandleInternal std::weak_ptr<ModelInstance> 
+#define ModelInstanceHandle std::shared_ptr<ModelInstance>
 
 namespace renderer{
 
@@ -42,6 +43,7 @@ public:
 
     static ModelInstanceHandle Create(ModelInstanceCreateInfo& createInfo);
 
+    ModelInstance(ModelInstanceCreateInfo& createInfo, std::shared_ptr<ModelInstance>& shared);
     ModelInstance& operator=(const ModelInstance& other) = delete;
     ModelInstance& operator=(ModelInstance&& other) = delete;
     ModelInstance(const ModelInstance& other) = delete;
@@ -57,7 +59,6 @@ public:
     glm::mat4 GetModelMatrix() override;
 
 private:
-    ModelInstance(ModelInstanceCreateInfo& createInfo);
 
     bool shouldDraw;
     glm::mat4 model; 

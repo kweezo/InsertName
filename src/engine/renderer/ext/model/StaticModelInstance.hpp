@@ -39,7 +39,7 @@ typedef struct _StaticModelData{
 
 
     uint32_t drawCount = 0;
-    std::vector<std::shared_ptr<_StaticModelInstance>> instanceList = {};
+    std::vector<std::weak_ptr<_StaticModelInstance>> instanceList = {};
 } _StaticModelData;
 
 

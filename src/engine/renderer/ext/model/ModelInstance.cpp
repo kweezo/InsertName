@@ -3,19 +3,23 @@
 namespace renderer{
 
 ModelInstanceHandle ModelInstance::Create(ModelInstanceCreateInfo& createInfo){
-    return std::shared_ptr<ModelInstance>(new ModelInstance(createInfo));
+    std::shared_ptr<ModelInstance> shared;
+    ModelInstance(createInfo, shared);
+    return shared;
 }
 
-ModelInstance::ModelInstance(ModelInstanceCreateInfo& createInfo){
+ModelInstance::ModelInstance(ModelInstanceCreateInfo& createInfo, std::shared_ptr<ModelInstance>& shared){
     this->model = glm::mat4(1.0f);
     this->model = glm::translate(this->model, createInfo.transform.pos);
     this->model = glm::scale(this->model, createInfo.transform.scale);
     //todo, face your enemies (rotation)
 
+    shared = std::shared_ptr<ModelInstance>(this);
+
     if(!createInfo.isDynamic){
         if(staticModelInstanceMap.find(createInfo.model.lock()->GetName()) == staticModelInstanceMap.end()){
             _StaticModelData instanceData{};
-            instanceData.instanceList.emplace_back(this);
+            instanceData.instanceList.push_back(shared);
 
             InitializeStaticInstanceData(instanceData, createInfo.model);
 
@@ -23,9 +27,8 @@ ModelInstance::ModelInstance(ModelInstanceCreateInfo& createInfo){
         }
         else{
             std::weak_ptr<_StaticModelData> instanceData = staticModelInstanceMap[createInfo.model.lock()->GetName()];
-            instanceData.lock()->instanceList.emplace_back(this);
+            instanceData.lock()->instanceList.push_back(shared);
         }
-
     }
 
     shouldDraw = true;

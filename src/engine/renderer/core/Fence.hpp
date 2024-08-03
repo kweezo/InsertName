@@ -24,8 +24,9 @@ public:
     bool IsInitialized() const;
 
     VkFence GetFence() const;
-private:
+
     void Destruct();
+private:
 
     VkFence fence = VK_NULL_HANDLE;
     

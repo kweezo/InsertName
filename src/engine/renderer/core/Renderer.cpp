@@ -129,16 +129,16 @@ void Renderer::UpdateCleanup(){
 void Renderer::Cleanup(){
     for(uint32_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++){
         for(uint32_t y = 0; y < DRAW_QUEUE_SUBMIT_COUNT; y++){
-            inFlightFences[i][y].~_Fence();
+            inFlightFences[i][y].Destruct();
         }
     }
 
     for(_Semaphore& semaphore : renderSemaphores){
-        semaphore.~_Semaphore();
+        semaphore.Destruct();
     }
 
     for(_Semaphore& semaphore : presentSemaphores){
-        semaphore.~_Semaphore();
+        semaphore.Destruct();
     }
 
     ModelInstance::__Cleanup();

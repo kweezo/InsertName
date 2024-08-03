@@ -190,7 +190,7 @@ void _Swapchain::Cleanup(){
     }
     vkDestroySwapchainKHR(_Device::GetDevice(), swapchain, nullptr);
 
-    depthImage.~_Image();
+    depthImage.Destruct();
 }
 
 }
