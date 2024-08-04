@@ -43,11 +43,13 @@ public:
 
     static ModelInstanceHandle Create(ModelInstanceCreateInfo& createInfo);
 
-    ModelInstance(ModelInstanceCreateInfo& createInfo, std::shared_ptr<ModelInstance>& shared);
+    ModelInstance(ModelInstanceCreateInfo& createInfo);
     ModelInstance& operator=(const ModelInstance& other) = delete;
     ModelInstance& operator=(ModelInstance&& other) = delete;
     ModelInstance(const ModelInstance& other) = delete;
     ModelInstance(ModelInstance&& other) = delete;
+
+    void __AddSelfToInstanceData(std::shared_ptr<ModelInstance> self);
 
 
     static std::array<VkSemaphore, 2> GetRenderFinishedSemaphores(uint32_t imageIndex);
@@ -59,6 +61,8 @@ public:
     glm::mat4 GetModelMatrix() override;
 
 private:
+
+    ModelInstanceCreateInfo createInfo;
 
     bool shouldDraw;
     glm::mat4 model; 

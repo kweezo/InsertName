@@ -29,7 +29,7 @@ namespace renderer{
 class _StaticModelInstance;
 
 
-typedef struct _StaticModelData{
+typedef struct _StaticInstanceData{
     ModelHandle model;
     _DataBuffer instanceBuffer;
 
@@ -40,7 +40,7 @@ typedef struct _StaticModelData{
 
     uint32_t drawCount = 0;
     std::vector<std::weak_ptr<_StaticModelInstance>> instanceList = {};
-} _StaticModelData;
+} _StaticInstanceData;
 
 
 class _StaticModelInstance{
@@ -52,17 +52,17 @@ protected:
 
     static VkSemaphore GetStaticRenderFinishedSemaphore(uint32_t imageIndex);
 
-    static void StaticDraw(_Semaphore presentSemaphor, _Fence inFlightFences);
+    static void StaticDraw(_Semaphore presentSemaphore, _Fence inFlightFences);
 
     virtual bool GetShouldDraw() = 0;
     virtual glm::mat4 GetModelMatrix() = 0;
 
-    static boost::container::flat_map<std::string, std::shared_ptr<_StaticModelData>> staticModelInstanceMap;
+    static boost::container::flat_map<std::string, std::shared_ptr<_StaticInstanceData>> staticModelInstanceMap;
 
-    static void InitializeStaticInstanceData(_StaticModelData& instanceData, ModelHandle model);
+    static void InitializeStaticInstanceData(_StaticInstanceData& instanceData, ModelHandle model);
 private:
-    static void RecordStaticCommandBuffer(std::weak_ptr<_StaticModelData> instances, uint32_t threadsIndex);
-    static void UploadDataToInstanceBuffer(std::weak_ptr<_StaticModelData> instances, uint32_t threadIndex);
+    static void RecordStaticCommandBuffer(std::weak_ptr<_StaticInstanceData> instances, uint32_t threadsIndex);
+    static void UploadDataToInstanceBuffer(std::weak_ptr<_StaticInstanceData> instances, uint32_t threadIndex);
 
     static void PrepareCommandBuffers();
 

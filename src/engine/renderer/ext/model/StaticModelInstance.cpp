@@ -3,7 +3,7 @@
 
 namespace renderer{
 
-boost::container::flat_map<std::string, std::shared_ptr<_StaticModelData>> _StaticModelInstance::staticModelInstanceMap = {};
+boost::container::flat_map<std::string, std::shared_ptr<_StaticInstanceData>> _StaticModelInstance::staticModelInstanceMap = {};
 std::array<_Semaphore, MAX_FRAMES_IN_FLIGHT> _StaticModelInstance::renderFinishedSemaphores = {};
 uint32_t _StaticModelInstance::threadIndex = 0;
 std::vector<std::thread> _StaticModelInstance::dataUploadThreads = {};
@@ -35,7 +35,7 @@ void _StaticModelInstance::StaticInit(){
     }
 }
     
-void _StaticModelInstance::InitializeStaticInstanceData(_StaticModelData& instanceData, ModelHandle model){
+void _StaticModelInstance::InitializeStaticInstanceData(_StaticInstanceData& instanceData, ModelHandle model){
     instanceData.model = model;
     instanceData.modelInstanceDataUploadedSemaphore = _Semaphore((_SemaphoreCreateInfo){});
 }
@@ -93,9 +93,9 @@ void _StaticModelInstance::StaticUpdate(){
     PrepareCommandBuffers();
 }
 
-void _StaticModelInstance::UploadDataToInstanceBuffer(std::weak_ptr<_StaticModelData> instances, uint32_t threadIndex){
+void _StaticModelInstance::UploadDataToInstanceBuffer(std::weak_ptr<_StaticInstanceData> instances, uint32_t threadIndex){
 
-    std::shared_ptr<_StaticModelData> instancesShared = instances.lock();
+    std::shared_ptr<_StaticInstanceData> instancesShared = instances.lock();
     instancesShared->drawCount = 0;
     for(std::weak_ptr<_StaticModelInstance> instance : instancesShared->instanceList){
         instancesShared->drawCount += instance.lock()->GetShouldDraw();
@@ -137,7 +137,7 @@ void _StaticModelInstance::UploadDataToInstanceBuffer(std::weak_ptr<_StaticModel
     threadIndex = (threadIndex + 1) % std::thread::hardware_concurrency();
 }
 
-void _StaticModelInstance::RecordStaticCommandBuffer(std::weak_ptr<_StaticModelData> instances, uint32_t threadsIndex){
+void _StaticModelInstance::RecordStaticCommandBuffer(std::weak_ptr<_StaticInstanceData> instances, uint32_t threadsIndex){
     __VertexInputDescriptions allDescriptions;
     std::get<0>(allDescriptions).insert(std::get<0>(allDescriptions).end(), std::get<0>(baseStaticInstanceDescriptions).begin(),
      std::get<0>(baseStaticInstanceDescriptions).end());
@@ -146,7 +146,7 @@ void _StaticModelInstance::RecordStaticCommandBuffer(std::weak_ptr<_StaticModelD
 
 
     {
-        std::shared_ptr<_StaticModelData> instancesShared = instances.lock(); 
+        std::shared_ptr<_StaticInstanceData> instancesShared = instances.lock(); 
         std::shared_ptr<_Model> model = instancesShared->model.lock();
         std::shared_ptr<_Shader> shader = model->GetShader().lock();
 

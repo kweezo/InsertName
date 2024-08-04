@@ -3,35 +3,39 @@
 namespace renderer{
 
 ModelInstanceHandle ModelInstance::Create(ModelInstanceCreateInfo& createInfo){
-    std::shared_ptr<ModelInstance> shared;
-    ModelInstance(createInfo, shared);
+    std::shared_ptr<ModelInstance> shared = std::make_shared<ModelInstance>(createInfo);
+    shared->__AddSelfToInstanceData(shared);
     return shared;
 }
 
-ModelInstance::ModelInstance(ModelInstanceCreateInfo& createInfo, std::shared_ptr<ModelInstance>& shared){
+ModelInstance::ModelInstance(ModelInstanceCreateInfo& createInfo){
     this->model = glm::mat4(1.0f);
     this->model = glm::translate(this->model, createInfo.transform.pos);
     this->model = glm::scale(this->model, createInfo.transform.scale);
     //todo, face your enemies (rotation)
 
-    shared = std::shared_ptr<ModelInstance>(this);
-
     if(!createInfo.isDynamic){
         if(staticModelInstanceMap.find(createInfo.model.lock()->GetName()) == staticModelInstanceMap.end()){
-            _StaticModelData instanceData{};
-            instanceData.instanceList.push_back(shared);
+            _StaticInstanceData instanceData{};
 
             InitializeStaticInstanceData(instanceData, createInfo.model);
 
-            staticModelInstanceMap.insert({createInfo.model.lock()->GetName(), std::make_shared<_StaticModelData>(instanceData)});
+            staticModelInstanceMap.insert({createInfo.model.lock()->GetName(), std::make_shared<_StaticInstanceData>(instanceData)});
         }
         else{
-            std::weak_ptr<_StaticModelData> instanceData = staticModelInstanceMap[createInfo.model.lock()->GetName()];
-            instanceData.lock()->instanceList.push_back(shared);
         }
     }
 
     shouldDraw = true;
+
+    this->createInfo = createInfo;
+}
+    
+void ModelInstance::__AddSelfToInstanceData(std::shared_ptr<ModelInstance> self){
+    if(!createInfo.isDynamic){
+        std::weak_ptr<_StaticInstanceData> instanceData = staticModelInstanceMap[createInfo.model.lock()->GetName()];
+        instanceData.lock()->instanceList.push_back(self);
+    }
 }
 
 void ModelInstance::__Init(){
