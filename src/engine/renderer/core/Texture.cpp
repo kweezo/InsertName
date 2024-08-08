@@ -5,15 +5,16 @@
 
 namespace renderer{
 
-std::vector<VkWriteDescriptorSet> _Texture::writeDescriptorSetsQueue = {};
-std::list<VkDescriptorImageInfo> _Texture::imageInfoList = {};
+std::vector<VkWriteDescriptorSet> i_Texture::writeDescriptorSetsQueue = {};
+std::list<VkDescriptorImageInfo> i_Texture::imageInfoList = {};
 
 //TODO delete image contents
 
-_Texture::_Texture(){
+i_Texture::i_Texture(): image(VK_NULL_HANDLE), sampler(VK_NULL_HANDLE), descriptorSet(VK_NULL_HANDLE), width(0), height(0), channels(0), data(nullptr),
+    shaders(), binding(-1), useCount(){
 }
 
-_Texture::_Texture(_TextureCreateInfo createInfo): shaders(createInfo.shaders), binding(createInfo.binding) {
+i_Texture::i_Texture(i_TextureCreateInfo createInfo): shaders(createInfo.shaders), binding(createInfo.binding) {
     LoadImageFile(createInfo.path);
     CreateImage();
     CreateSampler();
@@ -25,7 +26,7 @@ _Texture::_Texture(_TextureCreateInfo createInfo): shaders(createInfo.shaders), 
     useCount = std::make_shared<uint32_t>(1);
 }
 
-void _Texture::LoadImageFile(const std::string path){
+void i_Texture::LoadImageFile(const std::string path){
     data = stbi_load(path.c_str(), &width, &height,
      &channels, STBI_rgb_alpha);
 
@@ -34,8 +35,8 @@ void _Texture::LoadImageFile(const std::string path){
     }  
 }
 
-void _Texture::CreateImage(){
-    _ImageCreateInfo createInfo{};
+void i_Texture::CreateImage(){
+    i_ImageCreateInfo createInfo{};
 
     createInfo.layout = VK_IMAGE_LAYOUT_UNDEFINED;
     createInfo.format = VK_FORMAT_R8G8B8A8_SRGB; 
@@ -46,12 +47,12 @@ void _Texture::CreateImage(){
     createInfo.data = data;
     createInfo.copyToLocalDeviceMemory = true;
 
-    image = _Image(createInfo);
+    image = i_Image(createInfo);
 
     image.TransitionLayout(VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
 }
 
-void _Texture::CreateSampler(){
+void i_Texture::CreateSampler(){
     VkSamplerCreateInfo samplerInfo{};
     samplerInfo.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
     samplerInfo.magFilter = VK_FILTER_LINEAR;
@@ -60,7 +61,7 @@ void _Texture::CreateSampler(){
     samplerInfo.addressModeV = VK_SAMPLER_ADDRESS_MODE_REPEAT;
     samplerInfo.addressModeW = VK_SAMPLER_ADDRESS_MODE_REPEAT;
     samplerInfo.anisotropyEnable = Settings::GetInstance().anisotropyEnable;
-    samplerInfo.maxAnisotropy = std::min((float)Settings::GetInstance().anisotropy, (float)_Device::GetPhysicalDeviceProperties().limits.maxSamplerAnisotropy);
+    samplerInfo.maxAnisotropy = std::min((float)Settings::GetInstance().anisotropy, (float)i_Device::GetPhysicalDeviceProperties().limits.maxSamplerAnisotropy);
     samplerInfo.borderColor = VK_BORDER_COLOR_INT_OPAQUE_BLACK;
     samplerInfo.unnormalizedCoordinates = VK_FALSE;
     samplerInfo.compareEnable = VK_FALSE;
@@ -70,12 +71,12 @@ void _Texture::CreateSampler(){
     samplerInfo.minLod = 0.0f;
     samplerInfo.maxLod = 0.0f;
 
-    if(vkCreateSampler(_Device::GetDevice(), &samplerInfo, nullptr, &sampler) != VK_SUCCESS){
+    if(vkCreateSampler(i_Device::GetDevice(), &samplerInfo, nullptr, &sampler) != VK_SUCCESS){
         throw std::runtime_error("Failed to create texture sampler");
     }
 }
 
-void _Texture::SetBinding(uint32_t binding){
+void i_Texture::SetBinding(uint32_t binding){
     VkWriteDescriptorSet writeDescriptorSet{};
 
     writeDescriptorSet.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
@@ -92,21 +93,21 @@ void _Texture::SetBinding(uint32_t binding){
 
     writeDescriptorSet.pImageInfo = &imageInfoList.front();
 
-    for(std::weak_ptr<_Shader> shader : shaders){
+    for(std::weak_ptr<i_Shader> shader : shaders){
         writeDescriptorSet.dstSet = shader.lock()->GetDescriptorSet();
         writeDescriptorSetsQueue.push_back(writeDescriptorSet);
     }
 }
 
-void _Texture::Update(){
-    vkUpdateDescriptorSets(_Device::GetDevice(), writeDescriptorSetsQueue.size(), writeDescriptorSetsQueue.data(), 0, nullptr);
+void i_Texture::Update(){
+    vkUpdateDescriptorSets(i_Device::GetDevice(), writeDescriptorSetsQueue.size(), writeDescriptorSetsQueue.data(), 0, nullptr);
     writeDescriptorSetsQueue.clear();
     imageInfoList.clear();
 
-    _Image::Update();
+    i_Image::Update();
 }
 
-_Texture::_Texture(const _Texture& other){
+i_Texture::i_Texture(const i_Texture& other){
     if(other.useCount.get() == nullptr){
         return;
     }
@@ -124,7 +125,7 @@ _Texture::_Texture(const _Texture& other){
     (*useCount.get())++;
 }
 
-_Texture _Texture::operator=(const _Texture& other){
+i_Texture& i_Texture::operator=(const i_Texture& other){
     if(this == &other){
         return *this;
     }
@@ -150,13 +151,13 @@ _Texture _Texture::operator=(const _Texture& other){
     return *this;
 }
 
-void _Texture::Destruct(){
+void i_Texture::Destruct(){
     if(useCount.get() == nullptr){
         return;
     }
 
     if(*useCount.get() == 1){
-        vkDestroySampler(_Device::GetDevice(), sampler, nullptr);
+        vkDestroySampler(i_Device::GetDevice(), sampler, nullptr);
 
         useCount.reset();
         return;
@@ -166,7 +167,7 @@ void _Texture::Destruct(){
 
 }
 
-_Texture::~_Texture(){
+i_Texture::~i_Texture(){
     Destruct();
 }
 

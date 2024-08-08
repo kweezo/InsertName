@@ -12,22 +12,22 @@
 
 namespace renderer{
 
-struct _SemaphoreCreateInfo{
+struct i_SemaphoreCreateInfo{
 
 };
 
-class _Semaphore{
+class i_Semaphore{
 public:
-    _Semaphore();
-    _Semaphore(_SemaphoreCreateInfo createInfo);
-    ~_Semaphore();
+    i_Semaphore();
+    i_Semaphore(i_SemaphoreCreateInfo createInfo);
+    ~i_Semaphore();
 
-    _Semaphore(const _Semaphore& other);
-    _Semaphore& operator=(const _Semaphore& other);
+    i_Semaphore(const i_Semaphore& other);
+    i_Semaphore& operator=(const i_Semaphore& other);
 
-    bool IsInitialized() const;
+    [[nodiscard]] bool IsInitialized() const;
 
-    VkSemaphore GetSemaphore() const;
+    [[nodiscard]] VkSemaphore GetSemaphore() const;
 
     void Destruct();
 private:

@@ -1,8 +1,5 @@
 #pragma once
 
-#include <stdexcept>
-#include <thread>
-
 #include <vulkan/vulkan.h>
 
 #include "Device.hpp"
@@ -12,12 +9,12 @@
 
 namespace renderer{
 
-typedef struct _CommandPoolSet{
+typedef struct i_CommandPoolSet{
     VkCommandPool transferCommandPool;
     VkCommandPool graphicsCommandPool;
-}_CommandPoolSet;
+}i_CommandPoolSet;
 
-enum _CommandBufferType{ // necessary evil :(
+enum i_CommandBufferType{ // necessary evil :(
     GENERIC = 0,
     IMAGE = 1,
     DATA = 2,
@@ -28,7 +25,7 @@ enum _CommandBufferType{ // necessary evil :(
 };
 
 
-class _CommandPool{
+class i_CommandPool{
 public:
     static void Init();
     static void Cleanup();
@@ -39,7 +36,7 @@ public:
 
     static VkCommandPool ResetPool(uint32_t poolID);// TODO implement lol
 private:
-    static std::vector<_CommandPoolSet> commandPools;
+    static std::vector<i_CommandPoolSet> commandPools;
 
     static void CreateCommandPool(uint32_t poolID);
 };

@@ -19,7 +19,7 @@ void Window::CreateWindowContext(int width, int height, const char* title){
     glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE);
     
 
-    window = glfwCreateWindow(width, height, title, NULL, NULL);
+    window = glfwCreateWindow(width, height, title, nullptr, nullptr);
     if (!window) {
         throw std::runtime_error("Failed to create GLFW window");
     }
@@ -50,7 +50,7 @@ void Window::Init(){
             throw std::runtime_error("failed to create window surface!");
         }
     #else
-        if(glfwCreateWindowSurface(renderer::_Instance::GetInstance(), window, nullptr, &surface) != VK_SUCCESS){
+        if(glfwCreateWindowSurface(renderer::i_Instance::GetInstance(), window, nullptr, &surface) != VK_SUCCESS){
             throw std::runtime_error("Failed to create window surface!");
         }
     #endif

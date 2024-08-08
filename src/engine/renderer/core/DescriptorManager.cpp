@@ -2,13 +2,13 @@
 
 namespace renderer{
 
-const uint32_t DESCRIPTOR_TYPE_COUNT = 10;
+constexpr uint32_t DESCRIPTOR_TYPE_COUNT = 10 ;
 
-std::list<VkDescriptorPool> _DescriptorManager::descriptorPools = {};
-std::vector<VkDescriptorSetLayout> _DescriptorManager::descriptorLayouts = {};
-boost::container::flat_map<VkDescriptorPool, std::vector<VkDescriptorSet>> _DescriptorManager::descriptorSets = {};
+std::list<VkDescriptorPool> i_DescriptorManager::descriptorPools = {};
+std::vector<VkDescriptorSetLayout> i_DescriptorManager::descriptorLayouts = {};
+boost::container::flat_map<VkDescriptorPool, std::vector<VkDescriptorSet>> i_DescriptorManager::descriptorSets = {};
 
-std::vector<_DescriptorSetLocation> _DescriptorManager::AllocateDescriptorSetBatch(_DescriptorSetBatchAllocateInfo allocInfo){
+std::vector<i_DescriptorSetLocation> i_DescriptorManager::AllocateDescriptorSetBatch(i_DescriptorSetBatchAllocateInfo allocInfo){
 
     std::vector<VkDescriptorSetLayout> currentDescriptorLayouts(allocInfo.descriptorLayoutBindings.size());
 
@@ -20,7 +20,7 @@ std::vector<_DescriptorSetLocation> _DescriptorManager::AllocateDescriptorSetBat
         layoutCreateInfo.bindingCount = allocInfo.descriptorLayoutBindings[i].size();
 
         VkDescriptorSetLayout layout;
-        if(vkCreateDescriptorSetLayout(_Device::GetDevice(), &layoutCreateInfo, nullptr, &layout) != VK_SUCCESS){
+        if(vkCreateDescriptorSetLayout(i_Device::GetDevice(), &layoutCreateInfo, nullptr, &layout) != VK_SUCCESS){
             throw std::runtime_error("Failed to create a descriptor layout");
         }
 
@@ -31,7 +31,7 @@ std::vector<_DescriptorSetLocation> _DescriptorManager::AllocateDescriptorSetBat
 
     std::vector<VkDescriptorPoolSize> descriptorPoolSizes(DESCRIPTOR_TYPE_COUNT);
     for(uint32_t i = 0; i < DESCRIPTOR_TYPE_COUNT; i++){
-        descriptorPoolSizes[i].type = (VkDescriptorType)i;
+        descriptorPoolSizes[i].type = static_cast<VkDescriptorType>(i);
         descriptorPoolSizes[i].descriptorCount = 0;
     }
 
@@ -55,7 +55,7 @@ std::vector<_DescriptorSetLocation> _DescriptorManager::AllocateDescriptorSetBat
     poolCreateInfo.pPoolSizes = descriptorPoolSizes.data();
 
     descriptorPools.push_front({});
-    if(vkCreateDescriptorPool(_Device::GetDevice(), &poolCreateInfo, nullptr, &descriptorPools.front()) != VK_SUCCESS){
+    if(vkCreateDescriptorPool(i_Device::GetDevice(), &poolCreateInfo, nullptr, &descriptorPools.front()) != VK_SUCCESS){
         throw std::runtime_error("Failed to create a descriptor pool");
     }
     descriptorSets[descriptorPools.back()].resize(allocInfo.descriptorLayoutBindings.size());
@@ -67,35 +67,35 @@ std::vector<_DescriptorSetLocation> _DescriptorManager::AllocateDescriptorSetBat
     descriptorSetAllocInfo.descriptorSetCount = currentDescriptorLayouts.size();
     descriptorSetAllocInfo.pSetLayouts = currentDescriptorLayouts.data();
 
-    if(vkAllocateDescriptorSets(_Device::GetDevice(), &descriptorSetAllocInfo, descriptorSets[descriptorPools.front()].data()) != VK_SUCCESS){
+    if(vkAllocateDescriptorSets(i_Device::GetDevice(), &descriptorSetAllocInfo, descriptorSets[descriptorPools.front()].data()) != VK_SUCCESS){
         throw std::runtime_error("Failed to allocate descriptor sets");
     }
 
-    std::vector<_DescriptorSetLocation> descriptorSetLocations(currentDescriptorLayouts.size());
+    std::vector<i_DescriptorSetLocation> descriptorSetLocations(currentDescriptorLayouts.size());
 
     for(uint32_t i = 0; i < descriptorSetLocations.size(); i++){
-        descriptorSetLocations[i].key = (uint64_t)descriptorPools.front();
+        descriptorSetLocations[i].key = reinterpret_cast<uint64_t>(descriptorPools.front());
         descriptorSetLocations[i].index = i;
     }
 
     return descriptorSetLocations;
 }
 
-std::vector<VkDescriptorSetLayout> _DescriptorManager::GetLayouts(){
+std::vector<VkDescriptorSetLayout> i_DescriptorManager::GetLayouts(){
     return descriptorLayouts;
 }
 
-VkDescriptorSet _DescriptorManager::RetrieveDescriptorSet(_DescriptorSetLocation location){
-    return descriptorSets[(VkDescriptorPool)location.key][location.index];
+VkDescriptorSet i_DescriptorManager::RetrieveDescriptorSet(i_DescriptorSetLocation location){
+    return descriptorSets[reinterpret_cast<VkDescriptorPool>(location.key)][location.index];
 }
 
-void _DescriptorManager::Cleanup(){
+void i_DescriptorManager::Cleanup(){
     for(VkDescriptorPool descriptorPool : descriptorPools){
-        vkDestroyDescriptorPool(_Device::GetDevice(), descriptorPool, nullptr);
+        vkDestroyDescriptorPool(i_Device::GetDevice(), descriptorPool, nullptr);
     }
 
     for(VkDescriptorSetLayout descriptorLayout : descriptorLayouts){
-        vkDestroyDescriptorSetLayout(_Device::GetDevice(), descriptorLayout, nullptr);
+        vkDestroyDescriptorSetLayout(i_Device::GetDevice(), descriptorLayout, nullptr);
     }
 }
 

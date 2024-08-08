@@ -13,20 +13,20 @@
 
 namespace renderer{
 
-struct _DescriptorSetLocation{
+struct i_DescriptorSetLocation{
     uint64_t key;
     uint32_t index;
 };
 
-struct _DescriptorSetBatchAllocateInfo{
+struct i_DescriptorSetBatchAllocateInfo{
     std::vector<std::vector<VkDescriptorSetLayoutBinding>> descriptorLayoutBindings;    
 };
 
-class _DescriptorManager {
+class i_DescriptorManager {
 public:
 
-    static std::vector<_DescriptorSetLocation> AllocateDescriptorSetBatch(_DescriptorSetBatchAllocateInfo allocInfo);
-    static VkDescriptorSet RetrieveDescriptorSet(_DescriptorSetLocation location);
+    static std::vector<i_DescriptorSetLocation> AllocateDescriptorSetBatch(i_DescriptorSetBatchAllocateInfo allocInfo);
+    static VkDescriptorSet RetrieveDescriptorSet(i_DescriptorSetLocation location);
     
     static std::vector<VkDescriptorSetLayout> GetLayouts();
 

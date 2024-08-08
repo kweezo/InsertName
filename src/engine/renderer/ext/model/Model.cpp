@@ -2,31 +2,31 @@
 
 namespace renderer{
 
-std::vector<std::shared_ptr<_Model>> ModelManager::models = {};
+std::vector<std::shared_ptr<i_Model>> ModelManager::models = {};
 
-ModelHandle ModelManager::Create(_ModelCreateInfo createInfo){
-    models.emplace_back(std::make_shared<_Model>(createInfo));
+ModelHandle ModelManager::Create(i_ModelCreateInfo createInfo){
+    models.emplace_back(std::make_shared<i_Model>(createInfo));
 
     return models.back();
 }
 
 void ModelManager::Destoy(ModelHandle handle){
-    std::vector<std::shared_ptr<_Model>>::iterator it = std::find(models.begin(), models.end(), handle.lock());
+    std::vector<std::shared_ptr<i_Model>>::iterator it = std::find(models.begin(), models.end(), handle.lock());
     if(it == models.end()){
         throw std::runtime_error("Tried to erase a nonexistent model!");
     }
     models.erase(it);
 }
 
-void ModelManager::_Cleanup(){
+void ModelManager::i_Cleanup(){
     models.clear();
 }
 
-_Model::_Model(_ModelCreateInfo createInfo): createInfo(createInfo){
+i_Model::i_Model(i_ModelCreateInfo createInfo): createInfo(createInfo){
     LoadModelFile();
 }
 
-void _Model::LoadModelFile(){
+void i_Model::LoadModelFile(){
     Assimp::Importer importer;
     const aiScene* scene = importer.ReadFile(createInfo.path, aiProcess_Triangulate | aiProcess_FlipUVs |
      aiProcess_GenNormals);
@@ -38,14 +38,14 @@ void _Model::LoadModelFile(){
     ProcessNode(scene->mRootNode, scene);
 }
 
-void _Model::ProcessNode(aiNode* node, const aiScene* scene){
+void i_Model::ProcessNode(aiNode* node, const aiScene* scene){
     for(uint32_t i = 0; i < node->mNumMeshes; i++){
         aiMesh* mesh = scene->mMeshes[node->mMeshes[i]];
-        std::vector<_BasicMeshVertex> vertices;
+        std::vector<i_BasicMeshVertex> vertices;
         std::vector<uint32_t> indices;
 
         for(uint32_t j = 0; j < mesh->mNumVertices; j++){
-            _BasicMeshVertex vertex;
+            i_BasicMeshVertex vertex;
             vertex.pos = glm::vec3(mesh->mVertices[j].x, mesh->mVertices[j].y, mesh->mVertices[j].z);
             vertex.texCoord = glm::vec2(mesh->mTextureCoords[0][j].x, mesh->mTextureCoords[0][j].y);
             vertex.normal = glm::vec3(mesh->mNormals[j].x, mesh->mNormals[j].y, mesh->mNormals[j].z);
@@ -59,7 +59,7 @@ void _Model::ProcessNode(aiNode* node, const aiScene* scene){
             }
         }
 
-        _TextureMaps textureMaps{};
+        i_TextureMaps textureMaps{};
 
 
         if(mesh->mMaterialIndex >= 0){
@@ -69,22 +69,22 @@ void _Model::ProcessNode(aiNode* node, const aiScene* scene){
                 aiString path;
                 material->GetTexture(aiTextureType_BASE_COLOR, 0, &path);
 
-                _TextureCreateInfo createInfo;
+                i_TextureCreateInfo createInfo;
                 createInfo.binding = 1;
                 createInfo.path = std::string(path.C_Str());
-                createInfo.shaders = _ShaderManager::GetShaderCategory("models");
+                createInfo.shaders = i_ShaderManager::GetShaderCategory("models");
 
-                textureMaps.albedoMap = std::make_shared<_Texture>(createInfo);
+                textureMaps.albedoMap = std::make_shared<i_Texture>(createInfo);
             }
             else{
                 std::cerr << "No texture found for mesh or there is more than one, neither is supported (yet) for model: " << createInfo.path << "\n";
 
-                _TextureCreateInfo createInfo;
+                i_TextureCreateInfo createInfo;
                 createInfo.binding = 1;
                 createInfo.path = std::string(MISSING_TEXTURE_PATH);
-                createInfo.shaders = _ShaderManager::GetShaderCategory("models");
+                createInfo.shaders = i_ShaderManager::GetShaderCategory("models");
 
-                textureMaps.albedoMap = std::make_shared<_Texture>(createInfo);
+                textureMaps.albedoMap = std::make_shared<i_Texture>(createInfo);
             }
             //TODO: add support for other maps
         }
@@ -98,21 +98,21 @@ void _Model::ProcessNode(aiNode* node, const aiScene* scene){
 
 }
 
-void _Model::RecordDrawCommands(_CommandBuffer& commandBuffer, uint32_t instanceCount){
-    for(_Mesh& mesh : meshes){
+void i_Model::RecordDrawCommands(i_CommandBuffer& commandBuffer, uint32_t instanceCount){
+    for(i_Mesh& mesh : meshes){
         mesh.RecordDrawCommands(commandBuffer, instanceCount);
     }
 }
 
-std::function<void(void)> _Model::GetExtraDrawCommands(){
+std::function<void(void)> i_Model::GetExtraDrawCommands(){
     return createInfo.extraDrawCalls;
 }
 
-std::weak_ptr<_Shader> _Model::GetShader(){
+std::weak_ptr<i_Shader> i_Model::GetShader(){
     return createInfo.shader;
 }
 
-std::string _Model::GetName(){
+std::string i_Model::GetName(){
     return createInfo.name;
 }
 

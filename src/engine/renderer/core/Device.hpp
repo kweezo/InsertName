@@ -1,7 +1,5 @@
 #pragma once
 
-#include <stdexcept>
-#include <iostream>
 #include <vector>
 
 #include <vulkan/vulkan.h>
@@ -10,17 +8,17 @@
 
 namespace renderer{
 
-typedef struct _QueueFamilyInfo{
+typedef struct i_QueueFamilyInfo{
     bool graphicsFamilyFound = false;
     bool transferFamilyFound = false;
 
 
     VkDeviceQueueCreateInfo graphicsQueueCreateInfo{};
     VkDeviceQueueCreateInfo transferQueueCreateInfo{};
-} _QueueFamilyInfo;
+} i_QueueFamilyInfo;
 
 
-class _Device{
+class i_Device{
 public:
     static void Init();
     static void Cleanup();
@@ -31,7 +29,7 @@ public:
     static VkQueue GetGraphicsQueue();
     static VkQueue GetTransferQueue();
 
-    static _QueueFamilyInfo GetQueueFamilyInfo();
+    static i_QueueFamilyInfo GetQueueFamilyInfo();
     static VkPhysicalDeviceProperties GetPhysicalDeviceProperties();
 
     static bool DeviceMemoryFree();
@@ -55,7 +53,7 @@ private:
     static bool deviceMemoryFree;
     static bool initialized;
 
-    static _QueueFamilyInfo queueFamilyInfo;
+    static i_QueueFamilyInfo queueFamilyInfo;
 
     static void PickPhysicalDevice();
     static void CreateLogicalDevice();

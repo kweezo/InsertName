@@ -2,45 +2,39 @@
 
 
 #include <vector>
-#include <string>
-#include <stdexcept>
 #include <memory>
-#include <tuple>
-#include <thread>
 #include <list>
 
 #include <vulkan/vulkan.h>
 
 #include "DataBuffer.hpp"
-#include "DescriptorManager.hpp"
-#include "CommandBuffer.hpp"
 #include "Shader.hpp"
 
 #define UNIFORM_BUFFER_COMMAND_BUFFERS_PER_THREAD 1
 
 namespace renderer{
 
-struct _UniformBufferCreateInfo{
+struct i_UniformBufferCreateInfo{
     uint32_t binding;
     uint32_t threadIndex;
 
-    std::vector<std::weak_ptr<_Shader>> shaders;
+    std::vector<std::weak_ptr<i_Shader>> shaders;
 
     void* data;
     size_t size;
 };
 
 
-class _UniformBuffer{
+class i_UniformBuffer{
 public:
     static void Update();
 
-    _UniformBuffer();
-    _UniformBuffer(_UniformBufferCreateInfo createInfo);
+    i_UniformBuffer();
+    i_UniformBuffer(const i_UniformBufferCreateInfo& createInfo);
 
-    _UniformBuffer(const _UniformBuffer& other);
-    _UniformBuffer& operator=(const _UniformBuffer& other);
-    ~_UniformBuffer();
+    i_UniformBuffer(const i_UniformBuffer& other);
+    i_UniformBuffer& operator=(const i_UniformBuffer& other);
+    ~i_UniformBuffer();
 
     void SetBinding(uint32_t binding);
 
@@ -49,11 +43,11 @@ public:
     void Destructor();
 private:
 
-    _DataBuffer dataBuffer;
+    i_DataBuffer dataBuffer;
 
     size_t size;
     uint32_t binding;
-    std::vector<std::weak_ptr<_Shader>> shaders;
+    std::vector<std::weak_ptr<i_Shader>> shaders;
 
     std::shared_ptr<uint32_t> useCount;
 

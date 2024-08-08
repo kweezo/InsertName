@@ -3,38 +3,38 @@
 
 namespace renderer{
 
-std::vector<VkWriteDescriptorSet> _UniformBuffer::writeDescriptorSetsQueue = {};
-std::list<VkDescriptorBufferInfo> _UniformBuffer::bufferInfoList = {};
+std::vector<VkWriteDescriptorSet> i_UniformBuffer::writeDescriptorSetsQueue = {};
+std::list<VkDescriptorBufferInfo> i_UniformBuffer::bufferInfoList = {};
 
-void _UniformBuffer::Update(){
-    vkUpdateDescriptorSets(_Device::GetDevice(), writeDescriptorSetsQueue.size(), writeDescriptorSetsQueue.data(),
+void i_UniformBuffer::Update(){
+    vkUpdateDescriptorSets(i_Device::GetDevice(), writeDescriptorSetsQueue.size(), writeDescriptorSetsQueue.data(),
     0, nullptr);
     writeDescriptorSetsQueue.clear();
     bufferInfoList.clear();
 }
 
-_UniformBuffer::_UniformBuffer(){
+i_UniformBuffer::i_UniformBuffer(): size(0), binding(-1){
 
 }
 
-_UniformBuffer::_UniformBuffer(_UniformBufferCreateInfo createInfo): size(createInfo.size), binding(createInfo.binding), 
+i_UniformBuffer::i_UniformBuffer(const i_UniformBufferCreateInfo& createInfo): size(createInfo.size), binding(createInfo.binding),
 shaders(createInfo.shaders) {
 
-    _DataBufferCreateInfo dataBufferCreateInfo{};
+    i_DataBufferCreateInfo dataBufferCreateInfo{};
     dataBufferCreateInfo.size = size;
     dataBufferCreateInfo.data = createInfo.data;
     dataBufferCreateInfo.transferToLocalDeviceMemory = true;
     dataBufferCreateInfo.usage = VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT;
     dataBufferCreateInfo.isDynamic = true;
 
-    dataBuffer = _DataBuffer(dataBufferCreateInfo);
+    dataBuffer = i_DataBuffer(dataBufferCreateInfo);
 
     SetBinding(binding);
 
     useCount = std::make_shared<uint32_t>(1);
 }
 
-void _UniformBuffer::UpdateData(void* data, size_t size, uint32_t threadIndex){
+void i_UniformBuffer::UpdateData(void* data, size_t size, uint32_t threadIndex){
     if(this->size != size){
         throw std::runtime_error("Data size mismatch when trying to update uniform buffer data, expected size: " +
          std::to_string(this->size) + " actual size: " + std::to_string(size));
@@ -43,7 +43,7 @@ void _UniformBuffer::UpdateData(void* data, size_t size, uint32_t threadIndex){
     dataBuffer.UpdateData(data, size, threadIndex);
 }
 
-void _UniformBuffer::SetBinding(uint32_t binding){
+void i_UniformBuffer::SetBinding(uint32_t binding){
     VkWriteDescriptorSet writeDescriptorSet = {};
     writeDescriptorSet.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
     writeDescriptorSet.dstBinding = binding;
@@ -60,7 +60,7 @@ void _UniformBuffer::SetBinding(uint32_t binding){
 
     writeDescriptorSet.pBufferInfo = &bufferInfoList.front();
 
-    for(std::weak_ptr<_Shader> shader : shaders){
+    for(const std::weak_ptr<i_Shader>& shader : shaders){
         writeDescriptorSet.dstSet = shader.lock()->GetDescriptorSet();
         writeDescriptorSetsQueue.push_back(writeDescriptorSet);
     }
@@ -68,8 +68,8 @@ void _UniformBuffer::SetBinding(uint32_t binding){
     this->binding = binding;
 }
 
-_UniformBuffer::_UniformBuffer(const _UniformBuffer& other){
-    if(other.useCount.get() == nullptr){
+i_UniformBuffer::i_UniformBuffer(const i_UniformBuffer& other){
+    if(other.useCount == nullptr){
         return;
     }
 
@@ -79,15 +79,15 @@ _UniformBuffer::_UniformBuffer(const _UniformBuffer& other){
     shaders = other.shaders;
 
     useCount = other.useCount;
-    (*useCount.get())++;
+    (*useCount)++;
 }
 
-_UniformBuffer&  _UniformBuffer::operator=(const _UniformBuffer& other){
+i_UniformBuffer&  i_UniformBuffer::operator=(const i_UniformBuffer& other){
     if(this == &other){
         return *this;
     }
 
-    if(other.useCount.get() == nullptr){
+    if(other.useCount == nullptr){
         return *this;
     }
 
@@ -99,17 +99,17 @@ _UniformBuffer&  _UniformBuffer::operator=(const _UniformBuffer& other){
     shaders = other.shaders;
 
     useCount = other.useCount;
-    (*useCount.get())++;
+    (*useCount)++;
 
     return *this;
 }
 
-void _UniformBuffer::Destructor(){
-    if(useCount.get() == nullptr){
+void i_UniformBuffer::Destructor(){
+    if(useCount == nullptr){
         return;
     }
 
-    if(*useCount.get() <= 1){
+    if(*useCount <= 1){
         dataBuffer.Destruct();
 
         useCount.reset();
@@ -117,10 +117,10 @@ void _UniformBuffer::Destructor(){
         return;
     }
 
-    (*useCount.get())--;
+    (*useCount)--;
 }
 
-_UniformBuffer::~_UniformBuffer(){
+i_UniformBuffer::~i_UniformBuffer(){
     Destructor();
 }
 

@@ -2,53 +2,58 @@
 
 namespace renderer{
 
-const uint32_t TARGET_SECONDARY_BUFFER_COUNT_PER_THREAD = 5;
+constexpr uint32_t TARGET_SECONDARY_BUFFER_COUNT_PER_THREAD = 5;
     
-std::vector<std::vector<std::pair<_CommandBuffer, bool>>> _Image::secondaryCommandBuffers = {};
-_Fence _Image::commandBuffersFinishedExecutionFence ={};
-std::set<uint32_t> _Image::commandPoolResetIndexes = {};
-std::list<std::shared_ptr<_DataBuffer>> _Image::bufferCleanupQueue = { };
-bool _Image::anyCommandBuffersRecorded = false;
-std::vector<VkWriteDescriptorSet> _Image::writeDescriptorSetsQueue = {};
+std::vector<std::vector<std::pair<i_CommandBuffer, bool>>> i_Image::secondaryCommandBuffers = {};
+i_Fence i_Image::commandBuffersFinishedExecutionFence ={};
+std::set<uint32_t> i_Image::commandPoolResetIndexes = {};
+std::list<std::shared_ptr<i_DataBuffer>> i_Image::bufferCleanupQueue = { };
+bool i_Image::anyCommandBuffersRecorded = false;
+std::vector<VkWriteDescriptorSet> i_Image::writeDescriptorSetsQueue = {};
 
 
-void _Image::Init(){
+void i_Image::Init(){
     CreateCommmandBuffers();
 
-    commandBuffersFinishedExecutionFence = _Fence(false);
+    commandBuffersFinishedExecutionFence = i_Fence(false);
 }
 
-void _Image::Update(){
+void i_Image::Update(){
     SubmitCommandBuffers();
     UpdateCleanup();
 }
 
-void _Image::Cleanup(){
+void i_Image::Cleanup(){
     secondaryCommandBuffers.clear();
-    commandBuffersFinishedExecutionFence.~_Fence();
+    commandBuffersFinishedExecutionFence.~i_Fence();
 }
 
-VkFormat _Image::GetSupportedFormat(std::vector<VkFormat> candidates, VkImageTiling tiling, VkFormatFeatureFlags features){
+VkFormat i_Image::GetSupportedFormat(const std::vector<VkFormat>& candidates, VkImageTiling tiling, VkFormatFeatureFlags features){
     for (VkFormat format : candidates) {
         VkFormatProperties props;
-        vkGetPhysicalDeviceFormatProperties(_Device::GetPhysicalDevice(), format, &props);
+        vkGetPhysicalDeviceFormatProperties(i_Device::GetPhysicalDevice(), format, &props);
 
-        if (tiling == VK_IMAGE_TILING_LINEAR && (props.linearTilingFeatures & features) == features) {
-            return format;
-        } else if (tiling == VK_IMAGE_TILING_OPTIMAL && (props.optimalTilingFeatures & features) == features) {
-            return format;
+        if((props.linearTilingFeatures & features) == features) {
+
+            if (tiling == VK_IMAGE_TILING_LINEAR) {
+                return format;
+            }
+
+            if (tiling == VK_IMAGE_TILING_OPTIMAL) {
+                return format;
+            }
         }
     }
 
     throw std::runtime_error("failed to find supported format!");
 }
 
-inline bool _Image::HasStencilComponent(VkFormat format){
+inline bool i_Image::HasStencilComponent(VkFormat format){
     return format == VK_FORMAT_D32_SFLOAT_S8_UINT || format == VK_FORMAT_D24_UNORM_S8_UINT;
 }
 
 
-void _Image::SubmitCommandBuffers(){
+void i_Image::SubmitCommandBuffers(){
     if(!anyCommandBuffersRecorded){
         return;
     }
@@ -58,10 +63,10 @@ void _Image::SubmitCommandBuffers(){
 
     std::vector<VkCommandBuffer> recordedCommandBuffers{};
 
-    for(std::vector<std::pair<_CommandBuffer, bool>>& commandBuffers : secondaryCommandBuffers){
-        for(std::pair<_CommandBuffer, bool>& commandBuffer : commandBuffers){
+    for(std::vector<std::pair<i_CommandBuffer, bool>>& commandBuffers : secondaryCommandBuffers){
+        for(std::pair<i_CommandBuffer, bool>& commandBuffer : commandBuffers){
             if(!std::get<bool>(commandBuffer)){
-                recordedCommandBuffers.push_back(std::get<_CommandBuffer>(commandBuffer).GetCommandBuffer());
+                recordedCommandBuffers.push_back(std::get<i_CommandBuffer>(commandBuffer).GetCommandBuffer());
             }
         }
     }
@@ -71,74 +76,74 @@ void _Image::SubmitCommandBuffers(){
     submitInfo.commandBufferCount = recordedCommandBuffers.size();
     submitInfo.pCommandBuffers = recordedCommandBuffers.data();
 
-    if(vkQueueSubmit(_Device::GetTransferQueue(), 1, &submitInfo, commandBuffersFinishedExecutionFence.GetFence()) != VK_SUCCESS){
+    if(vkQueueSubmit(i_Device::GetTransferQueue(), 1, &submitInfo, commandBuffersFinishedExecutionFence.GetFence()) != VK_SUCCESS){
         throw std::runtime_error("Failed to submit data buffer command buffer");
     }
-    vkWaitForFences(_Device::GetDevice(), 1, &finishedCopyingFenceRaw, VK_TRUE, std::numeric_limits<uint64_t>::max());
-    vkResetFences(_Device::GetDevice(), 1, &finishedCopyingFenceRaw);
+    vkWaitForFences(i_Device::GetDevice(), 1, &finishedCopyingFenceRaw, VK_TRUE, std::numeric_limits<uint64_t>::max());
+    vkResetFences(i_Device::GetDevice(), 1, &finishedCopyingFenceRaw);
     
 }
 
-void _Image::UpdateCleanup(){
+void i_Image::UpdateCleanup(){
     for(uint32_t i : commandPoolResetIndexes){
-        _CommandBuffer::ResetPools(_CommandBufferType::IMAGE, i); 
+        i_CommandBuffer::ResetPools(i_CommandBufferType::IMAGE, i); 
     }
     anyCommandBuffersRecorded = false;
 
     bufferCleanupQueue.clear();
 }
 
-_CommandBuffer _Image::GetFreeCommandBuffer(uint32_t threadIndex){
+i_CommandBuffer i_Image::GetFreeCommandBuffer(uint32_t threadIndex){
     anyCommandBuffersRecorded = true; // TODO CHECK ON THIS FUNCTION SHOULDNT BE WORKING
 
-    for(std::pair<_CommandBuffer, bool>& commandBuffer : secondaryCommandBuffers[threadIndex]){
+    for(std::pair<i_CommandBuffer, bool>& commandBuffer : secondaryCommandBuffers[threadIndex]){
         if(std::get<bool>(commandBuffer)){
             std::get<bool>(commandBuffer) = false;
-            return std::get<_CommandBuffer>(commandBuffer);
+            return std::get<i_CommandBuffer>(commandBuffer);
         }
     }
 
 
-    _CommandBufferCreateInfo secondaryCommandBufferInfo;
-    secondaryCommandBufferInfo.type = _CommandBufferType::IMAGE;
+    i_CommandBufferCreateInfo secondaryCommandBufferInfo{};
+    secondaryCommandBufferInfo.type = i_CommandBufferType::IMAGE;
     secondaryCommandBufferInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
     secondaryCommandBufferInfo.flags = COMMAND_POOL_TYPE_TRANSFER;
     secondaryCommandBufferInfo.threadIndex = threadIndex;
 
-    secondaryCommandBuffers[threadIndex].push_back({_CommandBuffer(secondaryCommandBufferInfo), false});
-    return std::get<_CommandBuffer>(secondaryCommandBuffers[threadIndex].back());
+    secondaryCommandBuffers[threadIndex].emplace_back(i_CommandBuffer(secondaryCommandBufferInfo), false);
+    return std::get<i_CommandBuffer>(secondaryCommandBuffers[threadIndex].back());
 }
 
-void _Image::CreateCommmandBuffers(){
+void i_Image::CreateCommmandBuffers(){
     uint32_t i = 0;
     secondaryCommandBuffers.resize(std::thread::hardware_concurrency());
-    for(std::vector<std::pair<_CommandBuffer, bool>>& commandBuffers : secondaryCommandBuffers){
+    for(std::vector<std::pair<i_CommandBuffer, bool>>& commandBuffers : secondaryCommandBuffers){
 
-        _CommandBufferCreateInfo stagingCommandBufferInfo;
-        stagingCommandBufferInfo.type = _CommandBufferType::IMAGE;
+        i_CommandBufferCreateInfo stagingCommandBufferInfo{};
+        stagingCommandBufferInfo.type = i_CommandBufferType::IMAGE;
         stagingCommandBufferInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
         stagingCommandBufferInfo.flags = COMMAND_POOL_TYPE_TRANSFER; 
         stagingCommandBufferInfo.threadIndex = i;
 
-        commandBuffers = std::vector<std::pair<_CommandBuffer, bool>>(TARGET_SECONDARY_BUFFER_COUNT_PER_THREAD);
+        commandBuffers = std::vector<std::pair<i_CommandBuffer, bool>>(TARGET_SECONDARY_BUFFER_COUNT_PER_THREAD);
 
-        for(std::pair<_CommandBuffer, bool>& commandBuffer : commandBuffers){
+        for(std::pair<i_CommandBuffer, bool>& commandBuffer : commandBuffers){
             std::get<bool>(commandBuffer) = true;
-            std::get<_CommandBuffer>(commandBuffer) = _CommandBuffer(stagingCommandBufferInfo);
+            std::get<i_CommandBuffer>(commandBuffer) = i_CommandBuffer(stagingCommandBufferInfo);
         }
 
         i = (i + 1) % std::thread::hardware_concurrency();
     }
 }
 
-_Image::_Image(){
+i_Image::i_Image(): image(VK_NULL_HANDLE), imageView(VK_NULL_HANDLE), memory(VK_NULL_HANDLE), createInfo() {
 }
 
-_Image::_Image(_ImageCreateInfo createInfo): createInfo(createInfo) {
+i_Image::i_Image(const i_ImageCreateInfo& createInfo): image(VK_NULL_HANDLE), imageView(VK_NULL_HANDLE), memory(VK_NULL_HANDLE), createInfo(createInfo) {
     CreateImage();
     AllocateMemory();
 
-    vkBindImageMemory(_Device::GetDevice(), image, memory, 0);
+    vkBindImageMemory(i_Device::GetDevice(), image, memory, 0);
 
     CreateImageView();
     TransitionLayout(VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
@@ -149,29 +154,29 @@ _Image::_Image(_ImageCreateInfo createInfo): createInfo(createInfo) {
         return;
     }
 
-    if(_Device::DeviceMemoryFree() && createInfo.copyToLocalDeviceMemory){
+    if(i_Device::DeviceMemoryFree() && createInfo.copyToLocalDeviceMemory){
         
-        waitSemaphore = _Semaphore(_SemaphoreCreateInfo{});
+        waitSemaphore = i_Semaphore(i_SemaphoreCreateInfo{});
 
-        _DataBufferCreateInfo bufferCreateInfo{};
+        i_DataBufferCreateInfo bufferCreateInfo{};
         bufferCreateInfo.data = createInfo.data;
         bufferCreateInfo.size = createInfo.size;
         bufferCreateInfo.isDynamic = false;
         bufferCreateInfo.transferToLocalDeviceMemory = false;
         bufferCreateInfo.usage = VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
 
-        stagingBuffer = std::make_shared<_DataBuffer>(_DataBuffer(bufferCreateInfo));
+        stagingBuffer = std::make_shared<i_DataBuffer>(i_DataBuffer(bufferCreateInfo));
 
         CopyDataToDevice();
     }else{
-        _DataBuffer::UploadDataToMemory(memory, createInfo.data, createInfo.size);
+        i_DataBuffer::UploadDataToMemory(memory, createInfo.data, createInfo.size);
     }
 }
 
-void _Image::CreateImage(){
+void i_Image::CreateImage(){
     VkImageCreateInfo imageInfo{};
 
-    _QueueFamilyInfo queueFamilyInfo = _Device::GetQueueFamilyInfo();
+    i_QueueFamilyInfo queueFamilyInfo = i_Device::GetQueueFamilyInfo();
     if(queueFamilyInfo.transferFamilyFound){
         imageInfo.queueFamilyIndexCount = 2;
 
@@ -185,7 +190,7 @@ void _Image::CreateImage(){
         imageInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
     }
 
-    if(!_Device::DeviceMemoryFree()){
+    if(!i_Device::DeviceMemoryFree()){
         createInfo.copyToLocalDeviceMemory = false;
     }
 
@@ -205,17 +210,17 @@ void _Image::CreateImage(){
     imageInfo.initialLayout = createInfo.layout;
     imageInfo.samples = VK_SAMPLE_COUNT_1_BIT;
 
-    if(vkCreateImage(_Device::GetDevice(), &imageInfo, nullptr, &image) != VK_SUCCESS){
+    if(vkCreateImage(i_Device::GetDevice(), &imageInfo, nullptr, &image) != VK_SUCCESS){
         throw std::runtime_error("Failed to create an image");
     }
 }
 
-void _Image::AllocateMemory(){
+void i_Image::AllocateMemory(){
     VkMemoryRequirements memRequirements;
-    vkGetImageMemoryRequirements(_Device::GetDevice(), image, &memRequirements);
+    vkGetImageMemoryRequirements(i_Device::GetDevice(), image, &memRequirements);
 
     VkPhysicalDeviceMemoryProperties memProperties;
-    vkGetPhysicalDeviceMemoryProperties(_Device::GetPhysicalDevice(), &memProperties);
+    vkGetPhysicalDeviceMemoryProperties(i_Device::GetPhysicalDevice(), &memProperties);
 
 
     VkMemoryPropertyFlags memoryProperties = createInfo.copyToLocalDeviceMemory ? 
@@ -230,7 +235,7 @@ void _Image::AllocateMemory(){
             allocInfo.allocationSize = memRequirements.size;
             allocInfo.memoryTypeIndex = i;
 
-            if(vkAllocateMemory(_Device::GetDevice(), &allocInfo, nullptr, &memory) != VK_SUCCESS){
+            if(vkAllocateMemory(i_Device::GetDevice(), &allocInfo, nullptr, &memory) != VK_SUCCESS){
                 throw std::runtime_error("Failed to allocate vertex buffer memory");
             }
             return;
@@ -240,7 +245,7 @@ void _Image::AllocateMemory(){
     throw std::runtime_error("Failed to find a suitable memory type for VkImage");
 }
 
-void _Image::CreateImageView(){
+void i_Image::CreateImageView(){
     VkImageViewCreateInfo createInfo{};
 
     createInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
@@ -261,14 +266,14 @@ void _Image::CreateImageView(){
         1
     };// TODO make mutable
 
-    if(vkCreateImageView(_Device::GetDevice(), &createInfo, nullptr, &imageView) != VK_SUCCESS){
+    if(vkCreateImageView(i_Device::GetDevice(), &createInfo, nullptr, &imageView) != VK_SUCCESS){
         throw std::runtime_error("Failed to create image view");
     }
 }
 
-void _Image::CopyDataToDevice(){
+void i_Image::CopyDataToDevice() const{
 
-    _CommandBuffer commandBuffer = GetFreeCommandBuffer(createInfo.threadIndex);
+    i_CommandBuffer commandBuffer = GetFreeCommandBuffer(createInfo.threadIndex);
 
     VkCommandBufferInheritanceInfo inheritanceInfo{};
     inheritanceInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_INFO;
@@ -284,7 +289,7 @@ void _Image::CopyDataToDevice(){
     bufferCleanupQueue.push_front(stagingBuffer);
 }
 
-void _Image::TransitionLayout(VkImageLayout oldLayout, VkImageLayout newLayout){
+void i_Image::TransitionLayout(VkImageLayout oldLayout, VkImageLayout newLayout) const{
 
     VkImageMemoryBarrier imageMemoryBarrier = {};
     imageMemoryBarrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
@@ -310,7 +315,7 @@ void _Image::TransitionLayout(VkImageLayout oldLayout, VkImageLayout newLayout){
     inheritanceInfo.queryFlags = 0;
     inheritanceInfo.pipelineStatistics = 0;
 
-    _CommandBuffer commandBuffer = GetFreeCommandBuffer(createInfo.threadIndex);
+    i_CommandBuffer commandBuffer = GetFreeCommandBuffer(createInfo.threadIndex);
 
     commandBuffer.BeginCommandBuffer(&inheritanceInfo, false); 
 
@@ -321,21 +326,21 @@ void _Image::TransitionLayout(VkImageLayout oldLayout, VkImageLayout newLayout){
 }
 
 
-VkImage _Image::GetImage(){
+VkImage i_Image::GetImage() const{
     return image;
 }
 
-VkImageView _Image::GetImageView(){
+VkImageView i_Image::GetImageView() const{
     return imageView;
 }
 
 
-_Image _Image::operator=(const _Image& other){
+i_Image& i_Image::operator=(const i_Image& other){
     if(this == &other){
         return *this;
     }
 
-    if(other.useCount.get() == nullptr){
+    if(other.useCount == nullptr){
         return *this;
     }
 
@@ -347,13 +352,13 @@ _Image _Image::operator=(const _Image& other){
     createInfo = other.createInfo;
     useCount = other.useCount;
 
-    (*useCount.get())++;
+    (*useCount)++;
 
     return *this;
 }
 
-_Image::_Image(const _Image& other){
-    if(other.useCount.get() == nullptr){
+i_Image::i_Image(const i_Image& other){
+    if(other.useCount == nullptr){
         return;
     }
 
@@ -363,27 +368,27 @@ _Image::_Image(const _Image& other){
     createInfo = other.createInfo;
     useCount = other.useCount;
 
-    (*useCount.get())++;
+    (*useCount)++;
 }
 
-void _Image::Destruct(){
-    if(useCount.get() == nullptr){
+void i_Image::Destruct(){
+    if(useCount == nullptr){
         return;
     }
 
-    if(*useCount.get() == 1){
-        vkFreeMemory(_Device::GetDevice(), memory, nullptr);
-        vkDestroyImage(_Device::GetDevice(), image, nullptr);
-        vkDestroyImageView(_Device::GetDevice(), imageView, nullptr);
+    if(*useCount == 1){
+        vkFreeMemory(i_Device::GetDevice(), memory, nullptr);
+        vkDestroyImage(i_Device::GetDevice(), image, nullptr);
+        vkDestroyImageView(i_Device::GetDevice(), imageView, nullptr);
 
         useCount.reset();
         return;
     }
 
-    (*useCount.get())--;
+    (*useCount)--;
 }
 
-_Image::~_Image(){
+i_Image::~i_Image(){
     Destruct();
 }
 

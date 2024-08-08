@@ -2,17 +2,17 @@
 
 namespace renderer{
 
-VkRenderPass _GraphicsPipeline::renderPass = {};
-std::vector <VkFramebuffer> _GraphicsPipeline::framebuffers = {};
+VkRenderPass i_GraphicsPipeline::renderPass = {};
+std::vector <VkFramebuffer> i_GraphicsPipeline::framebuffers = {};
 
-_GraphicsPipeline::_GraphicsPipeline(): pipeline(VK_NULL_HANDLE){
+i_GraphicsPipeline::i_GraphicsPipeline(): pipeline(VK_NULL_HANDLE), pipelineLayout(VK_NULL_HANDLE){
 }
 
-void _GraphicsPipeline::Init(){
+void i_GraphicsPipeline::Init(){
     CreateRenderPass();
     CreateFramebuffers();
 }
-void _GraphicsPipeline::CreateRenderPass(){
+void i_GraphicsPipeline::CreateRenderPass(){
     VkSubpassDescription subpass{};
 
     VkAttachmentReference colorAttachmentRef{};
@@ -31,7 +31,7 @@ void _GraphicsPipeline::CreateRenderPass(){
 
 
     VkAttachmentDescription colorAttachment{};
-    colorAttachment.format = _Swapchain::GetImageFormat();
+    colorAttachment.format = i_Swapchain::GetImageFormat();
     colorAttachment.samples = VK_SAMPLE_COUNT_1_BIT;
     colorAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
     colorAttachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
@@ -41,7 +41,7 @@ void _GraphicsPipeline::CreateRenderPass(){
     colorAttachment.finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;        
 
     VkAttachmentDescription depthAttachment{};
-    depthAttachment.format = _Swapchain::GetDepthFormat();
+    depthAttachment.format = i_Swapchain::GetDepthFormat();
     depthAttachment.samples = VK_SAMPLE_COUNT_1_BIT;
     depthAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
     depthAttachment.storeOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
@@ -70,26 +70,26 @@ void _GraphicsPipeline::CreateRenderPass(){
     renderPassInfo.dependencyCount = 1;
     renderPassInfo.pDependencies = &subpassDep;
 
-    if(vkCreateRenderPass(_Device::GetDevice(), &renderPassInfo, nullptr, &renderPass) != VK_SUCCESS){
+    if(vkCreateRenderPass(i_Device::GetDevice(), &renderPassInfo, nullptr, &renderPass) != VK_SUCCESS){
         throw std::runtime_error("Failed to create render pass");
     }
 }
-void _GraphicsPipeline::CreateFramebuffers(){
-    std::vector<VkImageView> swapchainImageViews = _Swapchain::GetSwapchainImageViews();
+void i_GraphicsPipeline::CreateFramebuffers(){
+    std::vector<VkImageView> swapchainImageViews = i_Swapchain::GetSwapchainImageViews();
 
     framebuffers.resize(swapchainImageViews.size());
 
     for(int i = 0; i < swapchainImageViews.size(); i++){
 
-        std::vector<VkImageView> attachments = {swapchainImageViews[i], _Swapchain::GetDepthImage().GetImageView()};
+        std::vector<VkImageView> attachments = {swapchainImageViews[i], i_Swapchain::GetDepthImage().GetImageView()};
 
         VkFramebufferCreateInfo framebufferInfo{};
         framebufferInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
         framebufferInfo.renderPass = renderPass;
         framebufferInfo.attachmentCount = attachments.size();
         framebufferInfo.pAttachments = attachments.data();
-        framebufferInfo.width = _Swapchain::GetExtent().width;
-        framebufferInfo.height = _Swapchain::GetExtent().height;
+        framebufferInfo.width = i_Swapchain::GetExtent().width;
+        framebufferInfo.height = i_Swapchain::GetExtent().height;
         framebufferInfo.layers = 1;
 
 
@@ -100,20 +100,20 @@ void _GraphicsPipeline::CreateFramebuffers(){
             framebufferInfo.height = height;
         }
 
-        if(vkCreateFramebuffer(_Device::GetDevice(), &framebufferInfo, nullptr, &framebuffers[i]) != VK_SUCCESS){
+        if(vkCreateFramebuffer(i_Device::GetDevice(), &framebufferInfo, nullptr, &framebuffers[i]) != VK_SUCCESS){
             throw std::runtime_error("Failed to create framebuffer");
         }
     }
 }
 
-void _GraphicsPipeline::Cleanup(){
-    vkDestroyRenderPass(_Device::GetDevice(), renderPass, nullptr);
+void i_GraphicsPipeline::Cleanup(){
+    vkDestroyRenderPass(i_Device::GetDevice(), renderPass, nullptr);
     for(VkFramebuffer framebuffer : framebuffers){
-        vkDestroyFramebuffer(_Device::GetDevice(), framebuffer, nullptr);
+        vkDestroyFramebuffer(i_Device::GetDevice(), framebuffer, nullptr);
     }
 }
 
-_GraphicsPipeline::_GraphicsPipeline(_GraphicsPipelineCreateInfo createInfo){
+i_GraphicsPipeline::i_GraphicsPipeline(i_GraphicsPipelineCreateInfo createInfo): pipeline(VK_NULL_HANDLE), pipelineLayout(VK_NULL_HANDLE){
     std::vector<VkDynamicState> dynamicStates = {VK_DYNAMIC_STATE_VIEWPORT, VK_DYNAMIC_STATE_SCISSOR};
 
     //its a clusterfuck that HAS to exist, may god have mercy on us all
@@ -126,7 +126,7 @@ _GraphicsPipeline::_GraphicsPipeline(_GraphicsPipelineCreateInfo createInfo){
     vertexInputInfo.pVertexAttributeDescriptions = createInfo.attributeDescriptions.data();
  
 
-    std::vector<VkDescriptorSetLayout> layouts = _DescriptorManager::GetLayouts();
+    std::vector<VkDescriptorSetLayout> layouts = i_DescriptorManager::GetLayouts();
 
     VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
     pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
@@ -181,7 +181,7 @@ _GraphicsPipeline::_GraphicsPipeline(_GraphicsPipelineCreateInfo createInfo){
     colorBlending.attachmentCount = 1;
     colorBlending.pAttachments = &colorBlendAttachment;
 
-    if(vkCreatePipelineLayout(_Device::GetDevice(), &pipelineLayoutInfo, nullptr, &pipelineLayout) != VK_SUCCESS){
+    if(vkCreatePipelineLayout(i_Device::GetDevice(), &pipelineLayoutInfo, nullptr, &pipelineLayout) != VK_SUCCESS){
         throw std::runtime_error("Failed to create pipeline layout");
     }
 
@@ -204,20 +204,20 @@ _GraphicsPipeline::_GraphicsPipeline(_GraphicsPipelineCreateInfo createInfo){
     pipelineInfo.subpass = 0; // MAY NEED TO RESTRUCTURE FOR THIS TO BE DYNAMIC idk i dont actually know what im doing
     pipelineInfo.basePipelineHandle = VK_NULL_HANDLE;
 
-    if(vkCreateGraphicsPipelines(_Device::GetDevice(), VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &pipeline) != VK_SUCCESS){
+    if(vkCreateGraphicsPipelines(i_Device::GetDevice(), VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &pipeline) != VK_SUCCESS){
         throw std::runtime_error("Failed to create graphics pipeline");
     }
 
     useCount = std::make_shared<uint32_t>(1);
 }
 
-void _GraphicsPipeline::BeginRenderPassAndBindPipeline(VkCommandBuffer commandBuffer){
+void i_GraphicsPipeline::BeginRenderPassAndBindPipeline(VkCommandBuffer commandBuffer){
     VkRenderPassBeginInfo renderPassInfo{};
     renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
     renderPassInfo.renderPass = renderPass;
-    renderPassInfo.framebuffer = framebuffers[_Swapchain::GetImageIndex()];
+    renderPassInfo.framebuffer = framebuffers[i_Swapchain::GetImageIndex()];
     renderPassInfo.renderArea.offset = {0, 0};
-    renderPassInfo.renderArea.extent = _Swapchain::GetExtent();
+    renderPassInfo.renderArea.extent = i_Swapchain::GetExtent();
     if(renderPassInfo.renderArea.extent.width == -1 || renderPassInfo.renderArea.extent.height == -1){
         glfwGetWindowSize(Window::GetGLFWwindow(), (int*)&renderPassInfo.renderArea.extent.width, (int*)&renderPassInfo.renderArea.extent.height);
     }
@@ -248,35 +248,33 @@ void _GraphicsPipeline::BeginRenderPassAndBindPipeline(VkCommandBuffer commandBu
     vkCmdSetScissor(commandBuffer, 0, 1, &scissor);
 }
 
-void _GraphicsPipeline::EndRenderPass(VkCommandBuffer commandBuffer){
+void i_GraphicsPipeline::EndRenderPass(VkCommandBuffer commandBuffer){
     vkCmdEndRenderPass(commandBuffer);
 }
-VkPipelineLayout _GraphicsPipeline::GetPipelineLayout(){
+VkPipelineLayout i_GraphicsPipeline::GetPipelineLayout(){
     return pipelineLayout;
 }
     
-VkFramebuffer _GraphicsPipeline::GetFramebuffer(uint32_t index){
+VkFramebuffer i_GraphicsPipeline::GetFramebuffer(uint32_t index){
     return framebuffers[index];
 }
 
-VkRenderPass _GraphicsPipeline::GetRenderPass(){
+VkRenderPass i_GraphicsPipeline::GetRenderPass(){
     return renderPass;
 }
 
-_GraphicsPipeline::_GraphicsPipeline(const _GraphicsPipeline& other){
-    if(other.useCount.get() == nullptr){
+i_GraphicsPipeline::i_GraphicsPipeline(const i_GraphicsPipeline& other){
+    if(other.useCount == nullptr){
         return;
     }
 
     pipeline = other.pipeline;
     pipelineLayout = other.pipelineLayout;
-    renderPass = other.renderPass;
     useCount = other.useCount;
-    framebuffers = other.framebuffers;
-    (*useCount.get())++;
+    (*useCount)++;
 }
 
-_GraphicsPipeline _GraphicsPipeline::operator=(const _GraphicsPipeline& other){
+i_GraphicsPipeline& i_GraphicsPipeline::operator=(const i_GraphicsPipeline& other){
     if(this == &other){
         return *this;
     }
@@ -289,23 +287,21 @@ _GraphicsPipeline _GraphicsPipeline::operator=(const _GraphicsPipeline& other){
 
     pipeline = other.pipeline;
     pipelineLayout = other.pipelineLayout;
-    renderPass = other.renderPass;
     useCount = other.useCount;
-    framebuffers = other.framebuffers;
-    (*useCount.get())++;
+    (*useCount)++;
 
     return *this;
 }
 
-void _GraphicsPipeline::Destruct(){
+void i_GraphicsPipeline::Destruct(){
     if(useCount.get() == nullptr){
         return;
     }
 
     if(*useCount == 1){
         if(pipeline != VK_NULL_HANDLE){
-            vkDestroyPipelineLayout(_Device::GetDevice(), pipelineLayout, nullptr);
-            vkDestroyPipeline(_Device::GetDevice(), pipeline, nullptr);
+            vkDestroyPipelineLayout(i_Device::GetDevice(), pipelineLayout, nullptr);
+            vkDestroyPipeline(i_Device::GetDevice(), pipeline, nullptr);
         }
         useCount.reset();
     }
@@ -314,7 +310,7 @@ void _GraphicsPipeline::Destruct(){
     }
 }
 
-_GraphicsPipeline::~_GraphicsPipeline(){
+i_GraphicsPipeline::~i_GraphicsPipeline(){
     Destruct();
 }
 

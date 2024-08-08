@@ -4,7 +4,7 @@ namespace renderer{
 
 ModelInstanceHandle ModelInstance::Create(ModelInstanceCreateInfo& createInfo){
     std::shared_ptr<ModelInstance> shared = std::make_shared<ModelInstance>(createInfo);
-    shared->__AddSelfToInstanceData(shared);
+    shared->i_AddSelfToInstanceData(shared);
     return shared;
 }
 
@@ -31,31 +31,15 @@ ModelInstance::ModelInstance(ModelInstanceCreateInfo& createInfo){
     this->createInfo = createInfo;
 }
     
-void ModelInstance::__AddSelfToInstanceData(std::shared_ptr<ModelInstance> self){
+void ModelInstance::i_AddSelfToInstanceData(std::shared_ptr<ModelInstance> self){
     if(!createInfo.isDynamic){
         std::weak_ptr<_StaticInstanceData> instanceData = staticModelInstanceMap[createInfo.model.lock()->GetName()];
         instanceData.lock()->instanceList.push_back(self);
     }
 }
 
-void ModelInstance::__Init(){
-    StaticInit();
-}
-
-void ModelInstance::__Update(){
-    StaticUpdate();
-}
-
-void ModelInstance::__UpdateCleanup(){
-    StaticUpdateCleanup();
-}
-
-void ModelInstance::__Draw(_Semaphore presentSemaphore, std::array<_Fence, 2> inFlightFences){
+void ModelInstance::i_Draw(i_Semaphore presentSemaphore, std::array<i_Fence, 2> inFlightFences){
     StaticDraw(presentSemaphore, inFlightFences[0]);
-}
-
-void ModelInstance::__Cleanup(){
-    StaticCleanup();
 }
 
 std::array<VkSemaphore, 2> ModelInstance::GetRenderFinishedSemaphores(uint32_t imageIndex){

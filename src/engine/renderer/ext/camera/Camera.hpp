@@ -12,17 +12,17 @@ namespace renderer{
 
 class Camera{
 public:
-    static void __Init();
-    static void __Update();
-    static void __Cleanup();
+    static void i_Init();
+    static void i_Update();
+    static void i_Cleanup();
 
 private:
     static glm::mat4 view;
     static glm::mat4 perspectiveProjection;
     static glm::mat4 orthoProjection;
 
-    static _UniformBuffer orthoCamera;
-    static _UniformBuffer perspectiveCamera;
+    static i_UniformBuffer orthoCamera;
+    static i_UniformBuffer perspectiveCamera;
 };
 
 }

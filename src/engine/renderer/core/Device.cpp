@@ -17,7 +17,7 @@ VKAPI_ATTR VkBool32 VKAPI_CALL debugCallback(
     static const char* MEMORY_ERR = "VK_ERROR_OUT_OF_DEVICE_MEMORY";
 
     if(!strcmp(pCallbackData->pMessage, MEMORY_ERR)){
-        _Device::SetDeviceMemoryFull();
+        i_Device::SetDeviceMemoryFull();
     }
 
     if(messageSeverity >= VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT){
@@ -31,18 +31,18 @@ const std::vector<const char*> deviceExtensions = {
     VK_KHR_SWAPCHAIN_EXTENSION_NAME,
 };
 
-VkDevice _Device::device = VK_NULL_HANDLE;
-VkPhysicalDevice _Device::physicalDevice = VK_NULL_HANDLE;
-_QueueFamilyInfo _Device::queueFamilyInfo = {};
-std::vector<VkQueue> _Device::graphicsQueues = {};
-std::vector<VkQueue> _Device::transferQueues = {};
-uint32_t _Device::graphicsQueueFamilyIndex = 0;
-uint32_t _Device::transferQueueFamilyIndex = 0;
-bool _Device::deviceMemoryFree = false;
-VkPhysicalDeviceProperties _Device::physicalDeviceProperties = {};
-bool _Device::initialized = false;
+VkDevice i_Device::device = VK_NULL_HANDLE;
+VkPhysicalDevice i_Device::physicalDevice = VK_NULL_HANDLE;
+i_QueueFamilyInfo i_Device::queueFamilyInfo = {};
+std::vector<VkQueue> i_Device::graphicsQueues = {};
+std::vector<VkQueue> i_Device::transferQueues = {};
+uint32_t i_Device::graphicsQueueFamilyIndex = 0;
+uint32_t i_Device::transferQueueFamilyIndex = 0;
+bool i_Device::deviceMemoryFree = false;
+VkPhysicalDeviceProperties i_Device::physicalDeviceProperties = {};
+bool i_Device::initialized = false;
 
-void _Device::Init(){
+void i_Device::Init(){
     PickPhysicalDevice();
     CreateQueueCreateInfos();
     CreateLogicalDevice();
@@ -50,16 +50,16 @@ void _Device::Init(){
     initialized = true;
 }
 
-void _Device::PickPhysicalDevice(){
+void i_Device::PickPhysicalDevice(){
     uint32_t deviceCount = 0;
-    vkEnumeratePhysicalDevices(_Instance::GetInstance(), &deviceCount, nullptr);
+    vkEnumeratePhysicalDevices(i_Instance::GetInstance(), &deviceCount, nullptr);
 
     if(deviceCount == 0){
         throw std::runtime_error("Failed to find GPUs with Vulkan support!");
     }
 
     std::vector<VkPhysicalDevice> devices(deviceCount);
-    vkEnumeratePhysicalDevices(_Instance::GetInstance(), &deviceCount, devices.data());
+    vkEnumeratePhysicalDevices(i_Instance::GetInstance(), &deviceCount, devices.data());
 
     physicalDevice = devices[0];
 
@@ -86,7 +86,7 @@ void _Device::PickPhysicalDevice(){
     }
 }
 
-VkPhysicalDeviceFeatures _Device::GetAvailableDeviceFeatures(){
+VkPhysicalDeviceFeatures i_Device::GetAvailableDeviceFeatures(){
     VkPhysicalDeviceFeatures availableFeatures{};
     vkGetPhysicalDeviceFeatures(physicalDevice, &availableFeatures);
 
@@ -95,7 +95,7 @@ VkPhysicalDeviceFeatures _Device::GetAvailableDeviceFeatures(){
     wantedFeatures.samplerAnisotropy = VK_TRUE;
 
     for(uint32_t i = 0; i < sizeof(VkPhysicalDeviceFeatures)/sizeof(VkBool32); i++){
-        if(((VkBool32*)&wantedFeatures)[i] == VK_TRUE && ((VkBool32*)&availableFeatures)[i] == VK_FALSE){
+        if((reinterpret_cast<VkBool32*>(&wantedFeatures))[i] == VK_TRUE && (reinterpret_cast<VkBool32*>(&availableFeatures))[i] == VK_FALSE){
             throw std::runtime_error("Device does not support required features!");
         }
     }
@@ -103,27 +103,26 @@ VkPhysicalDeviceFeatures _Device::GetAvailableDeviceFeatures(){
     return wantedFeatures;
 }
 
-bool _Device::DeviceMemoryFree(){
+bool i_Device::DeviceMemoryFree(){
     return deviceMemoryFree;
 }
-void _Device::SetDeviceMemoryFull(){
+void i_Device::SetDeviceMemoryFull(){
     deviceMemoryFree = false;
 }
 
-VkPhysicalDeviceProperties _Device::GetPhysicalDeviceProperties(){
+VkPhysicalDeviceProperties i_Device::GetPhysicalDeviceProperties(){
     return physicalDeviceProperties;
 }
 
-void _Device::CreateLogicalDevice(){
+void i_Device::CreateLogicalDevice(){
     if(queueFamilyInfo.graphicsFamilyFound == false){
         throw std::runtime_error("Failed to find a suitable queue family!");
     }
 
     std::vector<VkDeviceQueueCreateInfo> queueCreateInfos;
 
-    std::vector<float> graphicsQueuePriorities(queueFamilyInfo.graphicsQueueCreateInfo.queueCount, 1.0f);
+    const std::vector<float> graphicsQueuePriorities(queueFamilyInfo.graphicsQueueCreateInfo.queueCount, 1.0f);
     queueFamilyInfo.graphicsQueueCreateInfo.pQueuePriorities = graphicsQueuePriorities.data();
-    queueFamilyInfo.graphicsQueueCreateInfo.queueCount = queueFamilyInfo.graphicsQueueCreateInfo.queueCount;
 
     queueCreateInfos.push_back(queueFamilyInfo.graphicsQueueCreateInfo);
 
@@ -149,14 +148,14 @@ void _Device::CreateLogicalDevice(){
 
 }
 
-void _Device::CreateQueueCreateInfos(){
+void i_Device::CreateQueueCreateInfos(){
     uint32_t queueFamilyCount = 0;
     vkGetPhysicalDeviceQueueFamilyProperties(physicalDevice, &queueFamilyCount, nullptr);
 
     std::vector<VkQueueFamilyProperties> queueFamilies(queueFamilyCount);
     vkGetPhysicalDeviceQueueFamilyProperties(physicalDevice, &queueFamilyCount, queueFamilies.data());
     
-    for(int i = 0; i < (int)queueFamilies.size(); i++){
+    for(int i = 0; i < static_cast<int>(queueFamilies.size()); i++){
         if(queueFamilies[i].queueFlags & VK_QUEUE_GRAPHICS_BIT){
             queueFamilyInfo.graphicsFamilyFound = true;
             queueFamilyInfo.graphicsQueueCreateInfo.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
@@ -172,7 +171,7 @@ void _Device::CreateQueueCreateInfos(){
     }
 }
 
-void _Device::GetQueues(){
+void i_Device::GetQueues(){
     for(int i = 0; i < queueFamilyInfo.graphicsQueueCreateInfo.queueCount; i++){
         VkQueue queue;
         vkGetDeviceQueue(device, queueFamilyInfo.graphicsQueueCreateInfo.queueFamilyIndex, i, &queue);
@@ -188,14 +187,14 @@ void _Device::GetQueues(){
     }
 }
 
-VkQueue _Device::GetGraphicsQueue(){ 
+VkQueue i_Device::GetGraphicsQueue(){ 
     VkQueue &queue = graphicsQueues[graphicsQueueFamilyIndex];
     graphicsQueueFamilyIndex = (graphicsQueueFamilyIndex + 1) % graphicsQueues.size();
 
     return queue;
 }
 
-VkQueue _Device::GetTransferQueue(){
+VkQueue i_Device::GetTransferQueue(){
     if(queueFamilyInfo.transferFamilyFound == false){
         return GetGraphicsQueue();
     }
@@ -206,23 +205,23 @@ VkQueue _Device::GetTransferQueue(){
     return queue;
 }
 
-_QueueFamilyInfo _Device::GetQueueFamilyInfo(){
+i_QueueFamilyInfo i_Device::GetQueueFamilyInfo(){
     return queueFamilyInfo;
 }
 
-VkPhysicalDevice _Device::GetPhysicalDevice(){
+VkPhysicalDevice i_Device::GetPhysicalDevice(){
     return physicalDevice;
 }
 
-VkDevice _Device::GetDevice(){
+VkDevice i_Device::GetDevice(){
     return device;
 }
 
-bool _Device::IsInitialized(){
+bool i_Device::IsInitialized(){
     return initialized;
 }
 
-void _Device::Cleanup(){
+void i_Device::Cleanup(){
     vkDestroyDevice(device, nullptr);
 }
 

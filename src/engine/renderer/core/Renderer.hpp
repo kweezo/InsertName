@@ -8,13 +8,9 @@
 #include <vulkan/vulkan.h>
 
 #include "Instance.hpp"
-#include "Device.hpp"
-#include "../window/Window.hpp"
 #include "Swapchain.hpp"
-#include "CommandPool.hpp"
 #include "GraphicsPipeline.hpp"
 #include "DataBuffer.hpp"
-#include "DescriptorManager.hpp"
 #include "Image.hpp"
 #include "Shader.hpp"
 #include "engine/renderer/ext/camera/Camera.hpp"
@@ -43,11 +39,11 @@ private:
     static void Present();
     static void UpdateCleanup();
 
-    static std::array<_Semaphore, MAX_FRAMES_IN_FLIGHT> presentSemaphores;
-    static std::array<_Semaphore, MAX_FRAMES_IN_FLIGHT> renderSemaphores;
+    static std::array<i_Semaphore, MAX_FRAMES_IN_FLIGHT> presentSemaphores;
+    static std::array<i_Semaphore, MAX_FRAMES_IN_FLIGHT> renderSemaphores;
     static std::array<std::vector<VkCommandBuffer>, MAX_FRAMES_IN_FLIGHT> commandBuffers;
 
-    static std::array<std::array<_Fence, DRAW_QUEUE_SUBMIT_COUNT>, MAX_FRAMES_IN_FLIGHT> inFlightFences; //size is the number of draw operations, 1 for each queue submit
+    static std::array<std::array<i_Fence, DRAW_QUEUE_SUBMIT_COUNT>, MAX_FRAMES_IN_FLIGHT> inFlightFences; //size is the number of draw operations, 1 for each queue submit
     static std::array<std::array<VkFence, DRAW_QUEUE_SUBMIT_COUNT>, MAX_FRAMES_IN_FLIGHT> inFlightFenceHandles;
 
 

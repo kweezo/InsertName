@@ -2,25 +2,25 @@
 
 namespace renderer{
 
-_Semaphore::_Semaphore(): semaphore(VK_NULL_HANDLE){
+i_Semaphore::i_Semaphore(): semaphore(VK_NULL_HANDLE){
 }
 
-_Semaphore::_Semaphore(_SemaphoreCreateInfo createInfo): semaphore(VK_NULL_HANDLE){
-    if(!_Device::IsInitialized()){
+i_Semaphore::i_Semaphore(i_SemaphoreCreateInfo createInfo): semaphore(VK_NULL_HANDLE){
+    if(!i_Device::IsInitialized()){
         return;
     }
 
     VkSemaphoreCreateInfo fenceInfo = {};
     fenceInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
 
-    if(vkCreateSemaphore(_Device::GetDevice(), &fenceInfo, nullptr, &semaphore) != VK_SUCCESS){
+    if(vkCreateSemaphore(i_Device::GetDevice(), &fenceInfo, nullptr, &semaphore) != VK_SUCCESS){
         throw std::runtime_error("Failed to create fence");
     }
 
     useCount = std::make_shared<uint32_t>(1);
 }
 
-VkSemaphore _Semaphore::GetSemaphore() const{
+VkSemaphore i_Semaphore::GetSemaphore() const{
     if(semaphore == VK_NULL_HANDLE){
         throw std::runtime_error("Tried to return an uninitialized semaphore");
     }
@@ -28,26 +28,26 @@ VkSemaphore _Semaphore::GetSemaphore() const{
     return semaphore;
 }
 
-bool _Semaphore::IsInitialized() const{
+bool i_Semaphore::IsInitialized() const{
     return semaphore != VK_NULL_HANDLE;
 }
 
-_Semaphore::_Semaphore(const _Semaphore& other){
-    if(other.useCount.get() == nullptr){
+i_Semaphore::i_Semaphore(const i_Semaphore& other){
+    if(other.useCount == nullptr){
         return;
     }
 
     semaphore = other.semaphore;
     useCount = other.useCount;
-    (*useCount.get())++;
+    (*useCount)++;
 }
 
-_Semaphore& _Semaphore::operator=(const _Semaphore& other){
+i_Semaphore& i_Semaphore::operator=(const i_Semaphore& other){
     if(this == &other){
         return *this;
     }
 
-    if(other.useCount.get() == nullptr){
+    if(other.useCount == nullptr){
         return *this;
     }
 
@@ -55,24 +55,24 @@ _Semaphore& _Semaphore::operator=(const _Semaphore& other){
 
     semaphore = other.semaphore;
     useCount = other.useCount;
-    (*useCount.get())++;
+    (*useCount)++;
     return *this;
 }
 
-void _Semaphore::Destruct(){
-    if(useCount.get() == nullptr){
+void i_Semaphore::Destruct(){
+    if(useCount == nullptr){
         return;
     }
 
     if(*useCount <= 1){
-        vkDestroySemaphore(_Device::GetDevice(), semaphore, nullptr);
+        vkDestroySemaphore(i_Device::GetDevice(), semaphore, nullptr);
         useCount.reset();
     }else{
-        (*useCount.get())--;
+        (*useCount)--;
     }   
 }
 
-_Semaphore::~_Semaphore(){
+i_Semaphore::~i_Semaphore(){
     Destruct();
 }
 

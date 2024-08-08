@@ -1,45 +1,39 @@
 #pragma once
 
-#include <stdexcept>
-#include <iostream>
-#include <limits>
+#include <array>
 #include <memory>
 
 #include <vulkan/vulkan.h>
 
-#include "../window/Window.hpp"
-#include "Device.hpp"
-#include "Swapchain.hpp"
-#include "DataBuffer.hpp"
 #include "DescriptorManager.hpp"
 
 namespace renderer{
 
-struct _GraphicsPipelineCreateInfo{
+struct i_GraphicsPipelineCreateInfo{
     std::array<VkPipelineShaderStageCreateInfo, 2> shaderStageCreateInfo;
     std::vector<VkVertexInputAttributeDescription> attributeDescriptions;
     std::vector<VkVertexInputBindingDescription> bindingDescriptions;
 };
 
-class _GraphicsPipeline{
+class i_GraphicsPipeline{
 public:
     static void Init();
     static void Cleanup();
 
-    _GraphicsPipeline();
-    _GraphicsPipeline(_GraphicsPipelineCreateInfo createInfo);
+    i_GraphicsPipeline();
+    i_GraphicsPipeline(i_GraphicsPipelineCreateInfo createInfo);
     
-    ~_GraphicsPipeline();
+    ~i_GraphicsPipeline();
 
-    _GraphicsPipeline(const _GraphicsPipeline& other);
-    _GraphicsPipeline operator=(const _GraphicsPipeline& other);
+    i_GraphicsPipeline(const i_GraphicsPipeline& other);
+    i_GraphicsPipeline& operator=(const i_GraphicsPipeline& other);
 
     void BeginRenderPassAndBindPipeline(VkCommandBuffer commandBuffer);
-    void EndRenderPass(VkCommandBuffer commandBuffer);
+    static void EndRenderPass(VkCommandBuffer commandBuffer);
 
     VkPipelineLayout GetPipelineLayout();
-    VkRenderPass GetRenderPass();
-    VkFramebuffer GetFramebuffer(uint32_t index);
+    static VkRenderPass GetRenderPass();
+    static VkFramebuffer GetFramebuffer(uint32_t index);
 private:
     void Destruct();
 

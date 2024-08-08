@@ -1,6 +1,5 @@
 #pragma once
 
-#include <stdexcept>
 #include <vector>
 #include <memory>
 #include <utility>
@@ -10,15 +9,14 @@
 #include <vulkan/vulkan.h>
 
 #include "DataBuffer.hpp"
-#include "Device.hpp"
 #include "CommandBuffer.hpp"
 #include "Fence.hpp"
 
 namespace renderer{
 
-class _Shader; //IM SORRY OKAY I HAD TO or else the dependencies go WEEEEEEEEEWOOOOOWEEEEWOOOO
+class i_Shader; //IM SORRY OKAY I HAD TO or else the dependencies go WEEEEEEEEEWOOOOOWEEEEWOOOO
 
-struct _ImageCreateInfo{
+struct i_ImageCreateInfo{
     VkImageLayout layout;
     VkFormat format;
     VkImageAspectFlags aspectMask;
@@ -34,26 +32,26 @@ struct _ImageCreateInfo{
     uint32_t threadIndex;
 };
 
-class _Image{
+class i_Image{
 public:
     static void Init();
     static void Update();
     static void Cleanup();
 
-    _Image();
-    _Image(_ImageCreateInfo createInfo);
-    _Image operator=(const _Image& other);
-    _Image(const _Image& other);
-    ~_Image();
+    i_Image();
+    i_Image(const i_ImageCreateInfo& createInfo);
+    i_Image& operator=(const i_Image& other);
+    i_Image(const i_Image& other);
+    ~i_Image();
 
 
-    static VkFormat GetSupportedFormat(std::vector<VkFormat> candidates, VkImageTiling tiling, VkFormatFeatureFlags features);
+    static VkFormat GetSupportedFormat(const std::vector<VkFormat>& candidates, VkImageTiling tiling, VkFormatFeatureFlags features);
     static inline bool HasStencilComponent(VkFormat format);
 
-    void TransitionLayout(VkImageLayout oldLayout, VkImageLayout newLayout);
+    void TransitionLayout(VkImageLayout oldLayout, VkImageLayout newLayout) const ;
 
-    VkImage GetImage();
-    VkImageView GetImageView();
+    [[nodiscard]] VkImage GetImage() const;
+    [[nodiscard]] VkImageView GetImageView() const;
 
     void Destruct();
 private:
@@ -62,17 +60,17 @@ private:
     void CreateImageView();
     void AllocateMemory();
 
-    void CopyDataToDevice();
+    void CopyDataToDevice() const;
 
-    static _CommandBuffer GetFreeCommandBuffer(uint32_t threadIndex);
-    static std::vector<std::vector<std::pair<_CommandBuffer, bool>>> secondaryCommandBuffers;
+    static i_CommandBuffer GetFreeCommandBuffer(uint32_t threadIndex);
+    static std::vector<std::vector<std::pair<i_CommandBuffer, bool>>> secondaryCommandBuffers;
 
     static void SubmitCommandBuffers();
     static void UpdateCleanup();
 
     static void CreateCommmandBuffers();
 
-    static _Fence commandBuffersFinishedExecutionFence;
+    static i_Fence commandBuffersFinishedExecutionFence;
     static std::set<uint32_t> commandPoolResetIndexes;
     static bool anyCommandBuffersRecorded;
 
@@ -81,13 +79,13 @@ private:
     VkImageView imageView;
     VkDeviceMemory memory;
 
-    std::shared_ptr<_DataBuffer> stagingBuffer;
+    std::shared_ptr<i_DataBuffer> stagingBuffer;
 
-    _Semaphore waitSemaphore;
+    i_Semaphore waitSemaphore;
 
-    _ImageCreateInfo createInfo;
+    i_ImageCreateInfo createInfo{};
 
-    static std::list<std::shared_ptr<_DataBuffer>> bufferCleanupQueue;
+    static std::list<std::shared_ptr<i_DataBuffer>> bufferCleanupQueue;
     static std::vector<VkWriteDescriptorSet> writeDescriptorSetsQueue;
 
 

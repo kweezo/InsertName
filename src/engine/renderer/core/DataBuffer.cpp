@@ -6,41 +6,41 @@ const uint32_t TARGET_STAGING_BUFFER_COUNT_PER_THREAD = 5;
 
 const size_t FREE_STAGING_MEMORY_TRESHOLD = 1024;
 
-std::list<std::list<_DataBufferStagingCommandBuferData>> _DataBuffer::stagingCommandBuffers = {};
-std::list<std::pair<VkBuffer, VkDeviceMemory>> _DataBuffer::stagingBufferAndMemoryDeleteQueue = {};
-_Fence _DataBuffer::finishedCopyingFence = {};
-std::set<uint32_t> _DataBuffer::resetPoolIndexes = {};
-bool _DataBuffer::anyCommandBuffersRecorded = false;
+std::list<std::list<i_DataBufferStagingCommandBuferData>> i_DataBuffer::stagingCommandBuffers = {};
+std::list<std::pair<VkBuffer, VkDeviceMemory>> i_DataBuffer::stagingBufferAndMemoryDeleteQueue = {};
+i_Fence i_DataBuffer::finishedCopyingFence = {};
+std::set<uint32_t> i_DataBuffer::resetPoolIndexes = {};
+bool i_DataBuffer::anyCommandBuffersRecorded = false;
 
-void _DataBuffer::Init(){
+void i_DataBuffer::Init(){
     CreateCommandBuffers();
 
-    finishedCopyingFence = _Fence(false);
+    finishedCopyingFence = i_Fence(false);
 }
 
-void _DataBuffer::CreateCommandBuffers(){
+void i_DataBuffer::CreateCommandBuffers(){
     uint32_t i = 0;
     stagingCommandBuffers.resize(std::thread::hardware_concurrency());
-    for(std::list<_DataBufferStagingCommandBuferData>& commandBuffers : stagingCommandBuffers){
+    for(std::list<i_DataBufferStagingCommandBuferData>& commandBuffers : stagingCommandBuffers){
 
-        _CommandBufferCreateInfo stagingCommandBufferInfo;
-        stagingCommandBufferInfo.type = _CommandBufferType::DATA;
+        i_CommandBufferCreateInfo stagingCommandBufferInfo;
+        stagingCommandBufferInfo.type = i_CommandBufferType::DATA;
         stagingCommandBufferInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
         stagingCommandBufferInfo.flags = COMMAND_POOL_TYPE_TRANSFER | COMMAND_BUFFER_ONE_TIME_SUBMIT_FLAG;
         stagingCommandBufferInfo.threadIndex = i;
 
-        for(_DataBufferStagingCommandBuferData& data : commandBuffers){
-            data = {_CommandBuffer(stagingCommandBufferInfo), {}, true, _Semaphore(_SemaphoreCreateInfo{})};
+        for(i_DataBufferStagingCommandBuferData& data : commandBuffers){
+            data = {i_CommandBuffer(stagingCommandBufferInfo), {}, true, i_Semaphore(i_SemaphoreCreateInfo{})};
         }
 
         i = (i + 1) % std::thread::hardware_concurrency();
     }
 }
 
-void _DataBuffer::Update(){
+void i_DataBuffer::Update(){
     std::list<std::unique_ptr<std::lock_guard<std::mutex>>> lockGuards;
-    for(std::list<_DataBufferStagingCommandBuferData>& commandBuffers : stagingCommandBuffers){
-        for(_DataBufferStagingCommandBuferData& data : commandBuffers){
+    for(std::list<i_DataBufferStagingCommandBuferData>& commandBuffers : stagingCommandBuffers){
+        for(i_DataBufferStagingCommandBuferData& data : commandBuffers){
             if(!data.free){
                 if(data.mutex.expired()){
                     throw std::runtime_error("Tried to update an already destroy data buffer; vkCommandBuffer " + std::format("0x{:X}", (size_t)data.commandBuffer.GetCommandBuffer()));
@@ -55,19 +55,19 @@ void _DataBuffer::Update(){
     UpdateCleanup();
 }
 
-void _DataBuffer::Cleanup(){
+void i_DataBuffer::Cleanup(){
     stagingCommandBuffers.clear();
-    finishedCopyingFence.~_Fence();
+    finishedCopyingFence.~i_Fence();
 }
 
 
-_DataBuffer::_DataBuffer() : buffer(VK_NULL_HANDLE), memory(VK_NULL_HANDLE){
+i_DataBuffer::i_DataBuffer() : buffer(VK_NULL_HANDLE), memory(VK_NULL_HANDLE){
 }
 
-_DataBuffer::_DataBuffer(_DataBufferCreateInfo createInfo) : createInfo(createInfo), stagingBuffer(VK_NULL_HANDLE), stagingMemory(VK_NULL_HANDLE),
+i_DataBuffer::i_DataBuffer(i_DataBufferCreateInfo createInfo) : createInfo(createInfo), stagingBuffer(VK_NULL_HANDLE), stagingMemory(VK_NULL_HANDLE),
 buffer(VK_NULL_HANDLE), memory(VK_NULL_HANDLE){
 
-    if(!_Device::DeviceMemoryFree()){
+    if(!i_Device::DeviceMemoryFree()){
         createInfo.transferToLocalDeviceMemory = false;
     }
 
@@ -93,13 +93,13 @@ buffer(VK_NULL_HANDLE), memory(VK_NULL_HANDLE){
     }
 
     if(!createInfo.signalSemaphore.IsInitialized()){
-        createInfo.signalSemaphore = _Semaphore(_SemaphoreCreateInfo{});
+        createInfo.signalSemaphore = i_Semaphore(i_SemaphoreCreateInfo{});
     }
 
     useCount = std::make_shared<uint32_t>(1);
 }
 
-void _DataBuffer::UpdateData(void* data, size_t size, uint32_t threadIndex){
+void i_DataBuffer::UpdateData(void* data, size_t size, uint32_t threadIndex){
     if(createInfo.size != size){
         throw std::runtime_error("Size of data does not match size of buffer, you need to create a new buffer for this");
     }
@@ -108,7 +108,7 @@ void _DataBuffer::UpdateData(void* data, size_t size, uint32_t threadIndex){
         throw std::runtime_error("This buffer isn't dynamic, so it can't be changed");
     }
 
-    if(!_Device::DeviceMemoryFree()){
+    if(!i_Device::DeviceMemoryFree()){
         createInfo.transferToLocalDeviceMemory = false;
     }
 
@@ -127,7 +127,7 @@ void _DataBuffer::UpdateData(void* data, size_t size, uint32_t threadIndex){
     
 }
 
-VkBuffer _DataBuffer::GetBuffer(){
+VkBuffer i_DataBuffer::GetBuffer(){
     if(buffer == VK_NULL_HANDLE){
         throw std::runtime_error("Tried to return an uninitialized data buffer");
     }
@@ -136,7 +136,7 @@ VkBuffer _DataBuffer::GetBuffer(){
     return buffer;
 }
 
-_DataBuffer::_DataBuffer(const _DataBuffer& other){
+i_DataBuffer::i_DataBuffer(const i_DataBuffer& other){
     if(other.useCount.get() == nullptr){
         return;
     }
@@ -152,7 +152,7 @@ _DataBuffer::_DataBuffer(const _DataBuffer& other){
     (*useCount.get())++;
 }
 
-_DataBuffer& _DataBuffer::operator=(const _DataBuffer& other) {
+i_DataBuffer& i_DataBuffer::operator=(const i_DataBuffer& other) {
     if(this == &other){
         return *this;
     }
@@ -176,19 +176,19 @@ _DataBuffer& _DataBuffer::operator=(const _DataBuffer& other) {
     return *this;
 }
 
-void _DataBuffer::Destruct(){
+void i_DataBuffer::Destruct(){
     if(useCount.get() == nullptr){
         return;
     }
 
     if(*useCount.get() == 1){
-        vkFreeMemory(_Device::GetDevice(), memory, nullptr);
-        vkDestroyBuffer(_Device::GetDevice(), buffer, nullptr); 
+        vkFreeMemory(i_Device::GetDevice(), memory, nullptr);
+        vkDestroyBuffer(i_Device::GetDevice(), buffer, nullptr);
         if(stagingBuffer != VK_NULL_HANDLE){
-            vkDestroyBuffer(_Device::GetDevice(), stagingBuffer, nullptr);
+            vkDestroyBuffer(i_Device::GetDevice(), stagingBuffer, nullptr);
         }
         if(stagingMemory != VK_NULL_HANDLE){
-            vkFreeMemory(_Device::GetDevice(), stagingMemory, nullptr);
+            vkFreeMemory(i_Device::GetDevice(), stagingMemory, nullptr);
         }
 
         useCount.reset();
@@ -198,40 +198,40 @@ void _DataBuffer::Destruct(){
     (*useCount.get())--;
 }
 
-_DataBuffer::~_DataBuffer(){
+i_DataBuffer::~i_DataBuffer(){
     Destruct();
 }
 
-void _DataBuffer::CreateBuffer(VkBuffer& buffer, VkBufferUsageFlags usage, VkDeviceSize size){
+void i_DataBuffer::CreateBuffer(VkBuffer& buffer, VkBufferUsageFlags usage, VkDeviceSize size){
     VkBufferCreateInfo bufferInfo{};
 
     bufferInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
     bufferInfo.usage = usage;
     bufferInfo.size = size;
     
-    if(_Device::GetQueueFamilyInfo().transferFamilyFound){
+    if(i_Device::GetQueueFamilyInfo().transferFamilyFound){
         bufferInfo.sharingMode = VK_SHARING_MODE_CONCURRENT;
         bufferInfo.queueFamilyIndexCount = 2;
 
-        uint32_t queueFamilyIndices[] = {_Device::GetQueueFamilyInfo().graphicsQueueCreateInfo.queueFamilyIndex,
-         _Device::GetQueueFamilyInfo().transferQueueCreateInfo.queueFamilyIndex};
+        uint32_t queueFamilyIndices[] = {i_Device::GetQueueFamilyInfo().graphicsQueueCreateInfo.queueFamilyIndex,
+         i_Device::GetQueueFamilyInfo().transferQueueCreateInfo.queueFamilyIndex};
 
         bufferInfo.pQueueFamilyIndices = queueFamilyIndices;
     }else{
         bufferInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
     }
 
-    if(vkCreateBuffer(_Device::GetDevice(), &bufferInfo, nullptr, &buffer) != VK_SUCCESS){
+    if(vkCreateBuffer(i_Device::GetDevice(), &bufferInfo, nullptr, &buffer) != VK_SUCCESS){
         throw std::runtime_error("Failed to create buffer");
     }
 }
 
-void _DataBuffer::AllocateMemory(VkDeviceMemory& memory, VkBuffer buffer, size_t size, VkMemoryPropertyFlags properties){
+void i_DataBuffer::AllocateMemory(VkDeviceMemory& memory, VkBuffer buffer, size_t size, VkMemoryPropertyFlags properties){
     VkMemoryRequirements memRequirements;
-    vkGetBufferMemoryRequirements(_Device::GetDevice(), buffer, &memRequirements);
+    vkGetBufferMemoryRequirements(i_Device::GetDevice(), buffer, &memRequirements);
 
     VkPhysicalDeviceMemoryProperties memProperties;
-    vkGetPhysicalDeviceMemoryProperties(_Device::GetPhysicalDevice(), &memProperties);
+    vkGetPhysicalDeviceMemoryProperties(i_Device::GetPhysicalDevice(), &memProperties);
 
     for(uint32_t i = 0; i < memProperties.memoryTypeCount; i++){
         if((memRequirements.memoryTypeBits & (1 << i)) && (memProperties.memoryTypes[i].propertyFlags & properties) == properties){
@@ -240,7 +240,7 @@ void _DataBuffer::AllocateMemory(VkDeviceMemory& memory, VkBuffer buffer, size_t
             allocInfo.allocationSize = memRequirements.size ;
             allocInfo.memoryTypeIndex = i;
 
-            if(vkAllocateMemory(_Device::GetDevice(), &allocInfo, nullptr, &memory) != VK_SUCCESS){
+            if(vkAllocateMemory(i_Device::GetDevice(), &allocInfo, nullptr, &memory) != VK_SUCCESS){
                 throw std::runtime_error("Failed to allocate vertex buffer memory");
             }
 
@@ -248,26 +248,26 @@ void _DataBuffer::AllocateMemory(VkDeviceMemory& memory, VkBuffer buffer, size_t
         }
     }
 
-    vkBindBufferMemory(_Device::GetDevice(), buffer, memory, 0);
+    vkBindBufferMemory(i_Device::GetDevice(), buffer, memory, 0);
 }
 
-void _DataBuffer::UploadDataToMemory(VkDeviceMemory memory, void* data, size_t size){
+void i_DataBuffer::UploadDataToMemory(VkDeviceMemory memory, void* data, size_t size){
     void* mappedMem;
 
-    if(vkMapMemory(_Device::GetDevice(), memory, 0, size, 0, &mappedMem) != VK_SUCCESS){
+    if(vkMapMemory(i_Device::GetDevice(), memory, 0, size, 0, &mappedMem) != VK_SUCCESS){
         throw std::runtime_error("Failed to map vertex buffer memory, out of RAM?");
     }
     memcpy(mappedMem, data, size);
-    vkUnmapMemory(_Device::GetDevice(), memory);
+    vkUnmapMemory(i_Device::GetDevice(), memory);
 }
 
-_CommandBuffer _DataBuffer::RetrieveFreeStagingCommandBuffer(uint32_t threadIndex, _Semaphore signalSemaphore, std::weak_ptr<std::mutex> mutex){
+i_CommandBuffer i_DataBuffer::RetrieveFreeStagingCommandBuffer(uint32_t threadIndex, i_Semaphore signalSemaphore, std::weak_ptr<std::mutex> mutex){
     anyCommandBuffersRecorded = true;
 
     auto listFront = stagingCommandBuffers.begin();
     std::advance(listFront, threadIndex);
 
-    for(_DataBufferStagingCommandBuferData& commandBuffer : *listFront){
+    for(i_DataBufferStagingCommandBuferData& commandBuffer : *listFront){
         if(commandBuffer.free){
             commandBuffer.free = false;
             commandBuffer.signalSemaphore = signalSemaphore;
@@ -277,20 +277,20 @@ _CommandBuffer _DataBuffer::RetrieveFreeStagingCommandBuffer(uint32_t threadInde
     }
 
 
-    _CommandBufferCreateInfo stagingCommandBufferInfo;
-    stagingCommandBufferInfo.type = _CommandBufferType::DATA;
+    i_CommandBufferCreateInfo stagingCommandBufferInfo;
+    stagingCommandBufferInfo.type = i_CommandBufferType::DATA;
     stagingCommandBufferInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
     stagingCommandBufferInfo.flags = COMMAND_POOL_TYPE_TRANSFER | COMMAND_BUFFER_ONE_TIME_SUBMIT_FLAG;
     stagingCommandBufferInfo.threadIndex = threadIndex;
     
 
-    (*listFront).emplace_back(_CommandBuffer(stagingCommandBufferInfo), mutex, false, signalSemaphore);
+    (*listFront).emplace_back(i_CommandBuffer(stagingCommandBufferInfo), mutex, false, signalSemaphore);
     return (*listFront).back().commandBuffer;
 }
 
-void _DataBuffer::RecordCopyCommandBuffer(uint32_t threadIndex, size_t size){
+void i_DataBuffer::RecordCopyCommandBuffer(uint32_t threadIndex, size_t size){
 
-    _CommandBuffer commandBuffer = RetrieveFreeStagingCommandBuffer(createInfo.threadIndex, createInfo.signalSemaphore, bufferMutex);
+    i_CommandBuffer commandBuffer = RetrieveFreeStagingCommandBuffer(createInfo.threadIndex, createInfo.signalSemaphore, bufferMutex);
 
     commandBuffer.BeginCommandBuffer(nullptr, false);
 
@@ -308,7 +308,7 @@ void _DataBuffer::RecordCopyCommandBuffer(uint32_t threadIndex, size_t size){
     }
 }
 
-void _DataBuffer::SubmitCommandBuffers(){
+void i_DataBuffer::SubmitCommandBuffers(){
   if(!anyCommandBuffersRecorded){
         return;
     }
@@ -318,12 +318,12 @@ void _DataBuffer::SubmitCommandBuffers(){
 
     std::vector<VkCommandBuffer> recordedCommandBuffers{};
 
-    std::vector<_Fence> fences{};
+    std::vector<i_Fence> fences{};
 
     std::list<std::pair<VkCommandBuffer, VkSemaphore>> submitInfoReferenceList{};
 
-    for(std::list<_DataBufferStagingCommandBuferData>& commandBuffers : stagingCommandBuffers){
-        for(_DataBufferStagingCommandBuferData& commandBuffer : commandBuffers){
+    for(std::list<i_DataBufferStagingCommandBuferData>& commandBuffers : stagingCommandBuffers){
+        for(i_DataBufferStagingCommandBuferData& commandBuffer : commandBuffers){
             if(!commandBuffer.free){
                 if(!commandBuffer.signalSemaphore.IsInitialized()){
                     recordedCommandBuffers.push_back(commandBuffer.commandBuffer.GetCommandBuffer());
@@ -361,34 +361,34 @@ void _DataBuffer::SubmitCommandBuffers(){
 
     VkFence finishedCopyingFenceHandle = finishedCopyingFence.GetFence();
 
-    if(vkQueueSubmit(_Device::GetTransferQueue(), submitInfos.size(), submitInfos.data(), finishedCopyingFenceHandle) != VK_SUCCESS){
+    if(vkQueueSubmit(i_Device::GetTransferQueue(), submitInfos.size(), submitInfos.data(), finishedCopyingFenceHandle) != VK_SUCCESS){
         throw std::runtime_error("Failed to submit data buffer command buffer");
     }
-    vkWaitForFences(_Device::GetDevice(), 1, &finishedCopyingFenceHandle, VK_TRUE, std::numeric_limits<uint64_t>::max());
-    vkResetFences(_Device::GetDevice(), 1, &finishedCopyingFenceHandle);
+    vkWaitForFences(i_Device::GetDevice(), 1, &finishedCopyingFenceHandle, VK_TRUE, std::numeric_limits<uint64_t>::max());
+    vkResetFences(i_Device::GetDevice(), 1, &finishedCopyingFenceHandle);
 }
 
-void _DataBuffer::UpdateCleanup(){
+void i_DataBuffer::UpdateCleanup(){
     for(uint32_t i : resetPoolIndexes){
-        _CommandBuffer::ResetPools(_CommandBufferType::DATA, i); 
+        i_CommandBuffer::ResetPools(i_CommandBufferType::DATA, i);
     }
     anyCommandBuffersRecorded = false;
 
-    for(std::list<_DataBufferStagingCommandBuferData>& commandBuffers : stagingCommandBuffers){
+    for(std::list<i_DataBufferStagingCommandBuferData>& commandBuffers : stagingCommandBuffers){
         commandBuffers.resize(TARGET_STAGING_BUFFER_COUNT_PER_THREAD);
-        for(_DataBufferStagingCommandBuferData& commandBuffer : commandBuffers){
+        for(i_DataBufferStagingCommandBuferData& commandBuffer : commandBuffers){
             commandBuffer.free = true;
         }
     }
 
     for(std::pair<VkBuffer, VkDeviceMemory> stagingBufferAndMemory : stagingBufferAndMemoryDeleteQueue){
-        vkDestroyBuffer(_Device::GetDevice(), stagingBufferAndMemory.first, nullptr);
-        vkFreeMemory(_Device::GetDevice(), stagingBufferAndMemory.second, nullptr);
+        vkDestroyBuffer(i_Device::GetDevice(), stagingBufferAndMemory.first, nullptr);
+        vkFreeMemory(i_Device::GetDevice(), stagingBufferAndMemory.second, nullptr);
     }
     stagingBufferAndMemoryDeleteQueue.clear();
 }
 
-void _DataBuffer::SetSignalSemaphore(_Semaphore signalSemaphore){
+void i_DataBuffer::SetSignalSemaphore(i_Semaphore signalSemaphore){
     createInfo.signalSemaphore = signalSemaphore; 
 }
 
