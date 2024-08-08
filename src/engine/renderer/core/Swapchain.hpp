@@ -13,11 +13,12 @@
 #include "Semaphore.hpp"
 #include "Image.hpp"
 
-#define MAX_FRAMES_IN_FLIGHT 2
 
 namespace renderer{
 
-class _Swapchain{
+constexpr uint32_t MAX_FRAMES_IN_FLIGHT = 2;
+
+class i_Swapchain{
 public:
     static void Init();
     static void Cleanup();
@@ -27,10 +28,10 @@ public:
     static VkFormat GetImageFormat();
     static VkFormat GetDepthFormat();
     static uint32_t GetImageCount();
-    static _Image GetDepthImage();
+    static i_Image GetDepthImage();
 
     static void IncrementCurrentFrameInFlight();
-    static void IncrementCurrentFrameIndex(_Semaphore semaphore);
+    static void IncrementCurrentFrameIndex(const i_Semaphore& semaphore);
 
     static uint32_t GetFrameInFlight();
     static uint32_t GetImageIndex();
@@ -40,7 +41,7 @@ private:
     static VkSwapchainKHR swapchain;
     static std::vector<VkImageView> swapchainImageViews;
 
-    static _Image depthImage;
+    static i_Image depthImage;
     static VkFormat depthFormat;
 
     static void CreateDepthImage();

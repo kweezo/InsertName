@@ -16,34 +16,34 @@
 
 namespace renderer{
 
-struct _TextureCreateInfo{
+struct i_TextureCreateInfo{
     std::string path;
     uint32_t binding;
 
-    std::vector<std::weak_ptr<_Shader>> shaders;
+    std::vector<std::weak_ptr<i_Shader>> shaders;
 };
 
 
-class _Texture{
+class i_Texture{
 public:
     static void Update();
 
-    _Texture();
-    _Texture(_TextureCreateInfo createInfo);
-    _Texture(const _Texture& other);
-    _Texture operator=(const _Texture& other);
-    ~_Texture();
+    i_Texture();
+    i_Texture(i_TextureCreateInfo createInfo);
+    i_Texture(const i_Texture& other);
+    i_Texture& operator=(const i_Texture& other);
+    ~i_Texture();
 
     void SetBinding(uint32_t binding);
 
 private:
     void Destruct();
 
-    void LoadImageFile(const std::string path);
+    void LoadImageFile(std::string path);
     void CreateImage();
     void CreateSampler();
 
-    _Image image;
+    i_Image image;
     VkSampler sampler;
     VkDescriptorSet descriptorSet;
     
@@ -52,7 +52,7 @@ private:
     int channels;
     void* data;
 
-    std::vector<std::weak_ptr<_Shader>> shaders;
+    std::vector<std::weak_ptr<i_Shader>> shaders;
 
     uint32_t binding;
 

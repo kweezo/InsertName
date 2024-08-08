@@ -22,7 +22,7 @@
 
 namespace renderer{
 
-class _Instance{
+class i_Instance{
 public:
     static void Init();
     static void Cleanup();

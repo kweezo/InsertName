@@ -2,11 +2,7 @@
 
 //IMPORTANT: Draw calls will be categorized by the pipeline they use
 
-#include <stdexcept>
 #include <memory>
-#include <thread>
-#include <array>
-#include <thread>
 #include <mutex>
 #include <deque>
 
@@ -20,28 +16,28 @@
 
 namespace renderer{
 
-struct _CommandBufferCreateInfo{
+struct i_CommandBufferCreateInfo{
     VkCommandBufferLevel level;
     uint32_t flags;
-    _CommandBufferType type;
+    i_CommandBufferType type;
     uint32_t threadIndex;
 };
 
-class _CommandBuffer{
+class i_CommandBuffer{
 public:
     //You can ONLY pass the pipeline as nullptr if its a transfer command buffer
 
     static void Init();
 
-    _CommandBuffer(_CommandBufferCreateInfo createInfo);
-    _CommandBuffer();
-    ~_CommandBuffer();
+    i_CommandBuffer(i_CommandBufferCreateInfo createInfo);
+    i_CommandBuffer();
+    ~i_CommandBuffer();
 
-    _CommandBuffer(const _CommandBuffer& other);
-    _CommandBuffer operator=(const _CommandBuffer& other);
+    i_CommandBuffer(const i_CommandBuffer& other);
+    i_CommandBuffer& operator=(const i_CommandBuffer& other);
 
     void ResetCommandBuffer();
-    static void ResetPools(_CommandBufferType type, uint32_t threadIndex);
+    static void ResetPools(i_CommandBufferType type, uint32_t threadIndex);
 
     void BeginCommandBuffer(VkCommandBufferInheritanceInfo* inheritanceInfo, bool reset);
     void EndCommandBuffer();

@@ -5,25 +5,20 @@
 #include <memory>
 #include <utility>
 #include <thread>
-#include <limits>
 #include <set>
 #include <list>
 #include <mutex>
-#include <format>
-#include <tuple>
 
 #include <vulkan/vulkan.h>
 
-#include "Device.hpp"
-#include "CommandPool.hpp"
-#include "CommandBuffer.hpp"
 #include "Fence.hpp"
 #include "Semaphore.hpp"
+#include "CommandBuffer.hpp"
 
 
 namespace renderer{
 
-struct _DataBufferCreateInfo{
+struct i_DataBufferCreateInfo{
     void* data;
     size_t size;
 
@@ -32,36 +27,36 @@ struct _DataBufferCreateInfo{
     bool transferToLocalDeviceMemory;
     uint32_t threadIndex;
 
-    _Semaphore signalSemaphore;
+    i_Semaphore signalSemaphore;
 };
 
-struct _DataBufferStagingCommandBuferData{
-    _CommandBuffer commandBuffer;
+struct i_DataBufferStagingCommandBuferData{
+    i_CommandBuffer commandBuffer;
     std::weak_ptr<std::mutex> mutex;
     bool free;
-    _Semaphore signalSemaphore;
+    i_Semaphore signalSemaphore;
 };
 
-class _DataBuffer{
+class i_DataBuffer{
 public:
     static void Init();
     static void Update();
     static void Cleanup();
 
 
-    _DataBuffer();
-    _DataBuffer(_DataBufferCreateInfo createInfo);
+    i_DataBuffer();
+    i_DataBuffer(i_DataBufferCreateInfo createInfo);
 
-    _DataBuffer(const _DataBuffer& other);
-    _DataBuffer& operator=(const _DataBuffer& other);    
+    i_DataBuffer(const i_DataBuffer& other);
+    i_DataBuffer& operator=(const i_DataBuffer& other);
 
-    ~_DataBuffer();
+    ~i_DataBuffer();
 
     void UpdateData(void* data, size_t size, uint32_t threadIndex);
 
     VkBuffer GetBuffer();
 
-    void SetSignalSemaphore(_Semaphore signalSemaphore);
+    void SetSignalSemaphore(i_Semaphore signalSemaphore);
 
     void Destruct();
 
@@ -73,7 +68,7 @@ private:
 
 
     static void CreateCommandBuffers();
-    static _CommandBuffer RetrieveFreeStagingCommandBuffer(uint32_t threadIndex, _Semaphore signalSemaphore, std::weak_ptr<std::mutex> mutex);
+    static i_CommandBuffer RetrieveFreeStagingCommandBuffer(uint32_t threadIndex, i_Semaphore signalSemaphore, std::weak_ptr<std::mutex> mutex);
 
     static void RecordPrimaryCommandBuffer();
     static void SubmitCommandBuffers();
@@ -81,7 +76,7 @@ private:
 
     void RecordCopyCommandBuffer(uint32_t threadIndex, size_t size);
 
-    _DataBufferCreateInfo createInfo;
+    i_DataBufferCreateInfo createInfo;
 
     std::shared_ptr<std::mutex>/*a minescule amount of tomfoolery*/ bufferMutex;
     VkBuffer buffer;
@@ -90,10 +85,10 @@ private:
     VkBuffer stagingBuffer;
     VkDeviceMemory stagingMemory;
 
-    static std::list<std::list<_DataBufferStagingCommandBuferData>> stagingCommandBuffers;
+    static std::list<std::list<i_DataBufferStagingCommandBuferData>> stagingCommandBuffers;
     static std::list<std::pair<VkBuffer, VkDeviceMemory>> stagingBufferAndMemoryDeleteQueue;
     static std::set<uint32_t> resetPoolIndexes;
-    static _Fence finishedCopyingFence;
+    static i_Fence finishedCopyingFence;
     static bool anyCommandBuffersRecorded;
 
     std::shared_ptr<uint32_t> useCount;

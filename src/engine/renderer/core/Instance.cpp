@@ -25,7 +25,7 @@ VKAPI_ATTR VkBool32 VKAPI_CALL debugCallback(
     void* pUserData);
 
 VkResult CreateDebugUtilsMessengerEXT(VkInstance instance, const VkDebugUtilsMessengerCreateInfoEXT* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkDebugUtilsMessengerEXT* pDebugMessenger) {
-    auto func = (PFN_vkCreateDebugUtilsMessengerEXT) vkGetInstanceProcAddr(instance, "vkCreateDebugUtilsMessengerEXT");
+    auto func = reinterpret_cast<PFN_vkCreateDebugUtilsMessengerEXT>(vkGetInstanceProcAddr(instance, "vkCreateDebugUtilsMessengerEXT"));
     if (func != nullptr) {
         return func(instance, pCreateInfo, pAllocator, pDebugMessenger);
     } else {
@@ -39,7 +39,7 @@ void OnGpuCrashDump(const void* pGpuCrashDump, const uint32_t gpuCrashDumpSize, 
     if(!out.is_open()){
         throw std::runtime_error("Failed to open file for gpu dump");
     }
-    out.write(reinterpret_cast<const char*>(pGpuCrashDump), gpuCrashDumpSize);
+    out.write(static_cast<const char*>(pGpuCrashDump), gpuCrashDumpSize);
     out.close();
 }
 
@@ -56,10 +56,10 @@ void OnResolveMarker(const void* pMarkerData, const uint32_t markerDataSize, voi
 }
 
 
-VkInstance _Instance::instance = VK_NULL_HANDLE;
-VkDebugUtilsMessengerEXT _Instance::debugMessenger = VK_NULL_HANDLE;
+VkInstance i_Instance::instance = VK_NULL_HANDLE;
+VkDebugUtilsMessengerEXT i_Instance::debugMessenger = VK_NULL_HANDLE;
 
-void _Instance::Init(){
+void i_Instance::Init(){
 #ifdef NDEBUG
  /*   GFSDK_Aftermath_Result result = GFSDK_Aftermath_EnableGpuCrashDumps(
         GFSDK_Aftermath_Version_API,
@@ -93,10 +93,9 @@ void _Instance::Init(){
     createInfo.pApplicationInfo = &appInfo;
 
     uint32_t glfwExtensionCount = 0;
-    const char** glfwExtensions;
-    glfwExtensions = glfwGetRequiredInstanceExtensions(&glfwExtensionCount);
+    const char** glfwExtensions = glfwGetRequiredInstanceExtensions(&glfwExtensionCount);;
 
-    for(int i = 0; i < (int)glfwExtensionCount; i++){
+    for(int i = 0; i < glfwExtensionCount; i++){
         instanceExtensions.push_back(glfwExtensions[i]);
     }
 
@@ -119,7 +118,7 @@ void _Instance::Init(){
 #endif
 }
 
-void _Instance::SetupDebugMessenger() {
+void i_Instance::SetupDebugMessenger() {
     VkDebugUtilsMessengerCreateInfoEXT createInfo{};
     createInfo.sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT;
     createInfo.messageSeverity = VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT |
@@ -133,16 +132,16 @@ void _Instance::SetupDebugMessenger() {
     }
 }
 
-VkInstance _Instance::GetInstance(){
+VkInstance i_Instance::GetInstance(){
     if (instance == VK_NULL_HANDLE) {
         throw std::runtime_error("Vulkan instance not created");
     }
     return instance;
 }
 
-void _Instance::Cleanup(){
+void i_Instance::Cleanup(){
     if (debugMessenger != VK_NULL_HANDLE) {
-        auto func = (PFN_vkDestroyDebugUtilsMessengerEXT) vkGetInstanceProcAddr(instance, "vkDestroyDebugUtilsMessengerEXT");
+        auto func = reinterpret_cast<PFN_vkDestroyDebugUtilsMessengerEXT>(vkGetInstanceProcAddr(instance, "vkDestroyDebugUtilsMessengerEXT"));
         if (func != nullptr) {
             func(instance, debugMessenger, nullptr);
         }

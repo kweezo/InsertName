@@ -2,9 +2,9 @@
 
 namespace renderer{
 
-std::array<_Semaphore, MAX_FRAMES_IN_FLIGHT> Renderer::presentSemaphores{};
-std::array<_Semaphore, MAX_FRAMES_IN_FLIGHT> Renderer::renderSemaphores{};
-std::array<std::array<_Fence, 2>, MAX_FRAMES_IN_FLIGHT> Renderer::inFlightFences{};
+std::array<i_Semaphore, MAX_FRAMES_IN_FLIGHT> Renderer::presentSemaphores{};
+std::array<i_Semaphore, MAX_FRAMES_IN_FLIGHT> Renderer::renderSemaphores{};
+std::array<std::array<i_Fence, 2>, MAX_FRAMES_IN_FLIGHT> Renderer::inFlightFences{};
 std::array<std::array<VkFence, DRAW_QUEUE_SUBMIT_COUNT>, MAX_FRAMES_IN_FLIGHT> Renderer::inFlightFenceHandles{};
 std::array<std::vector<VkCommandBuffer>, MAX_FRAMES_IN_FLIGHT> Renderer::commandBuffers{};
 void Renderer::Init(){
@@ -12,64 +12,60 @@ void Renderer::Init(){
     SoftInit();
 }
 void Renderer::HardInit(){
-    _Instance::Init();
-    _Device::Init();
+    i_Instance::Init();
+    i_Device::Init();
     Window::Init();
-    _CommandPool::Init();
-    _CommandBuffer::Init();
-    _DataBuffer::Init();
-    _Image::Init();
+    i_CommandPool::Init();
+    i_CommandBuffer::Init();
+    i_DataBuffer::Init();
+    i_Image::Init();
 }
 
 void Renderer::SoftInit(){
-    _Swapchain::Init();
-    _GraphicsPipeline::Init();
-    _ShaderManager::Init();
-    Camera::__Init();
+    i_Swapchain::Init();
+    i_GraphicsPipeline::Init();
+    i_ShaderManager::Init();
+    Camera::i_Init();
 
     for(uint32_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++){
         for(uint32_t y = 0; y < DRAW_QUEUE_SUBMIT_COUNT; y++){
-            inFlightFences[i][y] = _Fence((i == 0));
+            inFlightFences[i][y] = i_Fence((i == 0));
             inFlightFenceHandles[i][y] = inFlightFences[i][y].GetFence(); 
         }
     }
 
-    _SemaphoreCreateInfo semaphoreInfo{};
+    i_SemaphoreCreateInfo semaphoreInfo{};
 
-    for(_Semaphore& semaphore : renderSemaphores){
-        semaphore = _Semaphore(semaphoreInfo);
+    for(i_Semaphore& semaphore : renderSemaphores){
+        semaphore = i_Semaphore(semaphoreInfo);
     }
 
-    for(_Semaphore& semaphore : presentSemaphores){
-        semaphore = _Semaphore(semaphoreInfo);
+    for(i_Semaphore& semaphore : presentSemaphores){
+        semaphore = i_Semaphore(semaphoreInfo);
     }
 
-    ModelInstance::__Init();
-
-    _Image::Update();
+    i_Image::Update();
 }
 
 void Renderer::UpdatePrepare(){
 
-    vkWaitForFences(_Device::GetDevice(), inFlightFenceHandles[_Swapchain::GetFrameInFlight()].size()-1, &inFlightFenceHandles[_Swapchain::GetFrameInFlight()][0], VK_TRUE, std::numeric_limits<uint64_t>::max());
-    vkResetFences(_Device::GetDevice(), inFlightFenceHandles[_Swapchain::GetFrameInFlight()].size(), inFlightFenceHandles[_Swapchain::GetFrameInFlight()].data());
+    vkWaitForFences(i_Device::GetDevice(), inFlightFenceHandles[i_Swapchain::GetFrameInFlight()].size()-1, &inFlightFenceHandles[i_Swapchain::GetFrameInFlight()][0], VK_TRUE, std::numeric_limits<uint64_t>::max());
+    vkResetFences(i_Device::GetDevice(), inFlightFenceHandles[i_Swapchain::GetFrameInFlight()].size(), inFlightFenceHandles[i_Swapchain::GetFrameInFlight()].data());
 
-    _Swapchain::IncrementCurrentFrameInFlight();
+    i_Swapchain::IncrementCurrentFrameInFlight();
 
-    _Swapchain::IncrementCurrentFrameIndex(presentSemaphores[_Swapchain::GetFrameInFlight()]);
+    i_Swapchain::IncrementCurrentFrameIndex(presentSemaphores[i_Swapchain::GetFrameInFlight()]);
 }
 
 void Renderer::UpdateComponents(){
-    _UniformBuffer::Update();
-    Camera::__Update();
-    _Texture::Update();
-
-    ModelInstance::__Update();
+    i_UniformBuffer::Update();
+    Camera::i_Update();
+    i_Texture::Update();
 
 
     std::array<std::thread, 2> threads = {
-        std::thread(_DataBuffer::Update),
-        std::thread(_Image::Update)
+        std::thread(i_DataBuffer::Update),
+        std::thread(i_Image::Update)
     };
 
     for(std::thread& thread : threads){
@@ -93,16 +89,16 @@ void Renderer::Update(){
 }
 
 void Renderer::Submit(){
-    std::array<_Fence, 2> instanceFences = {inFlightFences[_Swapchain::GetFrameInFlight()][0], inFlightFences[_Swapchain::GetFrameInFlight()][1]};
+    std::array<i_Fence, 2> instanceFences = {inFlightFences[i_Swapchain::GetFrameInFlight()][0], inFlightFences[i_Swapchain::GetFrameInFlight()][1]};
 
-    ModelInstance::__Draw(presentSemaphores[_Swapchain::GetFrameInFlight()], instanceFences);
+    ModelInstance::i_Draw(presentSemaphores[i_Swapchain::GetFrameInFlight()], instanceFences);
 }
 
 void Renderer::Present(){
-    std::array<VkSemaphore, 2> modelRenderFinishedSemaphores = ModelInstance::GetRenderFinishedSemaphores(_Swapchain::GetFrameInFlight());
+    std::array<VkSemaphore, 2> modelRenderFinishedSemaphores = ModelInstance::GetRenderFinishedSemaphores(i_Swapchain::GetFrameInFlight());
 
-    std::array<VkSwapchainKHR, 1> swapchains = {_Swapchain::GetSwapchain()};
-    std::array<uint32_t, 1> imageIndices = {_Swapchain::GetImageIndex()};
+    std::array<VkSwapchainKHR, 1> swapchains = {i_Swapchain::GetSwapchain()};
+    std::array<uint32_t, 1> imageIndices = {i_Swapchain::GetImageIndex()};
     std::array<VkSemaphore, 1> waitSemaphores = {modelRenderFinishedSemaphores[0]};
 
     VkPresentInfoKHR presentInfo{};
@@ -115,7 +111,7 @@ void Renderer::Present(){
     presentInfo.waitSemaphoreCount = waitSemaphores.size();
     presentInfo.pWaitSemaphores = waitSemaphores.data();
 
-    if(vkQueuePresentKHR(_Device::GetGraphicsQueue(), &presentInfo) != VK_SUCCESS){
+    if(vkQueuePresentKHR(i_Device::GetGraphicsQueue(), &presentInfo) != VK_SUCCESS){
         throw std::runtime_error("Failed to present to screen");
     }
 }
@@ -133,26 +129,25 @@ void Renderer::Cleanup(){
         }
     }
 
-    for(_Semaphore& semaphore : renderSemaphores){
+    for(i_Semaphore& semaphore : renderSemaphores){
         semaphore.Destruct();
     }
 
-    for(_Semaphore& semaphore : presentSemaphores){
+    for(i_Semaphore& semaphore : presentSemaphores){
         semaphore.Destruct();
     }
 
-    ModelInstance::__Cleanup();
-    ModelManager::_Cleanup();
-    _ShaderManager::Cleanup();
-    _Swapchain::Cleanup();
-    Camera::__Cleanup();
-    _DescriptorManager::Cleanup();
-    _DataBuffer::Cleanup();
-    _Image::Cleanup();
-    vkDestroySurfaceKHR(_Instance::GetInstance(), Window::GetVulkanSurface(), nullptr);
-    _GraphicsPipeline::Cleanup();
-    _CommandPool::Cleanup();
-    _Device::Cleanup();
-    _Instance::Cleanup();
+    ModelManager::i_Cleanup();
+    i_ShaderManager::Cleanup();
+    i_Swapchain::Cleanup();
+    Camera::i_Cleanup();
+    i_DescriptorManager::Cleanup();
+    i_DataBuffer::Cleanup();
+    i_Image::Cleanup();
+    vkDestroySurfaceKHR(i_Instance::GetInstance(), Window::GetVulkanSurface(), nullptr);
+    i_GraphicsPipeline::Cleanup();
+    i_CommandPool::Cleanup();
+    i_Device::Cleanup();
+    i_Instance::Cleanup();
 }
 }

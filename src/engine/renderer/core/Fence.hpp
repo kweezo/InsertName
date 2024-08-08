@@ -12,18 +12,18 @@
 
 namespace renderer{
 
-class _Fence{
+class i_Fence{
 public:
-    _Fence();
-    _Fence(bool signaled);
-    ~_Fence();
+    i_Fence();
+    i_Fence(bool signaled);
+    ~i_Fence();
 
-    _Fence(const _Fence& other);
-    _Fence& operator=(const _Fence& other);
+    i_Fence(const i_Fence& other);
+    i_Fence& operator=(const i_Fence& other);
 
-    bool IsInitialized() const;
+    [[nodiscard]] bool IsInitialized() const;
 
-    VkFence GetFence() const;
+    [[nodiscard]] VkFence GetFence() const;
 
     void Destruct();
 private:

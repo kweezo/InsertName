@@ -28,42 +28,42 @@
 
 #define MISSING_TEXTURE_PATH "./client_data/res/textures/no_texture.png"
 
-#define ModelHandle std::weak_ptr<_Model>
+#define ModelHandle std::weak_ptr<i_Model>
 
 namespace renderer{
 
-class _Model;
+class i_Model;
 
-struct _ModelCreateInfo{
+struct i_ModelCreateInfo{
     std::string path;
     std::string name;
-    std::weak_ptr<_Shader> shader;
+    std::weak_ptr<i_Shader> shader;
     std::function<void(void)> extraDrawCalls;
 };
 
 class ModelManager{
 public:
-    static ModelHandle Create(_ModelCreateInfo createInfo);
+    static ModelHandle Create(i_ModelCreateInfo createInfo);
     static void Destoy(ModelHandle handle);
 
-    static void _Cleanup();
+    static void i_Cleanup();
 private:
-    static std::vector<std::shared_ptr<_Model>> models;
+    static std::vector<std::shared_ptr<i_Model>> models;
 };
 
 
-class _Model{
+class i_Model{
 public:
-    _Model(_ModelCreateInfo createInfo);
+    i_Model(i_ModelCreateInfo createInfo);
 
-    _Model(const _Model& other) = delete;
-    _Model(_Model&& other) = delete;
-    _Model& operator=(const _Model& other) = delete;
-    _Model& operator=(_Model&& other) = delete;
+    i_Model(const i_Model& other) = delete;
+    i_Model(i_Model&& other) = delete;
+    i_Model& operator=(const i_Model& other) = delete;
+    i_Model& operator=(i_Model&& other) = delete;
 
-    void RecordDrawCommands(_CommandBuffer& commandBuffer, uint32_t instanceCount);
+    void RecordDrawCommands(i_CommandBuffer& commandBuffer, uint32_t instanceCount);
     
-    std::weak_ptr<_Shader> GetShader();
+    std::weak_ptr<i_Shader> GetShader();
     std::function<void(void)> GetExtraDrawCommands();
     std::string GetName();
 
@@ -72,12 +72,12 @@ private: //copied from learnopengl.com *mostly* shamelessly
     void LoadModelFile();
     void ProcessNode(aiNode* node, const aiScene* scene);
 
-    std::list<_Mesh> meshes;
-    std::unordered_map<std::string, _Texture> loadedTextures;
+    std::list<i_Mesh> meshes;
+    std::unordered_map<std::string, i_Texture> loadedTextures;
 
-    __VertexInputDescriptions extraDescriptions;
+    i_VertexInputDescriptions extraDescriptions;
 
-    _ModelCreateInfo createInfo;
+    i_ModelCreateInfo createInfo;
 
 };
 

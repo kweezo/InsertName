@@ -38,7 +38,11 @@ endif()
 
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
-set(CMAKE_RUNTIME_OUTPUT_DIRECTORY bin)
+
+if(WIN32)
+    set(CMAKE_RUNTIME_OUTPUT_DIRECTORY bin)
+endif()
+
 set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY lib)
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY lib)
 
@@ -201,7 +205,9 @@ endif()
 if(BUILD_ENGINE)
     file(GLOB enginesrc src/engine/renderer/core/*.cpp src/engine/renderer/ext/*.cpp
      src/engine/renderer/window/*.cpp src/client/account/Settings.cpp src/engine/renderer/ext/**/*.cpp)
-    add_library(engine SHARED ${enginesrc})
+    add_library(engine SHARED ${enginesrc}
+            src/engine/renderer/ext/model/StaticInstanceManager.cpp
+            src/engine/renderer/ext/model/StaticInstanceManager.hpp)
 
     if(WIN32)
         target_link_libraries(engine PUBLIC

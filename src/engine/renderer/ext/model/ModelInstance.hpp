@@ -1,9 +1,5 @@
 #pragma once
 
-#include <unordered_map>
-#include <vector>
-#include <thread>
-#include <mutex>
 #include <array>
 #include <memory>
 
@@ -12,17 +8,12 @@
 
 
 #include "Model.hpp"
-#include "StaticModelInstance.hpp"
-#include "engine/renderer/core/DataBuffer.hpp"
 #include "engine/types/Transform.hpp"
-#include "engine/renderer/core/GraphicsPipeline.hpp"
-#include "engine/renderer/core/CommandBuffer.hpp"
-#include "engine/renderer/core/Swapchain.hpp"
 #include "engine/renderer/core/Fence.hpp"
 #include "engine/renderer/core/Semaphore.hpp"
 
 
-#define _ModelInstanceHandleInternal std::weak_ptr<ModelInstance> 
+#define i_ModelInstanceHandleInternal std::weak_ptr<ModelInstance>
 #define ModelInstanceHandle std::shared_ptr<ModelInstance>
 
 namespace renderer{
@@ -34,13 +25,8 @@ struct ModelInstanceCreateInfo{
 };
 
 
-class ModelInstance : public _StaticModelInstance{
+class ModelInstance{
 public:
-    static void __Init();
-    static void __Update();
-    static void __UpdateCleanup();
-    static void __Cleanup();
-
     static ModelInstanceHandle Create(ModelInstanceCreateInfo& createInfo);
 
     ModelInstance(ModelInstanceCreateInfo& createInfo);
@@ -49,16 +35,16 @@ public:
     ModelInstance(const ModelInstance& other) = delete;
     ModelInstance(ModelInstance&& other) = delete;
 
-    void __AddSelfToInstanceData(std::shared_ptr<ModelInstance> self);
+    void i_AddSelfToInstanceData(std::shared_ptr<ModelInstance> self);
 
 
     static std::array<VkSemaphore, 2> GetRenderFinishedSemaphores(uint32_t imageIndex);
 
-    static void __Draw(_Semaphore presentSemaphore, std::array<_Fence, 2> inFlightFences);
+    static void i_Draw(i_Semaphore presentSemaphore, std::array<i_Fence, 2> inFlightFences);
 
-    bool GetShouldDraw() override;
+    bool GetShouldDraw();
     void SetShouldDraw(bool shouldDraw);
-    glm::mat4 GetModelMatrix() override;
+    glm::mat4 GetModelMatrix();
 
 private:
 
