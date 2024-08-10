@@ -7,46 +7,52 @@
 
 #include "DescriptorManager.hpp"
 
-namespace renderer{
+namespace renderer {
+    struct i_GraphicsPipelineCreateInfo {
+        std::array<VkPipelineShaderStageCreateInfo, 2> shaderStageCreateInfo;
+        std::vector<VkVertexInputAttributeDescription> attributeDescriptions;
+        std::vector<VkVertexInputBindingDescription> bindingDescriptions;
+    };
 
-struct i_GraphicsPipelineCreateInfo{
-    std::array<VkPipelineShaderStageCreateInfo, 2> shaderStageCreateInfo;
-    std::vector<VkVertexInputAttributeDescription> attributeDescriptions;
-    std::vector<VkVertexInputBindingDescription> bindingDescriptions;
-};
+    class i_GraphicsPipeline {
+    public:
+        static void Init();
 
-class i_GraphicsPipeline{
-public:
-    static void Init();
-    static void Cleanup();
+        static void Cleanup();
 
-    i_GraphicsPipeline();
-    i_GraphicsPipeline(i_GraphicsPipelineCreateInfo createInfo);
-    
-    ~i_GraphicsPipeline();
+        i_GraphicsPipeline();
 
-    i_GraphicsPipeline(const i_GraphicsPipeline& other);
-    i_GraphicsPipeline& operator=(const i_GraphicsPipeline& other);
+        i_GraphicsPipeline(i_GraphicsPipelineCreateInfo createInfo);
 
-    void BeginRenderPassAndBindPipeline(VkCommandBuffer commandBuffer);
-    static void EndRenderPass(VkCommandBuffer commandBuffer);
+        ~i_GraphicsPipeline();
 
-    VkPipelineLayout GetPipelineLayout();
-    static VkRenderPass GetRenderPass();
-    static VkFramebuffer GetFramebuffer(uint32_t index);
-private:
-    void Destruct();
+        i_GraphicsPipeline(const i_GraphicsPipeline &other);
 
-    static void CreateRenderPass();
-    static void CreateFramebuffers();
+        i_GraphicsPipeline &operator=(const i_GraphicsPipeline &other);
 
-    VkPipeline pipeline;
-    VkPipelineLayout pipelineLayout;
-    static VkRenderPass renderPass;
+        void BeginRenderPassAndBindPipeline(VkCommandBuffer commandBuffer);
 
-    static std::vector<VkFramebuffer> framebuffers;
+        static void EndRenderPass(VkCommandBuffer commandBuffer);
 
-    std::shared_ptr<uint32_t> useCount;
-};
+        VkPipelineLayout GetPipelineLayout();
 
+        static VkRenderPass GetRenderPass();
+
+        static VkFramebuffer GetFramebuffer(uint32_t index);
+
+    private:
+        void Destruct();
+
+        static void CreateRenderPass();
+
+        static void CreateFramebuffers();
+
+        VkPipeline pipeline;
+        VkPipelineLayout pipelineLayout;
+        static VkRenderPass renderPass;
+
+        static std::vector<VkFramebuffer> framebuffers;
+
+        std::shared_ptr<uint32_t> useCount;
+    };
 }

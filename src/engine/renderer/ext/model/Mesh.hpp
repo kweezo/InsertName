@@ -19,38 +19,37 @@
 #include "engine/renderer/core/DataBuffer.hpp"
 
 
+namespace renderer {
+    typedef struct i_BasicMeshVertex {
+        glm::vec3 pos;
+        glm::vec2 texCoord;
+        glm::vec3 normal;
+    } i_BasicMeshVertex;
 
-namespace renderer{
+    typedef struct i_TextureMaps {
+        std::shared_ptr<i_Texture> diffuseMap{};
+        std::shared_ptr<i_Texture> specularMap{};
+        std::shared_ptr<i_Texture> normalMap{};
+        std::shared_ptr<i_Texture> albedoMap{};
+    } i_TextureMaps;
 
-typedef struct i_BasicMeshVertex{
-    glm::vec3 pos;
-    glm::vec2 texCoord;
-    glm::vec3 normal;
-}i_BasicMeshVertex;
+    class i_Mesh {
+    public:
+        i_Mesh(std::vector<i_BasicMeshVertex> &vertices, std::vector<uint32_t> &indices,
+               const i_TextureMaps &textureMaps);
 
-typedef struct i_TextureMaps{
-    std::shared_ptr<i_Texture> diffuseMap{};
-    std::shared_ptr<i_Texture> specularMap{};
-    std::shared_ptr<i_Texture> normalMap{};
-    std::shared_ptr<i_Texture> albedoMap{};
-}i_TextureMaps;
+        void RecordDrawCommands(i_CommandBuffer &commandBuffer, uint32_t instanceCount);
 
-class i_Mesh{
-public:
-    i_Mesh(std::vector<i_BasicMeshVertex>& vertices, std::vector<uint32_t>& indices, const i_TextureMaps& textureMaps);
+    private:
+        i_DataBuffer vtnBuffer;
+        i_DataBuffer indexBuffer;
 
-    void RecordDrawCommands(i_CommandBuffer& commandBuffer, uint32_t instanceCount);
-private:
-    i_DataBuffer vtnBuffer;
-    i_DataBuffer indexBuffer;
+        i_TextureMaps textureMaps;
 
-    i_TextureMaps textureMaps;
+        uint32_t indexCount;
 
-    uint32_t indexCount;
+        static uint32_t GetCurrentThreadIndex();
 
-    static uint32_t GetCurrentThreadIndex();
-
-    static uint32_t currentThreadIndex;
-};
-
+        static uint32_t currentThreadIndex;
+    };
 }

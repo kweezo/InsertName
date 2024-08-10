@@ -20,19 +20,19 @@
 
 #define GPU_CRASH_LOG_FILE "./client_data/log/gpu_dump.nv-gpudmp"
 
-namespace renderer{
+namespace renderer {
+    class i_Instance {
+    public:
+        static void Init();
 
-class i_Instance{
-public:
-    static void Init();
-    static void Cleanup();
+        static void Cleanup();
 
-    static VkInstance GetInstance();
-private:
-    static void SetupDebugMessenger();
+        static VkInstance GetInstance();
 
-    static VkInstance instance;
-    static VkDebugUtilsMessengerEXT debugMessenger;
-};
+    private:
+        static void SetupDebugMessenger();
 
+        static VkInstance instance;
+        static VkDebugUtilsMessengerEXT debugMessenger;
+    };
 }

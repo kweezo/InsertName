@@ -30,56 +30,59 @@
 
 #define ModelHandle std::weak_ptr<i_Model>
 
-namespace renderer{
+namespace renderer {
+    class i_Model;
 
-class i_Model;
+    struct i_ModelCreateInfo {
+        std::string path;
+        std::string name;
+        std::weak_ptr<i_Shader> shader;
+        std::function<void(void)> extraDrawCalls;
+    };
 
-struct i_ModelCreateInfo{
-    std::string path;
-    std::string name;
-    std::weak_ptr<i_Shader> shader;
-    std::function<void(void)> extraDrawCalls;
-};
+    class ModelManager {
+    public:
+        static ModelHandle Create(i_ModelCreateInfo createInfo);
 
-class ModelManager{
-public:
-    static ModelHandle Create(i_ModelCreateInfo createInfo);
-    static void Destoy(ModelHandle handle);
+        static void Destoy(ModelHandle handle);
 
-    static void i_Cleanup();
-private:
-    static std::vector<std::shared_ptr<i_Model>> models;
-};
+        static void i_Cleanup();
 
-
-class i_Model{
-public:
-    i_Model(i_ModelCreateInfo createInfo);
-
-    i_Model(const i_Model& other) = delete;
-    i_Model(i_Model&& other) = delete;
-    i_Model& operator=(const i_Model& other) = delete;
-    i_Model& operator=(i_Model&& other) = delete;
-
-    void RecordDrawCommands(i_CommandBuffer& commandBuffer, uint32_t instanceCount);
-    
-    std::weak_ptr<i_Shader> GetShader();
-    std::function<void(void)> GetExtraDrawCommands();
-    std::string GetName();
+    private:
+        static std::vector<std::shared_ptr<i_Model> > models;
+    };
 
 
-private: //copied from learnopengl.com *mostly* shamelessly
-    void LoadModelFile();
-    void ProcessNode(aiNode* node, const aiScene* scene);
+    class i_Model {
+    public:
+        i_Model(i_ModelCreateInfo createInfo);
 
-    std::list<i_Mesh> meshes;
-    std::unordered_map<std::string, i_Texture> loadedTextures;
+        i_Model(const i_Model &other) = delete;
 
-    i_VertexInputDescriptions extraDescriptions;
+        i_Model(i_Model &&other) = delete;
 
-    i_ModelCreateInfo createInfo;
+        i_Model &operator=(const i_Model &other) = delete;
 
-};
+        i_Model &operator=(i_Model &&other) = delete;
 
+        void RecordDrawCommands(i_CommandBuffer &commandBuffer, uint32_t instanceCount);
 
+        std::weak_ptr<i_Shader> GetShader();
+
+        std::function<void(void)> GetExtraDrawCommands();
+
+        std::string GetName();
+
+    private: //copied from learnopengl.com *mostly* shamelessly
+        void LoadModelFile();
+
+        void ProcessNode(aiNode *node, const aiScene *scene);
+
+        std::list<i_Mesh> meshes;
+        std::unordered_map<std::string, i_Texture> loadedTextures;
+
+        i_VertexInputDescriptions extraDescriptions;
+
+        i_ModelCreateInfo createInfo;
+    };
 }

@@ -10,27 +10,28 @@
 
 #include "Device.hpp"
 
-namespace renderer{
+namespace renderer {
+    class i_Fence {
+    public:
+        i_Fence();
 
-class i_Fence{
-public:
-    i_Fence();
-    i_Fence(bool signaled);
-    ~i_Fence();
+        i_Fence(bool signaled);
 
-    i_Fence(const i_Fence& other);
-    i_Fence& operator=(const i_Fence& other);
+        ~i_Fence();
 
-    [[nodiscard]] bool IsInitialized() const;
+        i_Fence(const i_Fence &other);
 
-    [[nodiscard]] VkFence GetFence() const;
+        i_Fence &operator=(const i_Fence &other);
 
-    void Destruct();
-private:
+        [[nodiscard]] bool IsInitialized() const;
 
-    VkFence fence = VK_NULL_HANDLE;
-    
-    std::shared_ptr<uint32_t> useCount;
-};
+        [[nodiscard]] VkFence GetFence() const;
 
+        void Destruct();
+
+    private:
+        VkFence fence = VK_NULL_HANDLE;
+
+        std::shared_ptr<uint32_t> useCount;
+    };
 }

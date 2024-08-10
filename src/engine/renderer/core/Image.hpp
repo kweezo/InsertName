@@ -12,84 +12,95 @@
 #include "CommandBuffer.hpp"
 #include "Fence.hpp"
 
-namespace renderer{
+namespace renderer {
+    class i_Shader; //IM SORRY OKAY I HAD TO or else the dependencies go WEEEEEEEEEWOOOOOWEEEEWOOOO
 
-class i_Shader; //IM SORRY OKAY I HAD TO or else the dependencies go WEEEEEEEEEWOOOOOWEEEEWOOOO
+    struct i_ImageCreateInfo {
+        VkImageLayout layout;
+        VkFormat format;
+        VkImageAspectFlags aspectMask;
+        VkImageUsageFlags usage;
+        VkExtent2D imageExtent;
 
-struct i_ImageCreateInfo{
-    VkImageLayout layout;
-    VkFormat format;
-    VkImageAspectFlags aspectMask;
-    VkImageUsageFlags usage;
-    VkExtent2D imageExtent;
-
-    bool copyToLocalDeviceMemory;
-
-
-    size_t size;
-    void* data;
-
-    uint32_t threadIndex;
-};
-
-class i_Image{
-public:
-    static void Init();
-    static void Update();
-    static void Cleanup();
-
-    i_Image();
-    i_Image(const i_ImageCreateInfo& createInfo);
-    i_Image& operator=(const i_Image& other);
-    i_Image(const i_Image& other);
-    ~i_Image();
+        bool copyToLocalDeviceMemory;
 
 
-    static VkFormat GetSupportedFormat(const std::vector<VkFormat>& candidates, VkImageTiling tiling, VkFormatFeatureFlags features);
-    static inline bool HasStencilComponent(VkFormat format);
+        size_t size;
+        void *data;
 
-    void TransitionLayout(VkImageLayout oldLayout, VkImageLayout newLayout) const ;
+        uint32_t threadIndex;
+    };
 
-    [[nodiscard]] VkImage GetImage() const;
-    [[nodiscard]] VkImageView GetImageView() const;
+    class i_Image {
+    public:
+        static void Init();
 
-    void Destruct();
-private:
+        static void Update();
 
-    void CreateImage();
-    void CreateImageView();
-    void AllocateMemory();
+        static void Cleanup();
 
-    void CopyDataToDevice() const;
+        i_Image();
 
-    static i_CommandBuffer GetFreeCommandBuffer(uint32_t threadIndex);
-    static std::vector<std::vector<std::pair<i_CommandBuffer, bool>>> secondaryCommandBuffers;
+        i_Image(const i_ImageCreateInfo &createInfo);
 
-    static void SubmitCommandBuffers();
-    static void UpdateCleanup();
+        i_Image &operator=(const i_Image &other);
 
-    static void CreateCommmandBuffers();
+        i_Image(const i_Image &other);
 
-    static i_Fence commandBuffersFinishedExecutionFence;
-    static std::set<uint32_t> commandPoolResetIndexes;
-    static bool anyCommandBuffersRecorded;
+        ~i_Image();
 
 
-    VkImage image;
-    VkImageView imageView;
-    VkDeviceMemory memory;
+        static VkFormat GetSupportedFormat(const std::vector<VkFormat> &candidates, VkImageTiling tiling,
+                                           VkFormatFeatureFlags features);
 
-    std::shared_ptr<i_DataBuffer> stagingBuffer;
+        static inline bool HasStencilComponent(VkFormat format);
 
-    i_Semaphore waitSemaphore;
+        void TransitionLayout(VkImageLayout oldLayout, VkImageLayout newLayout) const;
 
-    i_ImageCreateInfo createInfo{};
+        [[nodiscard]] VkImage GetImage() const;
 
-    static std::list<std::shared_ptr<i_DataBuffer>> bufferCleanupQueue;
-    static std::vector<VkWriteDescriptorSet> writeDescriptorSetsQueue;
+        [[nodiscard]] VkImageView GetImageView() const;
+
+        void Destruct();
+
+    private:
+        void CreateImage();
+
+        void CreateImageView();
+
+        void AllocateMemory();
+
+        void CopyDataToDevice() const;
+
+        static i_CommandBuffer GetFreeCommandBuffer(uint32_t threadIndex);
+
+        static std::vector<std::vector<std::pair<i_CommandBuffer, bool> > > secondaryCommandBuffers;
+
+        static void SubmitCommandBuffers();
+
+        static void UpdateCleanup();
+
+        static void CreateCommmandBuffers();
+
+        static i_Fence commandBuffersFinishedExecutionFence;
+        static std::set<uint32_t> commandPoolResetIndexes;
+        static bool anyCommandBuffersRecorded;
 
 
-    std::shared_ptr<uint32_t> useCount;
-};
-    
-} 
+        VkImage image;
+        VkImageView imageView;
+        VkDeviceMemory memory;
+
+        std::shared_ptr<i_DataBuffer> stagingBuffer;
+
+        i_Semaphore waitSemaphore;
+
+        i_ImageCreateInfo createInfo{};
+
+        static std::list<std::shared_ptr<i_DataBuffer> > bufferCleanupQueue;
+        static std::vector<VkWriteDescriptorSet> writeDescriptorSetsQueue;
+
+
+        std::shared_ptr<uint32_t> useCount;
+    };
+}

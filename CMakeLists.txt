@@ -206,8 +206,8 @@ if(BUILD_ENGINE)
     file(GLOB enginesrc src/engine/renderer/core/*.cpp src/engine/renderer/ext/*.cpp
      src/engine/renderer/window/*.cpp src/client/account/Settings.cpp src/engine/renderer/ext/**/*.cpp)
     add_library(engine SHARED ${enginesrc}
-            src/engine/renderer/ext/model/StaticInstanceManager.cpp
-            src/engine/renderer/ext/model/StaticInstanceManager.hpp)
+            src/engine/renderer/ext/model/StaticInstanceData.cpp
+            src/engine/renderer/ext/model/StaticInstanceData.hpp)
 
     if(WIN32)
         target_link_libraries(engine PUBLIC
@@ -230,7 +230,9 @@ endif()
 
 if(BUILD_CLIENT)    
     file(GLOB clientsrc src/client/account/*.cpp)
-    add_executable(client ${clientsrc} src/client/main.cpp)
+    add_executable(client ${clientsrc} src/client/main.cpp
+            src/engine/renderer/ext/model/StaticInstanceManager.cpp
+            src/engine/renderer/ext/model/StaticInstanceManager.hpp)
 
     link_directories(${CMAKE_SOURCE_DIR}/lib)
     include_directories(${CMAKE_SOURCE_DIR}/src)

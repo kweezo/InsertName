@@ -14,48 +14,52 @@
 #define COMMAND_BUFFER_TRANSFER_FLAG 2
 #define COMMAND_BUFFER_ONE_TIME_SUBMIT_FLAG 4
 
-namespace renderer{
+namespace renderer {
+    struct i_CommandBufferCreateInfo {
+        VkCommandBufferLevel level;
+        uint32_t flags;
+        i_CommandBufferType type;
+        uint32_t threadIndex;
+    };
 
-struct i_CommandBufferCreateInfo{
-    VkCommandBufferLevel level;
-    uint32_t flags;
-    i_CommandBufferType type;
-    uint32_t threadIndex;
-};
+    class i_CommandBuffer {
+    public:
+        //You can ONLY pass the pipeline as nullptr if its a transfer command buffer
 
-class i_CommandBuffer{
-public:
-    //You can ONLY pass the pipeline as nullptr if its a transfer command buffer
+        static void Init();
 
-    static void Init();
+        i_CommandBuffer(i_CommandBufferCreateInfo createInfo);
 
-    i_CommandBuffer(i_CommandBufferCreateInfo createInfo);
-    i_CommandBuffer();
-    ~i_CommandBuffer();
+        i_CommandBuffer();
 
-    i_CommandBuffer(const i_CommandBuffer& other);
-    i_CommandBuffer& operator=(const i_CommandBuffer& other);
+        ~i_CommandBuffer();
 
-    void ResetCommandBuffer();
-    static void ResetPools(i_CommandBufferType type, uint32_t threadIndex);
+        i_CommandBuffer(const i_CommandBuffer &other);
 
-    void BeginCommandBuffer(VkCommandBufferInheritanceInfo* inheritanceInfo, bool reset);
-    void EndCommandBuffer();
+        i_CommandBuffer &operator=(const i_CommandBuffer &other);
 
-    VkCommandBuffer GetCommandBuffer();
-private:
-    void Destruct();
+        void ResetCommandBuffer();
 
-    VkCommandBufferLevel level;
-    uint32_t flags;
-    uint32_t poolID;
+        static void ResetPools(i_CommandBufferType type, uint32_t threadIndex);
 
-    static std::deque<std::mutex> poolMutexes;
-    std::unique_ptr<std::lock_guard<std::mutex>> lock;
+        void BeginCommandBuffer(VkCommandBufferInheritanceInfo *inheritanceInfo, bool reset);
 
-    std::shared_ptr<uint32_t> useCount;
+        void EndCommandBuffer();
 
-    VkCommandBuffer commandBuffer;
-};
+        VkCommandBuffer GetCommandBuffer();
 
+    private:
+        void Destruct();
+
+        VkCommandBufferLevel level;
+        uint32_t flags;
+        uint32_t poolID;
+
+        static std::deque<std::mutex> poolMutexes;
+        std::unique_ptr<std::lock_guard<std::mutex> > lock;
+
+        std::shared_ptr<uint32_t> useCount;
+
+        VkCommandBuffer commandBuffer;
+    };
 }

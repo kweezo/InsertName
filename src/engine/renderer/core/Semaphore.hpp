@@ -10,30 +10,30 @@
 
 #include "Device.hpp"
 
-namespace renderer{
+namespace renderer {
+    struct i_SemaphoreCreateInfo {
+    };
 
-struct i_SemaphoreCreateInfo{
+    class i_Semaphore {
+    public:
+        i_Semaphore();
 
-};
+        i_Semaphore(i_SemaphoreCreateInfo createInfo);
 
-class i_Semaphore{
-public:
-    i_Semaphore();
-    i_Semaphore(i_SemaphoreCreateInfo createInfo);
-    ~i_Semaphore();
+        ~i_Semaphore();
 
-    i_Semaphore(const i_Semaphore& other);
-    i_Semaphore& operator=(const i_Semaphore& other);
+        i_Semaphore(const i_Semaphore &other);
 
-    [[nodiscard]] bool IsInitialized() const;
+        i_Semaphore &operator=(const i_Semaphore &other);
 
-    [[nodiscard]] VkSemaphore GetSemaphore() const;
+        [[nodiscard]] bool IsInitialized() const;
 
-    void Destruct();
-private:
+        [[nodiscard]] VkSemaphore GetSemaphore() const;
 
-    VkSemaphore semaphore = VK_NULL_HANDLE;
-    std::shared_ptr<uint32_t> useCount;
-};
+        void Destruct();
 
+    private:
+        VkSemaphore semaphore = VK_NULL_HANDLE;
+        std::shared_ptr<uint32_t> useCount;
+    };
 }

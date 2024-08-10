@@ -6,60 +6,66 @@
 
 #include "Instance.hpp"
 
-namespace renderer{
-
-typedef struct i_QueueFamilyInfo{
-    bool graphicsFamilyFound = false;
-    bool transferFamilyFound = false;
-
-
-    VkDeviceQueueCreateInfo graphicsQueueCreateInfo{};
-    VkDeviceQueueCreateInfo transferQueueCreateInfo{};
-} i_QueueFamilyInfo;
+namespace renderer {
+    typedef struct i_QueueFamilyInfo {
+        bool graphicsFamilyFound = false;
+        bool transferFamilyFound = false;
 
 
-class i_Device{
-public:
-    static void Init();
-    static void Cleanup();
+        VkDeviceQueueCreateInfo graphicsQueueCreateInfo{};
+        VkDeviceQueueCreateInfo transferQueueCreateInfo{};
+    } i_QueueFamilyInfo;
 
-    static VkDevice GetDevice();
-    static VkPhysicalDevice GetPhysicalDevice();
 
-    static VkQueue GetGraphicsQueue();
-    static VkQueue GetTransferQueue();
+    class i_Device {
+    public:
+        static void Init();
 
-    static i_QueueFamilyInfo GetQueueFamilyInfo();
-    static VkPhysicalDeviceProperties GetPhysicalDeviceProperties();
+        static void Cleanup();
 
-    static bool DeviceMemoryFree();
-    static void SetDeviceMemoryFull();
+        static VkDevice GetDevice();
 
-    static bool IsInitialized();
-private:
-    static VkPhysicalDeviceFeatures GetAvailableDeviceFeatures();
+        static VkPhysicalDevice GetPhysicalDevice();
 
-    static uint32_t graphicsQueueFamilyIndex;
-    static uint32_t transferQueueFamilyIndex;
+        static VkQueue GetGraphicsQueue();
 
-    static std::vector<VkQueue> graphicsQueues;
-    static std::vector<VkQueue> transferQueues;
+        static VkQueue GetTransferQueue();
 
-    static VkDevice device;
-    static VkPhysicalDevice physicalDevice;
+        static i_QueueFamilyInfo GetQueueFamilyInfo();
 
-    static VkPhysicalDeviceProperties physicalDeviceProperties;
+        static VkPhysicalDeviceProperties GetPhysicalDeviceProperties();
 
-    static bool deviceMemoryFree;
-    static bool initialized;
+        static bool DeviceMemoryFree();
 
-    static i_QueueFamilyInfo queueFamilyInfo;
+        static void SetDeviceMemoryFull();
 
-    static void PickPhysicalDevice();
-    static void CreateLogicalDevice();
-    static void CreateQueueCreateInfos();
-    static void GetQueues();
+        static bool IsInitialized();
 
-};
+    private:
+        static VkPhysicalDeviceFeatures GetAvailableDeviceFeatures();
 
+        static uint32_t graphicsQueueFamilyIndex;
+        static uint32_t transferQueueFamilyIndex;
+
+        static std::vector<VkQueue> graphicsQueues;
+        static std::vector<VkQueue> transferQueues;
+
+        static VkDevice device;
+        static VkPhysicalDevice physicalDevice;
+
+        static VkPhysicalDeviceProperties physicalDeviceProperties;
+
+        static bool deviceMemoryFree;
+        static bool initialized;
+
+        static i_QueueFamilyInfo queueFamilyInfo;
+
+        static void PickPhysicalDevice();
+
+        static void CreateLogicalDevice();
+
+        static void CreateQueueCreateInfos();
+
+        static void GetQueues();
+    };
 }

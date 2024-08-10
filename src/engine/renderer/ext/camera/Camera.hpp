@@ -8,21 +8,21 @@
 #include "engine/renderer/window/Window.hpp"
 #include "engine/renderer/core/UniformBuffer.hpp"
 
-namespace renderer{
+namespace renderer {
+    class Camera {
+    public:
+        static void i_Init();
 
-class Camera{
-public:
-    static void i_Init();
-    static void i_Update();
-    static void i_Cleanup();
+        static void i_Update();
 
-private:
-    static glm::mat4 view;
-    static glm::mat4 perspectiveProjection;
-    static glm::mat4 orthoProjection;
+        static void i_Cleanup();
 
-    static i_UniformBuffer orthoCamera;
-    static i_UniformBuffer perspectiveCamera;
-};
+    private:
+        static glm::mat4 view;
+        static glm::mat4 perspectiveProjection;
+        static glm::mat4 orthoProjection;
 
+        static i_UniformBuffer orthoCamera;
+        static i_UniformBuffer perspectiveCamera;
+    };
 }
