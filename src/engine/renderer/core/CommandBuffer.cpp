@@ -1,5 +1,7 @@
 #include "CommandBuffer.hpp"
 
+#include <thread>
+
 namespace renderer {
     std::deque<std::mutex> i_CommandBuffer::poolMutexes = {};
 
@@ -154,5 +156,9 @@ namespace renderer {
 
     i_CommandBuffer::~i_CommandBuffer() {
         Destruct();
+    }
+
+    uint32_t i_CommandBuffer::GetThreadIndex() const {
+        return threadIndex;
     }
 }

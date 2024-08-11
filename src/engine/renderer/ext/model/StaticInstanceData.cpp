@@ -10,7 +10,7 @@ namespace renderer {
     i_StaticInstanceData::i_StaticInstanceData(ModelHandle model, std::weak_ptr<i_Shader> shader): model(std::move(
             model)),
         shader(std::move(shader)), buffer(), dataUploadedSemaphore(),
-        commandBuffers(), drawCount(0), instances() {
+        drawCount(0), instances() {
         i_SemaphoreCreateInfo createInfo{};
         dataUploadedSemaphore = i_Semaphore(createInfo);
     }
@@ -19,15 +19,10 @@ namespace renderer {
         instances.push_front(instance);
     }
 
-    void i_StaticInstanceData::AssignCommandBuffers(
-        const std::array<i_CommandBuffer, MAX_FRAMES_IN_FLIGHT> &commandBuffers) {
-        this->commandBuffers = commandBuffers;
-    }
-
-    void i_StaticInstanceData::Update(uint32_t threadIndex) {
+    void i_StaticInstanceData::UpdateAndRecordBuffer(const i_CommandBuffer& commandBuffer) {
         GetDrawableInstances();
-        UploadDataToBuffer(threadIndex);
-        RecordCommandBuffer(threadIndex);
+        UploadDataToBuffer(commandBuffer.GetThreadIndex());
+        RecordCommandBuffer(commandBuffer);
     }
 
     void i_StaticInstanceData::GetDrawableInstances() {
@@ -81,7 +76,7 @@ namespace renderer {
         buffer = i_DataBuffer(createInfo);
     }
 
-    void i_StaticInstanceData::RecordCommandBuffer(uint32_t threadIndex) {
+    void i_StaticInstanceData::RecordCommandBuffer(i_CommandBuffer commandBuffer) {
         std::shared_ptr<i_Shader> shader = this->shader.lock();
         std::shared_ptr<i_Model> model = this->model.lock();
 
@@ -90,14 +85,14 @@ namespace renderer {
 
         VkDescriptorSet set = shader->GetDescriptorSet();
 
-        vkCmdBindVertexBuffers(commandBuffers[i_Swapchain::GetFrameInFlight()].GetCommandBuffer(), 1, 1, &vertexBuffer,
+        vkCmdBindVertexBuffers(commandBuffer.GetCommandBuffer(), 1, 1, &vertexBuffer,
                                &offset);
 
-        vkCmdBindDescriptorSets(commandBuffers[i_Swapchain::GetFrameInFlight()].GetCommandBuffer(),
+        vkCmdBindDescriptorSets(commandBuffer.GetCommandBuffer(),
                                 VK_PIPELINE_BIND_POINT_GRAPHICS, shader->GetGraphicsPipeline()->GetPipelineLayout(), 0,
                                 1, &set, 0, nullptr);
 
         model->GetExtraDrawCommands();
-        model->RecordDrawCommands(commandBuffers[i_Swapchain::GetFrameInFlight()], drawCount);
+        model->RecordDrawCommands(commandBuffer, drawCount);
     }
 }

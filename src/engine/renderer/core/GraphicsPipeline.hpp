@@ -36,7 +36,7 @@ namespace renderer {
 
         VkPipelineLayout GetPipelineLayout();
 
-        static VkRenderPass GetRenderPass();
+        static VkRenderPass GetRenderPass();//TODO: ????????? WHY STATIC WHAT THE FUCK
 
         static VkFramebuffer GetFramebuffer(uint32_t index);
 

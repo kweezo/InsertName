@@ -48,12 +48,16 @@ namespace renderer {
 
         VkCommandBuffer GetCommandBuffer();
 
+        [[nodiscard]] uint32_t GetThreadIndex() const;
+
     private:
         void Destruct();
 
         VkCommandBufferLevel level;
         uint32_t flags;
         uint32_t poolID;
+
+        uint32_t threadIndex;
 
         static std::deque<std::mutex> poolMutexes;
         std::unique_ptr<std::lock_guard<std::mutex> > lock;

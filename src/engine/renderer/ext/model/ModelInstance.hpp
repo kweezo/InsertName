@@ -49,6 +49,8 @@ namespace renderer {
 
         void SetShouldDraw(bool shouldDraw);
 
+        ModelHandle GetModel();
+
         glm::mat4 GetModelMatrix();
 
     private:

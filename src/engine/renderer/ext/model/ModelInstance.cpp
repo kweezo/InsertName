@@ -55,6 +55,11 @@ namespace renderer {
         return shouldDraw;
     }
 
+    ModelHandle ModelInstance::GetModel() {
+        return createInfo.model;
+    }
+
+
     void ModelInstance::SetShouldDraw(bool shouldDraw) {
         this->shouldDraw = shouldDraw;
     }
