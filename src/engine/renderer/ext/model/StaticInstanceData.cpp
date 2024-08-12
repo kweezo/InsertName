@@ -7,7 +7,7 @@
 #include <utility>
 
 namespace renderer {
-    i_StaticInstanceData::i_StaticInstanceData(ModelHandle model, std::weak_ptr<i_Shader> shader): model(std::move(
+    i_StaticInstanceData::i_StaticInstanceData(ModelHandle model, ShaderHandle shader): model(std::move(
             model)),
         shader(std::move(shader)), buffer(), dataUploadedSemaphore(),
         drawCount(0), instances() {
@@ -94,5 +94,9 @@ namespace renderer {
 
         model->GetExtraDrawCommands();
         model->RecordDrawCommands(commandBuffer, drawCount);
+    }
+
+    i_Semaphore i_StaticInstanceData::GetDataUploadedSemaphore() const{
+        return dataUploadedSemaphore;
     }
 }

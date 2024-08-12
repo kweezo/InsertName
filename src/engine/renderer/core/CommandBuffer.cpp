@@ -94,7 +94,7 @@ namespace renderer {
         i_CommandPool::ResetPool(type * std::thread::hardware_concurrency() + threadIndex);
     }
 
-    VkCommandBuffer i_CommandBuffer::GetCommandBuffer() {
+    VkCommandBuffer i_CommandBuffer::GetCommandBuffer() const{
         return commandBuffer;
     }
 

@@ -6,6 +6,7 @@
 #include <vulkan/vulkan.h>
 
 #include "DescriptorManager.hpp"
+#include "Swapchain.hpp"
 
 namespace renderer {
     struct i_GraphicsPipelineCreateInfo {

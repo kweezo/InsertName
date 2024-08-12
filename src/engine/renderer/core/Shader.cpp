@@ -3,9 +3,9 @@
 namespace renderer {
     const std::string shaderPath = "client_data/shaders/bin/";
 
-    std::vector<_ShaderBindingInfo> i_Shader::shaderBindings = {};
+    std::vector<i_ShaderBindingInfo> i_Shader::shaderBindings = {};
     boost::container::flat_map<std::string, std::shared_ptr<i_Shader> > i_ShaderManager::shaders = {};
-    boost::container::flat_map<std::string, std::vector<std::weak_ptr<i_Shader> > > i_ShaderManager::shadersByCategory =
+    boost::container::flat_map<std::string, std::vector<ShaderHandle > > i_ShaderManager::shadersByCategory =
             {};
 
     void i_ShaderManager::Init() {
@@ -107,14 +107,14 @@ namespace renderer {
         stream.close();
     }
 
-    std::weak_ptr<i_Shader> i_ShaderManager::GetShader(std::string name) {
+    ShaderHandle i_ShaderManager::GetShader(std::string name) {
         if (shaders.find(name) == shaders.end()) {
             throw std::runtime_error("Attempting to get nonexistent shader with name " + name);
         }
         return shaders[name];
     }
 
-    std::vector<std::weak_ptr<i_Shader> > i_ShaderManager::GetShaderCategory(std::string category) {
+    std::vector<ShaderHandle > i_ShaderManager::GetShaderCategory(std::string category) {
         return shadersByCategory[category];
     }
 

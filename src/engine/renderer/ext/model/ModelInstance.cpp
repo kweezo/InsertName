@@ -1,5 +1,7 @@
 #include "ModelInstance.hpp"
 
+#include "StaticInstanceManager.hpp"
+
 namespace renderer {
     ModelInstanceHandle ModelInstance::Create(ModelInstanceCreateInfo &createInfo) {
         std::shared_ptr<ModelInstance> shared = std::make_shared<ModelInstance>(createInfo);
@@ -7,60 +9,46 @@ namespace renderer {
         return shared;
     }
 
-    ModelInstance::ModelInstance(ModelInstanceCreateInfo &createInfo) {
+    ModelInstance::ModelInstance(const ModelInstanceCreateInfo &createInfo) {
         this->model = glm::mat4(1.0f);
         this->model = glm::translate(this->model, createInfo.transform.pos);
         this->model = glm::scale(this->model, createInfo.transform.scale);
         //todo, face your enemies (rotation)
 
-        if (!createInfo.isDynamic) {
-            if (staticModelInstanceMap.find(createInfo.model.lock()->GetName()) == staticModelInstanceMap.end()) {
-                _StaticInstanceData instanceData{};
-
-                InitializeStaticInstanceData(instanceData, createInfo.model);
-
-                staticModelInstanceMap.insert({
-                    createInfo.model.lock()->GetName(), std::make_shared<_StaticInstanceData>(instanceData)
-                });
-            } else {
-            }
-        }
 
         shouldDraw = true;
 
         this->createInfo = createInfo;
     }
 
-    void ModelInstance::i_AddSelfToInstanceData(std::shared_ptr<ModelInstance> self) {
+    void ModelInstance::i_AddSelfToInstanceData(const std::shared_ptr<ModelInstance>& self) const {
         if (!createInfo.isDynamic) {
-            std::weak_ptr<_StaticInstanceData> instanceData = staticModelInstanceMap[createInfo.model.lock()->
-                GetName()];
-            instanceData.lock()->instanceList.push_back(self);
+           i_StaticInstanceManager::AddInstance(self, createInfo.shader);
         }
     }
 
-    void ModelInstance::i_Draw(i_Semaphore presentSemaphore, std::array<i_Fence, 2> inFlightFences) {
-        StaticDraw(presentSemaphore, inFlightFences[0]);
+    void ModelInstance::i_Draw(const i_Semaphore& presentSemaphore, const std::array<i_Fence, 2>& inFlightFences) {
+        i_StaticInstanceManager::Draw();
     }
 
-    std::array<VkSemaphore, 2> ModelInstance::GetRenderFinishedSemaphores(uint32_t imageIndex) {
-        return {GetStaticRenderFinishedSemaphore(imageIndex), GetStaticRenderFinishedSemaphore(imageIndex)};
+    std::array<VkSemaphore, 2> ModelInstance::GetRenderFinishedSemaphores() {
+        return {i_StaticInstanceManager::GetRenderFinishedSemaphore(), i_StaticInstanceManager::GetRenderFinishedSemaphore()};
     }
 
-    glm::mat4 ModelInstance::GetModelMatrix() {
+    glm::mat4 ModelInstance::GetModelMatrix() const{
         return model;
     }
 
-    bool ModelInstance::GetShouldDraw() {
+    bool ModelInstance::GetShouldDraw() const {
         return shouldDraw;
     }
 
-    ModelHandle ModelInstance::GetModel() {
+    ModelHandle ModelInstance::GetModel() const {
         return createInfo.model;
     }
 
 
-    void ModelInstance::SetShouldDraw(bool shouldDraw) {
+    void ModelInstance::SetShouldDraw(const bool shouldDraw){
         this->shouldDraw = shouldDraw;
     }
 }

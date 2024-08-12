@@ -46,7 +46,7 @@ namespace renderer {
 
         void EndCommandBuffer();
 
-        VkCommandBuffer GetCommandBuffer();
+        [[nodiscard]] VkCommandBuffer GetCommandBuffer() const;
 
         [[nodiscard]] uint32_t GetThreadIndex() const;
 

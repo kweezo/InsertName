@@ -1,16 +1,18 @@
 #include "Model.hpp"
 
+#include <utility>
+
 namespace renderer {
     std::vector<std::shared_ptr<i_Model> > ModelManager::models = {};
 
-    ModelHandle ModelManager::Create(i_ModelCreateInfo createInfo) {
+    ModelHandle ModelManager::Create(const i_ModelCreateInfo& createInfo) {
         models.emplace_back(std::make_shared<i_Model>(createInfo));
 
         return models.back();
     }
 
     void ModelManager::Destoy(ModelHandle handle) {
-        std::vector<std::shared_ptr<i_Model> >::iterator it = std::find(models.begin(), models.end(), handle.lock());
+        auto it = std::find(models.begin(), models.end(), handle.lock());
         if (it == models.end()) {
             throw std::runtime_error("Tried to erase a nonexistent model!");
         }
@@ -21,7 +23,7 @@ namespace renderer {
         models.clear();
     }
 
-    i_Model::i_Model(i_ModelCreateInfo createInfo): createInfo(createInfo) {
+    i_Model::i_Model(i_ModelCreateInfo createInfo): createInfo(std::move(createInfo)) {
         LoadModelFile();
     }
 
@@ -61,7 +63,7 @@ namespace renderer {
             i_TextureMaps textureMaps{};
 
 
-            if (mesh->mMaterialIndex >= 0) {
+            if (mesh->mMaterialIndex >= 0) {//TODO ?????? (its not signed)
                 aiMaterial *material = scene->mMaterials[mesh->mMaterialIndex];
 
                 if (material->GetTextureCount(aiTextureType_BASE_COLOR) == 1) {
@@ -103,15 +105,11 @@ namespace renderer {
         }
     }
 
-    std::function<void(void)> i_Model::GetExtraDrawCommands() {
+    std::function<void(void)> i_Model::GetExtraDrawCommands() const {
         return createInfo.extraDrawCalls;
     }
 
-    std::weak_ptr<i_Shader> i_Model::GetShader() {
-        return createInfo.shader;
-    }
-
-    std::string i_Model::GetName() {
+    std::string i_Model::GetName() const {
         return createInfo.name;
     }
 }

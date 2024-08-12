@@ -1,5 +1,7 @@
 #include "Renderer.hpp"
 
+#include "engine/renderer/ext/model/StaticInstanceManager.hpp"
+
 namespace renderer {
     std::array<i_Semaphore, MAX_FRAMES_IN_FLIGHT> Renderer::presentSemaphores{};
     std::array<i_Semaphore, MAX_FRAMES_IN_FLIGHT> Renderer::renderSemaphores{};
@@ -27,6 +29,7 @@ namespace renderer {
         i_GraphicsPipeline::Init();
         i_ShaderManager::Init();
         Camera::i_Init();
+        i_StaticInstanceManager::Init();
 
         for (uint32_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
             for (uint32_t y = 0; y < DRAW_QUEUE_SUBMIT_COUNT; y++) {
@@ -64,6 +67,7 @@ namespace renderer {
         i_UniformBuffer::Update();
         Camera::i_Update();
         i_Texture::Update();
+        i_StaticInstanceManager::Update();
 
 
         std::array<std::thread, 2> threads = {
@@ -98,8 +102,7 @@ namespace renderer {
     }
 
     void Renderer::Present() {
-        std::array<VkSemaphore, 2> modelRenderFinishedSemaphores = ModelInstance::GetRenderFinishedSemaphores(
-            i_Swapchain::GetFrameInFlight());
+        std::array<VkSemaphore, 2> modelRenderFinishedSemaphores = ModelInstance::GetRenderFinishedSemaphores();
 
         std::array<VkSwapchainKHR, 1> swapchains = {i_Swapchain::GetSwapchain()};
         std::array<uint32_t, 1> imageIndices = {i_Swapchain::GetImageIndex()};

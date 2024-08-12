@@ -9,7 +9,7 @@ namespace renderer {
 
     //TODO delete image contents
 
-    i_Texture::i_Texture(): image(VK_NULL_HANDLE), sampler(VK_NULL_HANDLE), descriptorSet(VK_NULL_HANDLE), width(0),
+    i_Texture::i_Texture(): image(), sampler(VK_NULL_HANDLE), descriptorSet(VK_NULL_HANDLE), width(0),
                             height(0), channels(0), data(nullptr),
                             shaders(), binding(-1), useCount() {
     }
@@ -95,7 +95,7 @@ namespace renderer {
 
         writeDescriptorSet.pImageInfo = &imageInfoList.front();
 
-        for (std::weak_ptr<i_Shader> shader: shaders) {
+        for (ShaderHandle shader: shaders) {
             writeDescriptorSet.dstSet = shader.lock()->GetDescriptorSet();
             writeDescriptorSetsQueue.push_back(writeDescriptorSet);
         }

@@ -119,11 +119,10 @@ int main(){
     Renderer::Init();
 
 
-    std::weak_ptr<i_Shader> modelShader = i_ShaderManager::GetShader("basicMesh");
+    ShaderHandle modelShader = i_ShaderManager::GetShader("basicMesh");
 
     i_ModelCreateInfo modelCreateInfo{};
     modelCreateInfo.path = dir + "res/models/teapot/teapot.fbx";
-    modelCreateInfo.shader = i_ShaderManager::GetShader("basicMesh");
     modelCreateInfo.name = "teapot";
 
     ModelHandle teapot = ModelManager::Create(modelCreateInfo);
@@ -132,6 +131,7 @@ int main(){
     ModelInstanceCreateInfo instanceCreateInfo{};
     instanceCreateInfo.model = teapot;
     instanceCreateInfo.isDynamic = false;
+    instanceCreateInfo.shader = modelShader;
     instanceCreateInfo.transform = {
         glm::vec3(0.0f, 0.0f, -5.0f),
         glm::vec4(0.0f, 0.0f, 0.0f, 1.0f),

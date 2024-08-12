@@ -24,7 +24,7 @@ namespace renderer {
                                                static_cast<float>(extent.height), 0.1f, 100.0f);
 
 
-        std::vector<std::weak_ptr<i_Shader> > shaders = i_ShaderManager::GetShaderCategory("models");
+        std::vector<ShaderHandle > shaders = i_ShaderManager::GetShaderCategory("models");
 
         i_UniformBufferCreateInfo createInfo{};
 

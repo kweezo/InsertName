@@ -1,5 +1,6 @@
 #include "DataBuffer.hpp"
 
+
 namespace renderer {
     const uint32_t TARGET_STAGING_BUFFER_COUNT_PER_THREAD = 5;
 

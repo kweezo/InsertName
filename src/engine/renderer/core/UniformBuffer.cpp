@@ -58,7 +58,7 @@ namespace renderer {
 
         writeDescriptorSet.pBufferInfo = &bufferInfoList.front();
 
-        for (const std::weak_ptr<i_Shader> &shader: shaders) {
+        for (const ShaderHandle &shader: shaders) {
             writeDescriptorSet.dstSet = shader.lock()->GetDescriptorSet();
             writeDescriptorSetsQueue.push_back(writeDescriptorSet);
         }

@@ -17,7 +17,7 @@ namespace renderer {
         uint32_t binding;
         uint32_t threadIndex;
 
-        std::vector<std::weak_ptr<i_Shader> > shaders;
+        std::vector<ShaderHandle > shaders;
 
         void *data;
         size_t size;
@@ -49,7 +49,7 @@ namespace renderer {
 
         size_t size;
         uint32_t binding;
-        std::vector<std::weak_ptr<i_Shader> > shaders;
+        std::vector<ShaderHandle > shaders;
 
         std::shared_ptr<uint32_t> useCount;
 

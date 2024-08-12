@@ -21,6 +21,7 @@ namespace renderer {
         Transform transform;
         bool isDynamic;
         ModelHandle model;
+        ShaderHandle shader;
     };
 
 
@@ -28,7 +29,7 @@ namespace renderer {
     public:
         static ModelInstanceHandle Create(ModelInstanceCreateInfo &createInfo);
 
-        ModelInstance(ModelInstanceCreateInfo &createInfo);
+        ModelInstance(const ModelInstanceCreateInfo &createInfo);
 
         ModelInstance &operator=(const ModelInstance &other) = delete;
 
@@ -38,25 +39,25 @@ namespace renderer {
 
         ModelInstance(ModelInstance &&other) = delete;
 
-        void i_AddSelfToInstanceData(std::shared_ptr<ModelInstance> self);
+        void i_AddSelfToInstanceData(const std::shared_ptr<ModelInstance>& self) const;
 
 
-        static std::array<VkSemaphore, 2> GetRenderFinishedSemaphores(uint32_t imageIndex);
+        static std::array<VkSemaphore, 2> GetRenderFinishedSemaphores();
 
-        static void i_Draw(i_Semaphore presentSemaphore, std::array<i_Fence, 2> inFlightFences);
-
-        bool GetShouldDraw();
+        static void i_Draw(const i_Semaphore& presentSemaphore, const std::array<i_Fence, 2>& inFlightFences);
 
         void SetShouldDraw(bool shouldDraw);
 
-        ModelHandle GetModel();
+        [[nodiscard]] bool GetShouldDraw() const;
 
-        glm::mat4 GetModelMatrix();
+        [[nodiscard]] ModelHandle GetModel() const;
+
+        [[nodiscard]]glm::mat4 GetModelMatrix() const;
 
     private:
         ModelInstanceCreateInfo createInfo;
 
         bool shouldDraw;
-        glm::mat4 model;
+        glm::mat4 model{};
     };
 }

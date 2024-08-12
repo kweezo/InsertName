@@ -8,11 +8,13 @@
 namespace renderer {
     class i_StaticInstanceData {
     public:
-        i_StaticInstanceData(ModelHandle model, std::weak_ptr<i_Shader> shader);
+        i_StaticInstanceData(ModelHandle model, ShaderHandle shader);
 
         void UpdateAndRecordBuffer(const i_CommandBuffer& commandBuffer);
 
         void AddInstance(const i_ModelInstanceHandleInternal& instance);
+
+        [[nodiscard]] i_Semaphore GetDataUploadedSemaphore() const;
     private:
 
         void GetDrawableInstances();
@@ -20,7 +22,7 @@ namespace renderer {
         void RecordCommandBuffer(i_CommandBuffer commandBuffer);
 
         ModelHandle model;
-        std::weak_ptr<i_Shader> shader;
+        ShaderHandle shader;
 
         i_DataBuffer buffer;
         i_Semaphore dataUploadedSemaphore;

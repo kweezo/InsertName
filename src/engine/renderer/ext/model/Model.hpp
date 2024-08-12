@@ -36,13 +36,12 @@ namespace renderer {
     struct i_ModelCreateInfo {
         std::string path;
         std::string name;
-        std::weak_ptr<i_Shader> shader;
         std::function<void(void)> extraDrawCalls;
     };
 
     class ModelManager {
     public:
-        static ModelHandle Create(i_ModelCreateInfo createInfo);
+        static ModelHandle Create(const i_ModelCreateInfo& createInfo);
 
         static void Destoy(ModelHandle handle);
 
@@ -67,11 +66,9 @@ namespace renderer {
 
         void RecordDrawCommands(i_CommandBuffer &commandBuffer, uint32_t instanceCount);
 
-        std::weak_ptr<i_Shader> GetShader();
+        std::function<void(void)> GetExtraDrawCommands() const;
 
-        std::function<void(void)> GetExtraDrawCommands();
-
-        std::string GetName();
+        [[nodiscard]] std::string GetName() const;
 
     private: //copied from learnopengl.com *mostly* shamelessly
         void LoadModelFile();

@@ -19,7 +19,7 @@ namespace renderer {
         std::string path;
         uint32_t binding;
 
-        std::vector<std::weak_ptr<i_Shader> > shaders;
+        std::vector<ShaderHandle > shaders;
     };
 
 
@@ -57,7 +57,7 @@ namespace renderer {
         int channels;
         void *data;
 
-        std::vector<std::weak_ptr<i_Shader> > shaders;
+        std::vector<ShaderHandle > shaders;
 
         uint32_t binding;
 

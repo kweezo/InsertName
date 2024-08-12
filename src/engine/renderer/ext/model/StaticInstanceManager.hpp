@@ -17,25 +17,25 @@ namespace renderer {
 
         static void Cleanup();
 
-        static void AddInstance(const i_ModelInstanceHandleInternal &instance, const std::weak_ptr<i_Shader> &shader);
+        static void AddInstance(const i_ModelInstanceHandleInternal &instance, const ShaderHandle &shader);
 
 
-        [[nodiscard]] static VkSemaphore GetRenderFinishedSemaphore(uint32_t frameInFlight);
+        [[nodiscard]] static VkSemaphore GetRenderFinishedSemaphore();
 
         static void Draw();
 
     private:
         static void HandleCommandBuffers();
 
-        static void RecordCommandBuffer(const std::weak_ptr<i_Shader>& shader,
-                                        const std::list<std::shared_ptr<i_StaticInstanceData>>& instanceData,
+        static void RecordCommandBuffer(const ShaderHandle &shader,
+                                        const std::list<std::shared_ptr<i_StaticInstanceData> > &instanceData,
                                         i_CommandBuffer commandBuffer);
 
 
-        static boost::container::flat_map<ModelHandle, std::shared_ptr<i_StaticInstanceData> > instanceData;
+        static boost::container::flat_map<std::string, std::shared_ptr<i_StaticInstanceData> > instanceData;
         static boost::container::flat_map<std::string, std::pair<std::array<i_CommandBuffer, MAX_FRAMES_IN_FLIGHT>,
             std::list<std::shared_ptr<i_StaticInstanceData> > > >
-        instanceDataPerShader;
+        instanceDataPerShader; //shitty name but I couldnt give less than 2 shits
 
         static uint32_t currThreadIndex;
 

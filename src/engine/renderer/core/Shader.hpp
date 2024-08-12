@@ -16,6 +16,8 @@
 
 #define i_VertexInputDescriptions std::pair<std::vector<VkVertexInputAttributeDescription>, std::vector<VkVertexInputBindingDescription>>
 
+#define ShaderHandle std::weak_ptr<i_Shader>
+
 namespace renderer {
     class i_Shader;
 
@@ -30,13 +32,13 @@ namespace renderer {
 
         static void Cleanup();
 
-        static std::vector<std::weak_ptr<i_Shader> > GetShaderCategory(std::string category);
+        static std::vector<ShaderHandle > GetShaderCategory(std::string category);
 
-        static std::weak_ptr<i_Shader> GetShader(std::string name);
+        static ShaderHandle GetShader(std::string name);
 
     private:
         static boost::container::flat_map<std::string, std::shared_ptr<i_Shader> > shaders;
-        static boost::container::flat_map<std::string, std::vector<std::weak_ptr<i_Shader> > > shadersByCategory;
+        static boost::container::flat_map<std::string, std::vector<ShaderHandle > > shadersByCategory;
     };
 
 
