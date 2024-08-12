@@ -5,15 +5,11 @@ std::unique_ptr<pqxx::connection> Auth::c;
 
 
 void Auth::Init() {
-    try {
-        std::string connString = settings.dbConnString;
-        c = std::make_unique<pqxx::connection>("dbname=mydb user=myuser password=mypassword");
-        if (!c->is_open()) {
-            throw std::runtime_error("Failed to open database connection");
-        }
-    } catch (const std::exception &e) {
-        throw std::runtime_error("Failed to initialize Auth module: " + std::string(e.what()));
-    }
+    std::string connString = settings.dbConnString;
+    c = std::make_unique<pqxx::connection>("dbname=mydb user=myuser password=mypassword");
+    if (!c->is_open()) {
+        throw std::runtime_error("Failed to open database connection");
+    } 
 }
 
 bool Auth::RegisterUser(const std::string& username, const std::string& password, const std::string& email) {
@@ -85,7 +81,7 @@ int Auth::GetUID(const std::string& username) {
     return -1;
 }
 
-std::string Auth::HashPassword(const std::string& password, const std::string& salt) {
+std::string Auth::HashString(const std::string& string, const std::string& salt) {
     // Implement password hashing logic
     return "";
 }

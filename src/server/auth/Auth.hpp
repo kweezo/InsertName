@@ -41,7 +41,7 @@ public:
     static int GetUID(const std::string& username);
 
 private:
-    static std::string HashPassword(const std::string& password, const std::string& salt);
+    static std::string HashString(const std::string& string, const std::string& salt);
     static std::string GenerateSalt();
 
     static UserRegistration userRegistration;
