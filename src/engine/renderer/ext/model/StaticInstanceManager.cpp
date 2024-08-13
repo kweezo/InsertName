@@ -95,12 +95,12 @@ namespace renderer {
     }
 
 
-    void i_StaticInstanceManager::Draw() {
+    void i_StaticInstanceManager::Draw(const i_Semaphore& presentSemaphore) {
         std::vector<VkSemaphore> waitSemaphores;
-        waitSemaphores.reserve(instanceData.size());
+        waitSemaphores.reserve(instanceData.size()+1);
 
         std::vector<VkPipelineStageFlags> waitDstStageMask;
-        waitDstStageMask.reserve(instanceData.size());
+        waitDstStageMask.reserve(instanceData.size()+1);
 
         std::vector<VkCommandBuffer> commandBuffers;
         commandBuffers.reserve(instanceDataPerShader.size());
@@ -113,6 +113,8 @@ namespace renderer {
             waitSemaphores.push_back(data->GetDataUploadedSemaphore().GetSemaphore());
             waitDstStageMask.push_back(VK_PIPELINE_STAGE_VERTEX_INPUT_BIT);
         }
+        waitSemaphores.push_back(presentSemaphore.GetSemaphore());
+        waitDstStageMask.push_back(VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT);
 
         for (const auto &[shaderName, pair]: instanceDataPerShader) {
             commandBuffers.push_back(pair.first[i_Swapchain::GetFrameInFlight()].GetCommandBuffer());

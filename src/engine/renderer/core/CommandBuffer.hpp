@@ -38,7 +38,7 @@ namespace renderer {
 
         i_CommandBuffer &operator=(const i_CommandBuffer &other);
 
-        void ResetCommandBuffer();
+        void ResetCommandBuffer() const;
 
         static void ResetPools(i_CommandBufferType type, uint32_t threadIndex);
 

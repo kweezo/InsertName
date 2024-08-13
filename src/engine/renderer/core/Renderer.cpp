@@ -5,7 +5,7 @@
 namespace renderer {
     std::array<i_Semaphore, MAX_FRAMES_IN_FLIGHT> Renderer::presentSemaphores{};
     std::array<i_Semaphore, MAX_FRAMES_IN_FLIGHT> Renderer::renderSemaphores{};
-    std::array<std::array<i_Fence, 2>, MAX_FRAMES_IN_FLIGHT> Renderer::inFlightFences{};
+    std::array<std::array<i_Fence, DRAW_QUEUE_SUBMIT_COUNT>, MAX_FRAMES_IN_FLIGHT> Renderer::inFlightFences{};
     std::array<std::array<VkFence, DRAW_QUEUE_SUBMIT_COUNT>, MAX_FRAMES_IN_FLIGHT> Renderer::inFlightFenceHandles{};
     std::array<std::vector<VkCommandBuffer>, MAX_FRAMES_IN_FLIGHT> Renderer::commandBuffers{};
 
@@ -52,10 +52,10 @@ namespace renderer {
     }
 
     void Renderer::UpdatePrepare() {
-        vkWaitForFences(i_Device::GetDevice(), inFlightFenceHandles[i_Swapchain::GetFrameInFlight()].size() - 1,
+        vkWaitForFences(i_Device::GetDevice(), inFlightFenceHandles[i_Swapchain::GetFrameInFlight()].size(),
                         &inFlightFenceHandles[i_Swapchain::GetFrameInFlight()][0], VK_TRUE,
                         std::numeric_limits<uint64_t>::max());
-        vkResetFences(i_Device::GetDevice(), inFlightFenceHandles[i_Swapchain::GetFrameInFlight()].size(),
+       vkResetFences(i_Device::GetDevice(), inFlightFenceHandles[i_Swapchain::GetFrameInFlight()].size(),
                       inFlightFenceHandles[i_Swapchain::GetFrameInFlight()].data());
 
         i_Swapchain::IncrementCurrentFrameInFlight();

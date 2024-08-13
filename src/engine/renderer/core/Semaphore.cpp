@@ -24,6 +24,7 @@ namespace renderer {
             throw std::runtime_error("Tried to return an uninitialized semaphore");
         }
 
+
         return semaphore;
     }
 

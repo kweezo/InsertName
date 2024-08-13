@@ -18,7 +18,7 @@
 #include "Semaphore.hpp"
 #include "Fence.hpp"
 
-#define DRAW_QUEUE_SUBMIT_COUNT 2
+#define DRAW_QUEUE_SUBMIT_COUNT 1
 
 namespace renderer {
     class Renderer {

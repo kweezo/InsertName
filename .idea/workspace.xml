@@ -23,29 +23,13 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="966c797d-ba8f-4c5e-9509-6bdbf20999ea" name="Changes" comment="">
-      <change beforePath="$PROJECT_DIR$/.idea/.gitignore" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/client/main.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/src/client/main.cpp" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/engine/renderer/core/CommandBuffer.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/src/engine/renderer/core/CommandBuffer.cpp" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/engine/renderer/core/CommandBuffer.hpp" beforeDir="false" afterPath="$PROJECT_DIR$/src/engine/renderer/core/CommandBuffer.hpp" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/engine/renderer/core/CommandPool.hpp" beforeDir="false" afterPath="$PROJECT_DIR$/src/engine/renderer/core/CommandPool.hpp" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/engine/renderer/core/DataBuffer.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/src/engine/renderer/core/DataBuffer.cpp" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/engine/renderer/core/DataBuffer.hpp" beforeDir="false" afterPath="$PROJECT_DIR$/src/engine/renderer/core/DataBuffer.hpp" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/engine/renderer/core/GraphicsPipeline.hpp" beforeDir="false" afterPath="$PROJECT_DIR$/src/engine/renderer/core/GraphicsPipeline.hpp" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/engine/renderer/core/Image.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/src/engine/renderer/core/Image.cpp" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/engine/renderer/core/Renderer.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/src/engine/renderer/core/Renderer.cpp" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/engine/renderer/core/Shader.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/src/engine/renderer/core/Shader.cpp" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/engine/renderer/core/Shader.hpp" beforeDir="false" afterPath="$PROJECT_DIR$/src/engine/renderer/core/Shader.hpp" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/engine/renderer/core/Texture.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/src/engine/renderer/core/Texture.cpp" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/engine/renderer/core/Texture.hpp" beforeDir="false" afterPath="$PROJECT_DIR$/src/engine/renderer/core/Texture.hpp" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/engine/renderer/core/UniformBuffer.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/src/engine/renderer/core/UniformBuffer.cpp" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/engine/renderer/core/UniformBuffer.hpp" beforeDir="false" afterPath="$PROJECT_DIR$/src/engine/renderer/core/UniformBuffer.hpp" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/engine/renderer/ext/camera/Camera.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/src/engine/renderer/ext/camera/Camera.cpp" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/engine/renderer/ext/model/Model.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/src/engine/renderer/ext/model/Model.cpp" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/engine/renderer/ext/model/Model.hpp" beforeDir="false" afterPath="$PROJECT_DIR$/src/engine/renderer/ext/model/Model.hpp" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/engine/renderer/core/Renderer.hpp" beforeDir="false" afterPath="$PROJECT_DIR$/src/engine/renderer/core/Renderer.hpp" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/engine/renderer/core/Semaphore.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/src/engine/renderer/core/Semaphore.cpp" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/engine/renderer/ext/model/ModelInstance.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/src/engine/renderer/ext/model/ModelInstance.cpp" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/engine/renderer/ext/model/ModelInstance.hpp" beforeDir="false" afterPath="$PROJECT_DIR$/src/engine/renderer/ext/model/ModelInstance.hpp" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/engine/renderer/ext/model/StaticInstanceData.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/src/engine/renderer/ext/model/StaticInstanceData.cpp" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/engine/renderer/ext/model/StaticInstanceData.hpp" beforeDir="false" afterPath="$PROJECT_DIR$/src/engine/renderer/ext/model/StaticInstanceData.hpp" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/engine/renderer/ext/model/StaticInstanceManager.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/src/engine/renderer/ext/model/StaticInstanceManager.cpp" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/engine/renderer/ext/model/StaticInstanceManager.hpp" beforeDir="false" afterPath="$PROJECT_DIR$/src/engine/renderer/ext/model/StaticInstanceManager.hpp" afterDir="false" />
     </list>
@@ -84,47 +68,6 @@
     <setting file="mock:///dummy.cpp" root0="SKIP_HIGHLIGHTING" />
     <setting file="mock:///dummy.cpp" root0="SKIP_HIGHLIGHTING" />
     <setting file="mock:///dummy.cpp" root0="SKIP_HIGHLIGHTING" />
-    <setting file="mock:///dummy.cpp" root0="SKIP_HIGHLIGHTING" />
-    <setting file="mock:///dummy.cpp" root0="SKIP_HIGHLIGHTING" />
-    <setting file="mock:///dummy.cpp" root0="SKIP_HIGHLIGHTING" />
-    <setting file="mock:///dummy.cpp" root0="SKIP_HIGHLIGHTING" />
-    <setting file="mock:///dummy.cpp" root0="SKIP_HIGHLIGHTING" />
-    <setting file="mock:///dummy.cpp" root0="SKIP_HIGHLIGHTING" />
-    <setting file="mock:///dummy.cpp" root0="SKIP_HIGHLIGHTING" />
-    <setting file="mock:///dummy.cpp" root0="SKIP_HIGHLIGHTING" />
-    <setting file="mock:///dummy.cpp" root0="SKIP_HIGHLIGHTING" />
-    <setting file="mock:///dummy.cpp" root0="SKIP_HIGHLIGHTING" />
-    <setting file="mock:///dummy.cpp" root0="SKIP_HIGHLIGHTING" />
-    <setting file="mock:///dummy.cpp" root0="SKIP_HIGHLIGHTING" />
-    <setting file="mock:///dummy.cpp" root0="SKIP_HIGHLIGHTING" />
-    <setting file="mock:///dummy.cpp" root0="SKIP_HIGHLIGHTING" />
-    <setting file="mock:///dummy.cpp" root0="SKIP_HIGHLIGHTING" />
-    <setting file="mock:///dummy.cpp" root0="SKIP_HIGHLIGHTING" />
-    <setting file="mock:///dummy.cpp" root0="SKIP_HIGHLIGHTING" />
-    <setting file="mock:///dummy.cpp" root0="SKIP_HIGHLIGHTING" />
-    <setting file="mock:///dummy.cpp" root0="SKIP_HIGHLIGHTING" />
-    <setting file="mock:///dummy.cpp" root0="SKIP_HIGHLIGHTING" />
-    <setting file="mock:///dummy.cpp" root0="SKIP_HIGHLIGHTING" />
-    <setting file="mock:///dummy.cpp" root0="SKIP_HIGHLIGHTING" />
-    <setting file="mock:///dummy.cpp" root0="SKIP_HIGHLIGHTING" />
-    <setting file="mock:///dummy.cpp" root0="SKIP_HIGHLIGHTING" />
-    <setting file="mock:///dummy.cpp" root0="SKIP_HIGHLIGHTING" />
-    <setting file="mock:///dummy.cpp" root0="SKIP_HIGHLIGHTING" />
-    <setting file="mock:///dummy.cpp" root0="SKIP_HIGHLIGHTING" />
-    <setting file="mock:///dummy.cpp" root0="SKIP_HIGHLIGHTING" />
-    <setting file="mock:///dummy.cpp" root0="SKIP_HIGHLIGHTING" />
-    <setting file="mock:///dummy.cpp" root0="SKIP_HIGHLIGHTING" />
-    <setting file="mock:///dummy.cpp" root0="SKIP_HIGHLIGHTING" />
-    <setting file="mock:///dummy.cpp" root0="SKIP_HIGHLIGHTING" />
-    <setting file="mock:///dummy.cpp" root0="SKIP_HIGHLIGHTING" />
-    <setting file="mock:///dummy.cpp" root0="SKIP_HIGHLIGHTING" />
-    <setting file="mock:///dummy.cpp" root0="SKIP_HIGHLIGHTING" />
-    <setting file="mock:///dummy.cpp" root0="SKIP_HIGHLIGHTING" />
-    <setting file="mock:///dummy.cpp" root0="SKIP_HIGHLIGHTING" />
-    <setting file="mock:///dummy.cpp" root0="SKIP_HIGHLIGHTING" />
-    <setting file="mock:///dummy.cpp" root0="SKIP_HIGHLIGHTING" />
-    <setting file="mock:///dummy.cpp" root0="SKIP_HIGHLIGHTING" />
-    <setting file="mock:///dummy.cpp" root0="SKIP_HIGHLIGHTING" />
   </component>
   <component name="ProjectApplicationVersion">
     <option name="ide" value="CLion" />
@@ -141,31 +84,26 @@
     <option name="hideEmptyMiddlePackages" value="true" />
     <option name="showLibraryContents" value="true" />
   </component>
-  <component name="PropertiesComponent"><![CDATA[{
-  "keyToString": {
-    "CMake Application.client.executor": "Debug",
-    "RunOnceActivity.RadMigrateCodeStyle": "true",
-    "RunOnceActivity.ShowReadmeOnStart": "true",
-    "RunOnceActivity.cidr.known.project.marker": "true",
-    "RunOnceActivity.readMode.enableVisualFormatting": "true",
-    "cf.first.check.clang-format": "false",
-    "cidr.known.project.marker": "true",
-    "git-widget-placeholder": "5a126038",
-    "node.js.detected.package.eslint": "true",
-    "node.js.detected.package.tslint": "true",
-    "node.js.selected.package.eslint": "(autodetect)",
-    "node.js.selected.package.tslint": "(autodetect)",
-    "nodejs_package_manager_path": "npm",
-    "settings.editor.selected.configurable": "CMakeSettings",
-    "vue.rearranger.settings.migration": "true"
+  <component name="PropertiesComponent">{
+  &quot;keyToString&quot;: {
+    &quot;CMake Application.client.executor&quot;: &quot;Debug&quot;,
+    &quot;RunOnceActivity.RadMigrateCodeStyle&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.cidr.known.project.marker&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.readMode.enableVisualFormatting&quot;: &quot;true&quot;,
+    &quot;cf.first.check.clang-format&quot;: &quot;false&quot;,
+    &quot;cidr.known.project.marker&quot;: &quot;true&quot;,
+    &quot;git-widget-placeholder&quot;: &quot;models&quot;,
+    &quot;node.js.detected.package.eslint&quot;: &quot;true&quot;,
+    &quot;node.js.detected.package.tslint&quot;: &quot;true&quot;,
+    &quot;node.js.selected.package.eslint&quot;: &quot;(autodetect)&quot;,
+    &quot;node.js.selected.package.tslint&quot;: &quot;(autodetect)&quot;,
+    &quot;nodejs_package_manager_path&quot;: &quot;npm&quot;,
+    &quot;settings.editor.selected.configurable&quot;: &quot;CMakeSettings&quot;,
+    &quot;vue.rearranger.settings.migration&quot;: &quot;true&quot;
   }
-}]]></component>
+}</component>
   <component name="RunManager" selected="CMake Application.client">
-    <configuration default="true" type="CMakeRunConfiguration" factoryName="Application" REDIRECT_INPUT="false" ELEVATE="false" USE_EXTERNAL_CONSOLE="false" EMULATE_TERMINAL="false" PASS_PARENT_ENVS_2="true">
-      <method v="2">
-        <option name="com.jetbrains.cidr.execution.CidrBuildBeforeRunTaskProvider$BuildBeforeRunTask" enabled="true" />
-      </method>
-    </configuration>
     <configuration name="client" type="CMakeRunConfiguration" factoryName="Application" REDIRECT_INPUT="false" ELEVATE="false" USE_EXTERNAL_CONSOLE="false" EMULATE_TERMINAL="false" WORKING_DIR="file://$PROJECT_DIR$" PASS_PARENT_ENVS_2="true" PROJECT_NAME="InsertName" TARGET_NAME="client" CONFIG_NAME="Debug" RUN_TARGET_PROJECT_NAME="InsertName" RUN_TARGET_NAME="client">
       <method v="2">
         <option name="com.jetbrains.cidr.execution.CidrBuildBeforeRunTaskProvider$BuildBeforeRunTask" enabled="true" />
@@ -191,6 +129,10 @@
       <updated>1723411336463</updated>
       <workItem from="1723411338106" duration="2933000" />
       <workItem from="1723447676217" duration="4527000" />
+      <workItem from="1723492630891" duration="3735000" />
+      <workItem from="1723548771181" duration="32000" />
+      <workItem from="1723548808768" duration="1289000" />
+      <workItem from="1723560753309" duration="1661000" />
     </task>
     <servers />
   </component>

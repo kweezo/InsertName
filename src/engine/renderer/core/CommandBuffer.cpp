@@ -9,18 +9,29 @@ namespace renderer {
         poolMutexes.resize(i_CommandBufferType::size * std::thread::hardware_concurrency());
     }
 
-    i_CommandBuffer::i_CommandBuffer() : commandBuffer(VK_NULL_HANDLE) {
-        flags = 0;
+    i_CommandBuffer::i_CommandBuffer() : level(),
+                                         flags(),
+                                         poolID(),
+                                         threadIndex(),
+                                         lock(),
+                                         useCount(),
+                                         commandBuffer() {
     }
 
-    i_CommandBuffer::i_CommandBuffer(i_CommandBufferCreateInfo createInfo): flags(createInfo.flags),
-                                                                            level(createInfo.level) {
+    i_CommandBuffer::i_CommandBuffer(i_CommandBufferCreateInfo createInfo): level(createInfo.level),
+                                                                            flags(createInfo.flags),
+                                                                            poolID(),
+                                                                            threadIndex(createInfo.threadIndex),
+                                                                            lock(),
+                                                                            useCount(),
+                                                                            commandBuffer() {
         poolID = createInfo.type * std::thread::hardware_concurrency() + createInfo.threadIndex;
 
         VkCommandBufferAllocateInfo allocInfo = {};
         allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
         allocInfo.level = createInfo.level;
         allocInfo.commandBufferCount = 1;
+
 
         if (flags & COMMAND_BUFFER_GRAPHICS_FLAG == COMMAND_BUFFER_GRAPHICS_FLAG) {
             allocInfo.commandPool = i_CommandPool::GetGraphicsCommandPool(poolID);
@@ -40,7 +51,7 @@ namespace renderer {
         useCount = std::make_shared<uint32_t>(1);
     }
 
-    void i_CommandBuffer::ResetCommandBuffer() {
+    void i_CommandBuffer::ResetCommandBuffer() const {
         vkResetCommandBuffer(commandBuffer, 0);
     }
 
@@ -94,12 +105,12 @@ namespace renderer {
         i_CommandPool::ResetPool(type * std::thread::hardware_concurrency() + threadIndex);
     }
 
-    VkCommandBuffer i_CommandBuffer::GetCommandBuffer() const{
+    VkCommandBuffer i_CommandBuffer::GetCommandBuffer() const {
         return commandBuffer;
     }
 
     i_CommandBuffer::i_CommandBuffer(const i_CommandBuffer &other) {
-        if (other.useCount.get() == nullptr) {
+        if (other.useCount == nullptr) {
             return;
         }
 
@@ -109,6 +120,7 @@ namespace renderer {
         flags = other.flags;
         poolID = other.poolID;
         level = other.level;
+        threadIndex = other.threadIndex;
 
         (*useCount)++;
     }
@@ -118,7 +130,7 @@ namespace renderer {
             return *this;
         }
 
-        if (other.useCount.get() == nullptr) {
+        if (other.useCount == nullptr) {
             return *this;
         }
 
@@ -129,6 +141,7 @@ namespace renderer {
         flags = other.flags;
         poolID = other.poolID;
         level = other.level;
+        threadIndex = other.threadIndex;
 
         (*useCount)++;
 

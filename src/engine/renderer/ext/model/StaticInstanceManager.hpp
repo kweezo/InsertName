@@ -22,7 +22,7 @@ namespace renderer {
 
         [[nodiscard]] static VkSemaphore GetRenderFinishedSemaphore();
 
-        static void Draw();
+        static void Draw(const i_Semaphore& presentSemaphore);
 
     private:
         static void HandleCommandBuffers();
