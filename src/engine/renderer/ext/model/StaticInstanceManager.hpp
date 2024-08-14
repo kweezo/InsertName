@@ -13,6 +13,7 @@ namespace renderer {
     public:
         static void Init();
 
+        static void EarlyUpdate();
         static void Update();
 
         static void Cleanup();
@@ -22,10 +23,11 @@ namespace renderer {
 
         [[nodiscard]] static VkSemaphore GetRenderFinishedSemaphore();
 
-        static void Draw(const i_Semaphore& presentSemaphore);
+        static void Draw(const i_Semaphore& presentSemaphore, const i_Fence& inFlightFence);
 
     private:
         static void HandleCommandBuffers();
+        static void UpdateDataBuffers();
 
         static void RecordCommandBuffer(const ShaderHandle &shader,
                                         const std::list<std::shared_ptr<i_StaticInstanceData> > &instanceData,

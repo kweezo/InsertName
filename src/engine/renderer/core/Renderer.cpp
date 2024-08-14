@@ -67,8 +67,7 @@ namespace renderer {
         i_UniformBuffer::Update();
         Camera::i_Update();
         i_Texture::Update();
-        i_StaticInstanceManager::Update();
-
+        i_StaticInstanceManager::EarlyUpdate();
 
         std::array<std::thread, 2> threads = {
             std::thread(i_DataBuffer::Update),
@@ -80,6 +79,8 @@ namespace renderer {
                 thread.join(); // TODO if proper sync we don't have to wait???
             }
         }
+
+        i_StaticInstanceManager::Update();
     }
 
     void Renderer::Update() {
@@ -95,7 +96,7 @@ namespace renderer {
 
     void Renderer::Submit() {
         std::array<i_Fence, 2> instanceFences = {
-            inFlightFences[i_Swapchain::GetFrameInFlight()][0], inFlightFences[i_Swapchain::GetFrameInFlight()][1]
+            inFlightFences[i_Swapchain::GetFrameInFlight()][0], inFlightFences[i_Swapchain::GetFrameInFlight()][0]
         };
 
         ModelInstance::i_Draw(presentSemaphores[i_Swapchain::GetFrameInFlight()], instanceFences);

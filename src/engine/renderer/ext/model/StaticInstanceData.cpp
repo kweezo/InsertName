@@ -11,7 +11,7 @@ namespace renderer {
             model)),
         shader(std::move(shader)), buffer(), dataUploadedSemaphore(),
         drawCount(0), instances() {
-        i_SemaphoreCreateInfo createInfo{};
+        constexpr i_SemaphoreCreateInfo createInfo{};
         dataUploadedSemaphore = i_Semaphore(createInfo);
     }
 
@@ -19,10 +19,9 @@ namespace renderer {
         instances.push_front(instance);
     }
 
-    void i_StaticInstanceData::UpdateAndRecordBuffer(const i_CommandBuffer& commandBuffer) {
+    void i_StaticInstanceData::UpdateDataBuffer(uint32_t threadIndex) {
         GetDrawableInstances();
-        UploadDataToBuffer(commandBuffer.GetThreadIndex());
-        RecordCommandBuffer(commandBuffer);
+        UploadDataToBuffer(threadIndex);
     }
 
     void i_StaticInstanceData::GetDrawableInstances() {
@@ -71,7 +70,9 @@ namespace renderer {
         createInfo.isDynamic = false;
         createInfo.transferToLocalDeviceMemory = true;
         createInfo.threadIndex = threadIndex;
-        createInfo.signalSemaphore = dataUploadedSemaphore;
+        if(i_Device::DeviceMemoryFree()) {
+            createInfo.signalSemaphore = dataUploadedSemaphore;
+        }
 
         buffer = i_DataBuffer(createInfo);
     }
@@ -92,7 +93,8 @@ namespace renderer {
                                 VK_PIPELINE_BIND_POINT_GRAPHICS, shader->GetGraphicsPipeline()->GetPipelineLayout(), 0,
                                 1, &set, 0, nullptr);
 
-        model->GetExtraDrawCommands();
+        //model->GetExtraDrawCommands()(); TODO no crashy crashy
+
         model->RecordDrawCommands(commandBuffer, drawCount);
     }
 

@@ -5,7 +5,8 @@
 #include "StaticInstanceManager.hpp"
 
 namespace renderer {
-    boost::container::flat_map<std::string, std::shared_ptr<i_StaticInstanceData> > i_StaticInstanceManager::instanceData = {};
+    boost::container::flat_map<std::string, std::shared_ptr<i_StaticInstanceData> >
+    i_StaticInstanceManager::instanceData = {};
     boost::container::flat_map<std::string, std::pair<std::array<i_CommandBuffer, MAX_FRAMES_IN_FLIGHT>,
         std::list<std::shared_ptr<i_StaticInstanceData> > > >
     i_StaticInstanceManager::instanceDataPerShader = {}; //shitty name but I couldnt give less than 2 shits
@@ -21,6 +22,28 @@ namespace renderer {
             semaphore = i_Semaphore(info);
         }
     }
+
+    void i_StaticInstanceManager::EarlyUpdate() {
+        UpdateDataBuffers();
+    }
+
+    void i_StaticInstanceManager::UpdateDataBuffers() {
+        std::list<std::thread> threads;
+
+        for (auto &[shaderName, pair]: instanceDataPerShader) {
+            for (std::shared_ptr<i_StaticInstanceData> &instanceData: pair.second) {
+                threads.emplace_back(std::bind(&i_StaticInstanceData::UpdateDataBuffer, instanceData.get(),
+                                               pair.first[i_Swapchain::GetFrameInFlight()].GetThreadIndex()));
+            }
+        }
+
+        for (std::thread &thread: threads) {
+            if (thread.joinable()) {
+                thread.join();
+            }
+        }
+    }
+
 
     void i_StaticInstanceManager::Update() {
         HandleCommandBuffers();
@@ -66,8 +89,9 @@ namespace renderer {
         std::vector<std::thread> threads;
         threads.reserve(instanceDataPerShader.size());
 
-        for (const auto &[shaderName, pair]: instanceDataPerShader) {
-            threads.emplace_back(RecordCommandBuffer, i_ShaderManager::GetShader(shaderName), std::ref(pair.second), pair.first[i_Swapchain::GetFrameInFlight()]);
+        for (auto &[shaderName, pair]: instanceDataPerShader) {
+            threads.emplace_back(RecordCommandBuffer, i_ShaderManager::GetShader(shaderName), std::ref(pair.second),
+                                 pair.first[i_Swapchain::GetFrameInFlight()]);
         }
 
         for (std::thread &thread: threads) {
@@ -87,7 +111,8 @@ namespace renderer {
         shared->GetGraphicsPipeline()->BeginRenderPassAndBindPipeline(commandBuffer.GetCommandBuffer());
 
         for (const std::shared_ptr<i_StaticInstanceData> &data: instanceData) {
-            data->UpdateAndRecordBuffer(commandBuffer);
+            data->RecordCommandBuffer(commandBuffer);
+            //do these things simoltaneously and figure out why the signal semaphore from the databuffer don'
         }
 
         shared->GetGraphicsPipeline()->EndRenderPass(commandBuffer.GetCommandBuffer());
@@ -95,12 +120,16 @@ namespace renderer {
     }
 
 
-    void i_StaticInstanceManager::Draw(const i_Semaphore& presentSemaphore) {
+    void i_StaticInstanceManager::Draw(const i_Semaphore &presentSemaphore, const i_Fence& inFlightFence) {
         std::vector<VkSemaphore> waitSemaphores;
-        waitSemaphores.reserve(instanceData.size()+1);
+        if (i_Device::DeviceMemoryFree()) {
+            waitSemaphores.reserve(instanceData.size() + 1);
+        } else {
+            waitSemaphores.reserve(1);
+        }
 
         std::vector<VkPipelineStageFlags> waitDstStageMask;
-        waitDstStageMask.reserve(instanceData.size()+1);
+        waitDstStageMask.reserve(waitSemaphores.size());
 
         std::vector<VkCommandBuffer> commandBuffers;
         commandBuffers.reserve(instanceDataPerShader.size());
@@ -109,9 +138,11 @@ namespace renderer {
             renderFinishedSemaphores[i_Swapchain::GetFrameInFlight()].GetSemaphore()
         };
 
-        for (const auto &[model, data]: instanceData) {
-            waitSemaphores.push_back(data->GetDataUploadedSemaphore().GetSemaphore());
-            waitDstStageMask.push_back(VK_PIPELINE_STAGE_VERTEX_INPUT_BIT);
+        if (i_Device::DeviceMemoryFree()) {
+            for (const auto &[model, data]: instanceData) {
+                waitSemaphores.push_back(data->GetDataUploadedSemaphore().GetSemaphore());
+                waitDstStageMask.push_back(VK_PIPELINE_STAGE_VERTEX_INPUT_BIT);
+            }
         }
         waitSemaphores.push_back(presentSemaphore.GetSemaphore());
         waitDstStageMask.push_back(VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT);
@@ -130,7 +161,7 @@ namespace renderer {
         submitInfo.pSignalSemaphores = signalSemaphores.data();
         submitInfo.signalSemaphoreCount = signalSemaphores.size();
 
-        if (vkQueueSubmit(i_Device::GetGraphicsQueue(), 1, &submitInfo, VK_NULL_HANDLE) != VK_SUCCESS) {
+        if (vkQueueSubmit(i_Device::GetGraphicsQueue(), 1, &submitInfo, inFlightFence.GetFence()) != VK_SUCCESS) {
             throw std::runtime_error("Failed to submit the static instance command buffer");
         }
     }

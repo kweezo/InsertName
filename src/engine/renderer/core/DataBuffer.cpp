@@ -77,7 +77,11 @@ namespace renderer {
         bufferMutex.reset(new std::mutex);
 
         if (createInfo.transferToLocalDeviceMemory) {
-            CreateBuffer(buffer, createInfo.usage | VK_BUFFER_USAGE_TRANSFER_DST_BIT, createInfo.size);
+            {
+                std::lock_guard<std::mutex> lock(bufferCreationMutex);
+                CreateBuffer(buffer, createInfo.usage | VK_BUFFER_USAGE_TRANSFER_DST_BIT, createInfo.size);
+            }
+
             AllocateMemory(memory, buffer, createInfo.size, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
 
             CreateBuffer(stagingBuffer, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, createInfo.size);
@@ -88,7 +92,11 @@ namespace renderer {
 
             RecordCopyCommandBuffer(createInfo.threadIndex, createInfo.size);
         } else {
-            CreateBuffer(buffer, createInfo.usage, createInfo.size);
+            {
+                std::lock_guard<std::mutex> lock(bufferCreationMutex);
+                CreateBuffer(buffer, createInfo.usage, createInfo.size);
+            }
+
             AllocateMemory(memory, buffer, createInfo.size,
                            VK_MEMORY_PROPERTY_HOST_COHERENT_BIT | VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT);
 
@@ -131,11 +139,12 @@ namespace renderer {
     }
 
     VkBuffer i_DataBuffer::GetBuffer() {
+        std::lock_guard<std::mutex> lock(bufferCreationMutex);
+
         if (buffer == VK_NULL_HANDLE) {
             throw std::runtime_error("Tried to return an uninitialized data buffer");
         }
 
-        std::lock_guard lock(*bufferMutex.get());
         return buffer;
     }
 

@@ -10,7 +10,8 @@ namespace renderer {
     public:
         i_StaticInstanceData(ModelHandle model, ShaderHandle shader);
 
-        void UpdateAndRecordBuffer(const i_CommandBuffer& commandBuffer);
+        void UpdateDataBuffer(uint32_t threadIndex);
+        void RecordCommandBuffer(i_CommandBuffer commandBuffer);
 
         void AddInstance(const i_ModelInstanceHandleInternal& instance);
 
@@ -19,7 +20,6 @@ namespace renderer {
 
         void GetDrawableInstances();
         void UploadDataToBuffer(uint32_t threadIndex);
-        void RecordCommandBuffer(i_CommandBuffer commandBuffer);
 
         ModelHandle model;
         ShaderHandle shader;

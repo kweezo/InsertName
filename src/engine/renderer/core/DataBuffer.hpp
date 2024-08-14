@@ -94,6 +94,8 @@ namespace renderer {
         VkBuffer stagingBuffer;
         VkDeviceMemory stagingMemory;
 
+        std::mutex bufferCreationMutex; //made to handle a specific race condition
+
         static std::list<std::list<i_DataBufferStagingCommandBuferData> > stagingCommandBuffers;
         static std::list<std::pair<VkBuffer, VkDeviceMemory> > stagingBufferAndMemoryDeleteQueue;
         static std::set<uint32_t> resetPoolIndexes;

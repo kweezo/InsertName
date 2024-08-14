@@ -28,7 +28,7 @@ namespace renderer {
     }
 
     void ModelInstance::i_Draw(const i_Semaphore& presentSemaphore, const std::array<i_Fence, 2>& inFlightFences) {
-        i_StaticInstanceManager::Draw(presentSemaphore);
+        i_StaticInstanceManager::Draw(presentSemaphore, inFlightFences[0]);
     }
 
     std::array<VkSemaphore, 2> ModelInstance::GetRenderFinishedSemaphores() {
