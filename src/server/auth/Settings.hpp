@@ -4,4 +4,6 @@
 
 struct Settings {
     std::string dbConnString;
-} settings;
+};
+
+extern Settings settings;

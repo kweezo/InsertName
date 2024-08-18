@@ -172,3 +172,19 @@ void ClientServiceLink::HandleMessageContent(const std::string& msg) {
         messageHandler(msg);
     }
 }
+
+std::string ClientServiceLink::GetFirstParameter(std::string& message) {
+    size_t pos = message.find(static_cast<char>(30));
+    
+    if (pos == std::string::npos) {
+        std::string result = message;
+        message.clear();
+        return result;
+    }
+    
+    std::string firstParam = message.substr(0, pos);
+    
+    message.erase(0, pos + 1);
+    
+    return firstParam;
+}

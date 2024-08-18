@@ -1,6 +1,10 @@
 #pragma once
 
-#include <string> 
+#include "shared/ClientServiceLink.hpp"
+#include "Settings.hpp"
+
+#include <string>
+#include <iostream>
 
 
-void handleMessageContent(const std::string& message);
+void handleMessageContent(std::string message);

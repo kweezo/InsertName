@@ -32,6 +32,8 @@ public:
     template<typename... Args>
     static void SendData(const Args&... args);
 
+    static std::string GetFirstParameter(std::string& message);
+    
 private:
     static void ProcessMessages();
     static void ProcessSendBuffer();
