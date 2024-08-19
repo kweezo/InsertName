@@ -3,6 +3,7 @@
 namespace renderer {
     VkRenderPass i_GraphicsPipeline::renderPass = {};
     std::vector<VkFramebuffer> i_GraphicsPipeline::framebuffers = {};
+    std::mutex i_GraphicsPipeline::renderPassMutex = {};
 
     i_GraphicsPipeline::i_GraphicsPipeline(): pipeline(VK_NULL_HANDLE), pipelineLayout(VK_NULL_HANDLE) {
     }
@@ -235,6 +236,8 @@ namespace renderer {
         renderPassInfo.clearValueCount = clearValues.size();
         renderPassInfo.pClearValues = clearValues.data();
 
+        renderPassLock.reset(new std::lock_guard<std::mutex>(renderPassMutex));
+
         vkCmdBeginRenderPass(commandBuffer, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
 
         vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline);
@@ -259,6 +262,7 @@ namespace renderer {
 
     void i_GraphicsPipeline::EndRenderPass(VkCommandBuffer commandBuffer) {
         vkCmdEndRenderPass(commandBuffer);
+        renderPassLock.reset();
     }
 
     VkPipelineLayout i_GraphicsPipeline::GetPipelineLayout() {

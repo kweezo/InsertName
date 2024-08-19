@@ -10,7 +10,7 @@ namespace renderer {
     i_StaticInstanceData::i_StaticInstanceData(ModelHandle model, ShaderHandle shader): model(std::move(
             model)),
         shader(std::move(shader)), buffer(), dataUploadedSemaphore(),
-        drawCount(0), instances() {
+        drawCount(0), instances(), lastInstancesSize(0) {
         constexpr i_SemaphoreCreateInfo createInfo{};
         dataUploadedSemaphore = i_Semaphore(createInfo);
     }
@@ -65,7 +65,7 @@ namespace renderer {
         i_DataBufferCreateInfo createInfo{};
 
         createInfo.data = transformInstanceData.data();
-        createInfo.size = transformInstanceData.size();
+        createInfo.size = transformInstanceData.size() * sizeof(glm::mat4);
         createInfo.usage = VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
         createInfo.isDynamic = false;
         createInfo.transferToLocalDeviceMemory = true;
@@ -100,5 +100,14 @@ namespace renderer {
 
     i_Semaphore i_StaticInstanceData::GetDataUploadedSemaphore() const{
         return dataUploadedSemaphore;
+    }
+
+    bool i_StaticInstanceData::HasChangedSinceLastUpdate(){
+        if(lastInstancesSize != instances.size()){
+            lastInstancesSize = instances.size();
+            return true;
+        }
+        
+        return false;
     }
 }

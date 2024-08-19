@@ -74,17 +74,20 @@ namespace renderer {
 
         static i_CommandBuffer GetFreeCommandBuffer(uint32_t threadIndex);
 
-        static std::vector<std::vector<std::pair<i_CommandBuffer, bool> > > secondaryCommandBuffers;
-
         static void SubmitCommandBuffers();
 
         static void UpdateCleanup();
 
         static void CreateCommmandBuffers();
 
+        static void WaitForQueue(VkQueue queue, std::list<std::pair<uint32_t, uint32_t>> buffersInQueue, std::shared_ptr<bool> finished);
+
         static i_Fence commandBuffersFinishedExecutionFence;
         static std::set<uint32_t> commandPoolResetIndexes;
         static bool anyCommandBuffersRecorded;
+        static std::vector<std::vector<std::pair<i_CommandBuffer, bool> > > secondaryCommandBuffers;
+        static std::vector<std::pair<std::shared_ptr<std::thread>, std::shared_ptr<bool>>> queueWaitThreads;
+
 
 
         VkImage image;
@@ -97,7 +100,6 @@ namespace renderer {
 
         i_ImageCreateInfo createInfo{};
 
-        static std::list<std::shared_ptr<i_DataBuffer> > bufferCleanupQueue;
         static std::vector<VkWriteDescriptorSet> writeDescriptorSetsQueue;
 
 

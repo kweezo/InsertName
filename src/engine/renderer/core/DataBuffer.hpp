@@ -51,8 +51,8 @@ namespace renderer {
         i_DataBuffer(i_DataBufferCreateInfo createInfo);
 
         i_DataBuffer(const i_DataBuffer &other);
-
         i_DataBuffer &operator=(const i_DataBuffer &other);
+
 
         ~i_DataBuffer();
 
@@ -83,6 +83,8 @@ namespace renderer {
 
         static void UpdateCleanup();
 
+        static void WaitForQueue(VkQueue queue, std::list<std::pair<uint32_t, uint32_t>> buffersInQueue, std::shared_ptr<bool> finished);
+
         void RecordCopyCommandBuffer(uint32_t threadIndex, size_t size);
 
         i_DataBufferCreateInfo createInfo;
@@ -96,8 +98,9 @@ namespace renderer {
 
         std::mutex bufferCreationMutex; //made to handle a specific race condition
 
-        static std::list<std::list<i_DataBufferStagingCommandBuferData> > stagingCommandBuffers;
+        static std::vector<std::vector<i_DataBufferStagingCommandBuferData> > stagingCommandBuffers;
         static std::list<std::pair<VkBuffer, VkDeviceMemory> > stagingBufferAndMemoryDeleteQueue;
+        static std::vector<std::pair<std::shared_ptr<std::thread>, std::shared_ptr<bool>>> queueWaitThreads;
         static std::set<uint32_t> resetPoolIndexes;
         static i_Fence finishedCopyingFence;
         static bool anyCommandBuffersRecorded;

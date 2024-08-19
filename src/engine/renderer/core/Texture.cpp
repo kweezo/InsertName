@@ -7,8 +7,6 @@ namespace renderer {
     std::vector<VkWriteDescriptorSet> i_Texture::writeDescriptorSetsQueue = {};
     std::list<VkDescriptorImageInfo> i_Texture::imageInfoList = {};
 
-    //TODO delete image contents
-
     i_Texture::i_Texture(): image(), sampler(VK_NULL_HANDLE), descriptorSet(VK_NULL_HANDLE), width(0),
                             height(0), channels(0), data(nullptr),
                             shaders(), binding(-1), useCount() {
@@ -48,6 +46,8 @@ namespace renderer {
         createInfo.copyToLocalDeviceMemory = true;
 
         image = i_Image(createInfo);
+
+        stbi_image_free(data);
 
         image.TransitionLayout(VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
     }

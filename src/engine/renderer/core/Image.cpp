@@ -6,9 +6,9 @@ namespace renderer {
     std::vector<std::vector<std::pair<i_CommandBuffer, bool> > > i_Image::secondaryCommandBuffers = {};
     i_Fence i_Image::commandBuffersFinishedExecutionFence = {};
     std::set<uint32_t> i_Image::commandPoolResetIndexes = {};
-    std::list<std::shared_ptr<i_DataBuffer> > i_Image::bufferCleanupQueue = {};
     bool i_Image::anyCommandBuffersRecorded = false;
     std::vector<VkWriteDescriptorSet> i_Image::writeDescriptorSetsQueue = {};
+    std::vector<std::pair<std::shared_ptr<std::thread>, std::shared_ptr<bool>>> i_Image::queueWaitThreads = {};//todo combine shared_ptr into one pair
 
 
     void i_Image::Init() {
@@ -55,16 +55,26 @@ namespace renderer {
         }
 
 
-        VkFence finishedCopyingFenceRaw = commandBuffersFinishedExecutionFence.GetFence();
-
         std::vector<VkCommandBuffer> recordedCommandBuffers{};
+        std::list<std::pair<uint32_t, uint32_t>> recordedCommandBufferIndexes;
 
+        uint32_t i = 0;
+        uint32_t y = 0;
         for (std::vector<std::pair<i_CommandBuffer, bool> > &commandBuffers: secondaryCommandBuffers) {
+        
+            i = 0;
             for (std::pair<i_CommandBuffer, bool> &commandBuffer: commandBuffers) {
+        
                 if (!std::get<bool>(commandBuffer)) {
                     recordedCommandBuffers.push_back(std::get<i_CommandBuffer>(commandBuffer).GetCommandBuffer());
+                    std::get<bool>(commandBuffer) = true;
+                    recordedCommandBufferIndexes.push_back(std::make_pair<>(y, i));
                 }
+
+                i++;
             }
+
+            y++;
         }
         //TODO paralelize image and data buffer command buffer execution
         VkSubmitInfo submitInfo{};
@@ -72,22 +82,46 @@ namespace renderer {
         submitInfo.commandBufferCount = recordedCommandBuffers.size();
         submitInfo.pCommandBuffers = recordedCommandBuffers.data();
 
-        if (vkQueueSubmit(i_Device::GetTransferQueue(), 1, &submitInfo,
-                          commandBuffersFinishedExecutionFence.GetFence()) != VK_SUCCESS) {
+        VkQueue queue = i_Device::GetTransferQueue();
+
+        if (vkQueueSubmit(queue, 1, &submitInfo,
+                          VK_NULL_HANDLE) != VK_SUCCESS) {
             throw std::runtime_error("Failed to submit data buffer command buffer");
         }
-        vkWaitForFences(i_Device::GetDevice(), 1, &finishedCopyingFenceRaw, VK_TRUE,
-                        std::numeric_limits<uint64_t>::max());
-        vkResetFences(i_Device::GetDevice(), 1, &finishedCopyingFenceRaw);
+
+        std::shared_ptr<bool> finished = std::make_shared<bool>(false);
+        std::shared_ptr<std::thread> thread = 
+        std::make_shared<std::thread>(std::thread(WaitForQueue, queue, recordedCommandBufferIndexes, finished));
+
+        queueWaitThreads.push_back(std::make_pair<>(thread, finished));
+
+    }
+
+    void i_Image::WaitForQueue(VkQueue queue,
+     std::list<std::pair<uint32_t, uint32_t>> buffersInQueue, std::shared_ptr<bool> finished){
+        vkQueueWaitIdle(queue);
+
+        for(std::pair<uint32_t, uint32_t>& i : buffersInQueue){
+            secondaryCommandBuffers[i.first][i.second].second = true;
+        }
+
+        *finished = true;
     }
 
     void i_Image::UpdateCleanup() {
-        for (uint32_t i: commandPoolResetIndexes) {
-            i_CommandBuffer::ResetPools(i_CommandBufferType::IMAGE, i);
-        }
-        anyCommandBuffersRecorded = false;
 
-        bufferCleanupQueue.clear();
+        for(uint32_t i = 0; i < queueWaitThreads.size(); i++){
+            if(!*queueWaitThreads[i].second){
+                continue;
+            }
+
+            queueWaitThreads[i].first->join();
+            queueWaitThreads.erase(queueWaitThreads.begin() + i);
+            i--;
+
+        }
+
+        anyCommandBuffersRecorded = false;
     }
 
     i_CommandBuffer i_Image::GetFreeCommandBuffer(uint32_t threadIndex) {
@@ -167,6 +201,11 @@ namespace renderer {
         } else {
             i_DataBuffer::UploadDataToMemory(memory, createInfo.data, createInfo.size);
         }
+
+
+
+
+
     }
 
     void i_Image::CreateImage() {
@@ -286,8 +325,6 @@ namespace renderer {
         vkCmdCopyBufferToImage(commandBuffer.GetCommandBuffer(), stagingBuffer->GetBuffer(), image,
                                VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &copyRegion);
         commandBuffer.EndCommandBuffer();
-
-        bufferCleanupQueue.push_front(stagingBuffer);
     }
 
     void i_Image::TransitionLayout(VkImageLayout oldLayout, VkImageLayout newLayout) const {
@@ -304,7 +341,7 @@ namespace renderer {
         imageMemoryBarrier.subresourceRange.baseArrayLayer = 0;
         imageMemoryBarrier.subresourceRange.layerCount = 1;
         imageMemoryBarrier.srcAccessMask = 0;
-        imageMemoryBarrier.dstAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT; // ?????
+        imageMemoryBarrier.dstAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT; // todo ?????
 
         VkCommandBufferInheritanceInfo inheritanceInfo = {};
         inheritanceInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_INFO;

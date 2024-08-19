@@ -39,9 +39,7 @@ endif()
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-if(WIN32)
-    set(CMAKE_RUNTIME_OUTPUT_DIRECTORY bin)
-endif()
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY bin)
 
 set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY lib)
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY lib)
@@ -69,7 +67,7 @@ if(BUILD_SERVER)
 endif()
 
 if(DEBUG)
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g -DNDEBUG ")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g -DNDEBUG -fsanitize=address")
 endif()
 
 if(RELEASE)
@@ -230,10 +228,7 @@ endif()
 
 if(BUILD_CLIENT)    
     file(GLOB clientsrc src/client/account/*.cpp)
-    add_executable(client ${clientsrc} src/client/main.cpp
-            src/engine/renderer/ext/model/StaticInstanceManager.cpp
-            src/engine/renderer/ext/model/StaticInstanceManager.hpp)
-
+    add_executable(client ${clientsrc} src/client/main.cpp)
     link_directories(${CMAKE_SOURCE_DIR}/lib)
     include_directories(${CMAKE_SOURCE_DIR}/src)
     

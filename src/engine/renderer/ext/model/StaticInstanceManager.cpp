@@ -32,6 +32,9 @@ namespace renderer {
 
         for (auto &[shaderName, pair]: instanceDataPerShader) {
             for (std::shared_ptr<i_StaticInstanceData> &instanceData: pair.second) {
+                if(!instanceData->HasChangedSinceLastUpdate()){
+                    continue;
+                }
                 threads.emplace_back(std::bind(&i_StaticInstanceData::UpdateDataBuffer, instanceData.get(),
                                                pair.first[i_Swapchain::GetFrameInFlight()].GetThreadIndex()));
             }
@@ -53,6 +56,9 @@ namespace renderer {
         for (i_Semaphore &semaphore: renderFinishedSemaphores) {
             semaphore.Destruct();
         }
+
+        instanceDataPerShader.clear();
+        instanceData.clear();
     }
 
     void i_StaticInstanceManager::AddInstance(const i_ModelInstanceHandleInternal &instance,

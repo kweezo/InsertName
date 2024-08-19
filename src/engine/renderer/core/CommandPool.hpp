@@ -39,7 +39,7 @@ namespace renderer {
 
         static VkCommandPool GetGraphicsCommandPool(uint32_t poolID);
 
-        static VkCommandPool ResetPool(uint32_t poolID); // TODO implement lol
+        static VkCommandPool ResetPool(uint32_t poolID); 
     private:
         static std::vector<i_CommandPoolSet> commandPools;
 

@@ -76,7 +76,7 @@ namespace renderer {
 
         for (std::thread &thread: threads) {
             if (thread.joinable()) {
-                thread.join(); // TODO if proper sync we don't have to wait???
+                thread.join(); 
             }
         }
 
@@ -145,6 +145,7 @@ namespace renderer {
             semaphore.Destruct();
         }
 
+        i_StaticInstanceManager::Cleanup();
         ModelManager::i_Cleanup();
         i_ShaderManager::Cleanup();
         i_Swapchain::Cleanup();

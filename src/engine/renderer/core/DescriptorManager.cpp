@@ -52,6 +52,7 @@ namespace renderer {
         poolCreateInfo.maxSets = allocInfo.descriptorLayoutBindings.size();
         poolCreateInfo.poolSizeCount = descriptorPoolSizes.size();
         poolCreateInfo.pPoolSizes = descriptorPoolSizes.data();
+        poolCreateInfo.flags = VK_DESCRIPTOR_POOL_CREATE_UPDATE_AFTER_BIND_BIT_EXT;
 
         descriptorPools.push_front({});
         if (vkCreateDescriptorPool(i_Device::GetDevice(), &poolCreateInfo, nullptr, &descriptorPools.front()) !=

@@ -28,6 +28,7 @@ namespace renderer {
 
     const std::vector<const char *> deviceExtensions = {
         VK_KHR_SWAPCHAIN_EXTENSION_NAME,
+        "VK_EXT_descriptor_indexing"
     };
 
     VkDevice i_Device::device = VK_NULL_HANDLE;
@@ -133,14 +134,24 @@ namespace renderer {
             queueCreateInfos.push_back(queueFamilyInfo.transferQueueCreateInfo);
         }
 
+        VkPhysicalDeviceDescriptorIndexingFeatures indexingFeatures{};
+        indexingFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DESCRIPTOR_INDEXING_FEATURES;
+        indexingFeatures.pNext = nullptr;
+
+
+        VkPhysicalDeviceFeatures2 deviceFeatures{};
+        deviceFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
+        deviceFeatures.pNext = &indexingFeatures;
+        deviceFeatures.features.samplerAnisotropy = VK_TRUE;
+
+
         VkDeviceCreateInfo createInfo{};
         createInfo.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
+        createInfo.pNext = &deviceFeatures;
         createInfo.queueCreateInfoCount = static_cast<uint32_t>(queueCreateInfos.size());
         createInfo.pQueueCreateInfos = queueCreateInfos.data();
         createInfo.enabledExtensionCount = deviceExtensions.size();
         createInfo.ppEnabledExtensionNames = deviceExtensions.data();
-        VkPhysicalDeviceFeatures features = GetAvailableDeviceFeatures();
-        createInfo.pEnabledFeatures = &features;
         createInfo.enabledLayerCount = 0;
 
         if (vkCreateDevice(physicalDevice, &createInfo, nullptr, &device) != VK_SUCCESS) {

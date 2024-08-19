@@ -2,6 +2,8 @@
 
 #include <array>
 #include <memory>
+#include <memory>
+#include <mutex>
 
 #include <vulkan/vulkan.h>
 
@@ -33,11 +35,11 @@ namespace renderer {
 
         void BeginRenderPassAndBindPipeline(VkCommandBuffer commandBuffer);
 
-        static void EndRenderPass(VkCommandBuffer commandBuffer);
+        void EndRenderPass(VkCommandBuffer commandBuffer);
 
         VkPipelineLayout GetPipelineLayout();
 
-        static VkRenderPass GetRenderPass();//TODO: ????????? WHY STATIC WHAT THE FUCK
+        static VkRenderPass GetRenderPass();
 
         static VkFramebuffer GetFramebuffer(uint32_t index);
 
@@ -50,9 +52,12 @@ namespace renderer {
 
         VkPipeline pipeline;
         VkPipelineLayout pipelineLayout;
-        static VkRenderPass renderPass;
 
+        static VkRenderPass renderPass;
         static std::vector<VkFramebuffer> framebuffers;
+
+        static std::mutex renderPassMutex;
+        std::unique_ptr<std::lock_guard<std::mutex>> renderPassLock;
 
         std::shared_ptr<uint32_t> useCount;
     };

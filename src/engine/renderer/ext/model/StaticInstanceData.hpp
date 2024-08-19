@@ -15,6 +15,8 @@ namespace renderer {
 
         void AddInstance(const i_ModelInstanceHandleInternal& instance);
 
+        bool HasChangedSinceLastUpdate();
+
         [[nodiscard]] i_Semaphore GetDataUploadedSemaphore() const;
     private:
 
@@ -30,5 +32,7 @@ namespace renderer {
         uint32_t drawCount;
         std::list<i_ModelInstanceHandleInternal> instances;
         std::vector<glm::mat4> transformInstanceData;
+
+        size_t lastInstancesSize;
     };
 }
