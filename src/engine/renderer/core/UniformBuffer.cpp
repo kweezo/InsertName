@@ -18,12 +18,16 @@ namespace renderer {
     i_UniformBuffer::i_UniformBuffer(const i_UniformBufferCreateInfo &createInfo): size(createInfo.size),
         binding(createInfo.binding),
         shaders(createInfo.shaders) {
+
         i_DataBufferCreateInfo dataBufferCreateInfo{};
+
         dataBufferCreateInfo.size = size;
         dataBufferCreateInfo.data = createInfo.data;
         dataBufferCreateInfo.transferToLocalDeviceMemory = true;
         dataBufferCreateInfo.usage = VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT;
         dataBufferCreateInfo.isDynamic = true;
+        dataBufferCreateInfo.signalSemaphore = createInfo.signalSemaphore;
+        dataBufferCreateInfo.signalSemaphoreValue = createInfo.signalSemaphoreValue;
 
         dataBuffer = i_DataBuffer(dataBufferCreateInfo);
 
@@ -64,6 +68,10 @@ namespace renderer {
         }
 
         this->binding = binding;
+    }
+
+    void i_UniformBuffer::SetSignalSemaphoreValue(uint64_t value){
+        dataBuffer.SetSignalSemapnoreValue(value);
     }
 
     i_UniformBuffer::i_UniformBuffer(const i_UniformBuffer &other) {

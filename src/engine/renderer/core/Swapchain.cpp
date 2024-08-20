@@ -8,6 +8,7 @@ namespace renderer {
     constexpr uint32_t PREFERRED_IMAGE_COUNT = 2;
     uint32_t i_Swapchain::currentImageIndex{};
     uint32_t i_Swapchain::currentFrameInFlight{};
+    uint64_t i_Swapchain::frameCount{};
 
     VkSwapchainKHR i_Swapchain::swapchain = VK_NULL_HANDLE;
     std::vector<VkImageView> i_Swapchain::swapchainImageViews = {};
@@ -189,11 +190,16 @@ namespace renderer {
     }
 
     uint32_t i_Swapchain::GetFrameInFlight() {
+        frameCount++;
         return currentFrameInFlight;
     }
 
     uint32_t i_Swapchain::GetImageIndex() {
         return currentImageIndex;
+    }
+
+    uint32_t i_Swapchain::GetFrameCount(){
+        return frameCount;
     }
 
     VkFormat i_Swapchain::GetImageFormat() {

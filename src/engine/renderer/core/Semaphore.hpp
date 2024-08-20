@@ -12,6 +12,8 @@
 
 namespace renderer {
     struct i_SemaphoreCreateInfo {
+        VkSemaphoreType type;
+        uint64_t initalValue;
     };
 
     class i_Semaphore {
@@ -30,10 +32,15 @@ namespace renderer {
 
         [[nodiscard]] VkSemaphore GetSemaphore() const;
 
+        [[nodiscard]] bool IsTimelineSemaphore();
+
         void Destruct();
 
     private:
         VkSemaphore semaphore = VK_NULL_HANDLE;
+
         std::shared_ptr<uint32_t> useCount;
+
+        bool isTimeline;
     };
 }

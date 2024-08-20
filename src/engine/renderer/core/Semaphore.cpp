@@ -9,10 +9,24 @@ namespace renderer {
             return;
         }
 
-        VkSemaphoreCreateInfo fenceInfo = {};
-        fenceInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
 
-        if (vkCreateSemaphore(i_Device::GetDevice(), &fenceInfo, nullptr, &semaphore) != VK_SUCCESS) {
+        isTimeline = createInfo.type;
+
+        VkSemaphoreTypeCreateInfo typeInfo{};
+        typeInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_TYPE_CREATE_INFO;
+        typeInfo.semaphoreType = VK_SEMAPHORE_TYPE_BINARY;
+
+        if(isTimeline){
+            typeInfo.semaphoreType = VK_SEMAPHORE_TYPE_TIMELINE;
+            typeInfo.initialValue = createInfo.initalValue;
+        }
+
+        VkSemaphoreCreateInfo semaphoreInfo = {};
+        semaphoreInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
+        semaphoreInfo.pNext = &typeInfo;
+        
+
+        if (vkCreateSemaphore(i_Device::GetDevice(), &semaphoreInfo, nullptr, &semaphore) != VK_SUCCESS) {
             throw std::runtime_error("Failed to create fence");
         }
 

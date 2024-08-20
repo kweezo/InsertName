@@ -42,6 +42,9 @@ namespace renderer {
         void i_AddSelfToInstanceData(const std::shared_ptr<ModelInstance>& self) const;
 
 
+        void TranslatePosition(glm::vec3 pos);
+
+
         static std::array<VkSemaphore, 2> GetRenderFinishedSemaphores();
 
         static void i_Draw(const i_Semaphore& presentSemaphore, const std::array<i_Fence, 2>& inFlightFences);
@@ -58,6 +61,8 @@ namespace renderer {
         ModelInstanceCreateInfo createInfo;
 
         bool shouldDraw;
+
+        Transform transform;
         glm::mat4 model{};
     };
 }

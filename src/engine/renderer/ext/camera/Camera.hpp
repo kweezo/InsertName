@@ -17,6 +17,9 @@ namespace renderer {
 
         static void i_Cleanup();
 
+        static i_Semaphore i_GetPerspectiveSignalSemaphore();
+        static i_Semaphore i_GetOrthoSignalSemaphore();
+
     private:
         static glm::mat4 view;
         static glm::mat4 perspectiveProjection;
@@ -24,5 +27,8 @@ namespace renderer {
 
         static i_UniformBuffer orthoCamera;
         static i_UniformBuffer perspectiveCamera;
+
+        static i_Semaphore orthoSignalSemaphore;
+        static i_Semaphore perspectiveSignalSemaphore;
     };
 }

@@ -9,6 +9,7 @@
 
 #include "DataBuffer.hpp"
 #include "Shader.hpp"
+#include "Semaphore.hpp"
 
 #define UNIFORM_BUFFER_COMMAND_BUFFERS_PER_THREAD 1
 
@@ -21,6 +22,9 @@ namespace renderer {
 
         void *data;
         size_t size;
+
+        i_Semaphore signalSemaphore;
+        uint64_t signalSemaphoreValue;
     };
 
 
@@ -41,6 +45,8 @@ namespace renderer {
         void SetBinding(uint32_t binding);
 
         void UpdateData(void *data, size_t size, uint32_t threadIndex);
+
+        void SetSignalSemaphoreValue(uint64_t value);
 
         void Destructor();
 

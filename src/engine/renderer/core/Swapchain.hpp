@@ -43,6 +43,8 @@ namespace renderer {
 
         static uint32_t GetImageIndex();
 
+        static uint32_t GetFrameCount();
+
         static std::vector<VkImageView> GetSwapchainImageViews();
 
     private:
@@ -60,5 +62,6 @@ namespace renderer {
 
         static uint32_t currentImageIndex;
         static uint32_t currentFrameInFlight;
+        static uint64_t frameCount;
     };
 }

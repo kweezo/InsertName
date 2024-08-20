@@ -12,8 +12,6 @@ std::vector<const char *> instanceExtensions = {
 #ifdef NDEBUG
     "VK_EXT_debug_utils",
 #endif
-
-
 };
 
 namespace renderer {

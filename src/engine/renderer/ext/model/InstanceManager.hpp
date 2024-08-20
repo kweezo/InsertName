@@ -6,10 +6,11 @@
 #include <boost/container/flat_map.hpp>
 
 #include "Model.hpp"
-#include "StaticInstanceData.hpp"
+#include "InstanceData.hpp"
+#include "../camera/Camera.hpp"
 
 namespace renderer {
-    class i_StaticInstanceManager {
+    class i_InstanceManager {
     public:
         static void Init();
 
@@ -30,13 +31,13 @@ namespace renderer {
         static void UpdateDataBuffers();
 
         static void RecordCommandBuffer(const ShaderHandle &shader,
-                                        const std::list<std::shared_ptr<i_StaticInstanceData> > &instanceData,
+                                        const std::list<std::shared_ptr<i_InstanceData> > &instanceData,
                                         i_CommandBuffer commandBuffer);
 
 
-        static boost::container::flat_map<std::string, std::shared_ptr<i_StaticInstanceData> > instanceData;
+        static boost::container::flat_map<std::string, std::shared_ptr<i_InstanceData> > instanceData;
         static boost::container::flat_map<std::string, std::pair<std::array<i_CommandBuffer, MAX_FRAMES_IN_FLIGHT>,
-            std::list<std::shared_ptr<i_StaticInstanceData> > > >
+            std::list<std::shared_ptr<i_InstanceData> > > >
         instanceDataPerShader; //shitty name but I couldnt give less than 2 shits
 
         static uint32_t currThreadIndex;

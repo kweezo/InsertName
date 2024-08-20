@@ -70,82 +70,77 @@ namespace renderer {
     i_DataBuffer::i_DataBuffer(i_DataBufferCreateInfo createInfo) : createInfo(createInfo),
                                                                     stagingBuffer(VK_NULL_HANDLE),
                                                                     stagingMemory(VK_NULL_HANDLE),
-                                                                    buffer(VK_NULL_HANDLE), memory(VK_NULL_HANDLE) {
+                                                                    buffer(VK_NULL_HANDLE), memory(VK_NULL_HANDLE){
         if (!i_Device::DeviceMemoryFree()) {
             createInfo.transferToLocalDeviceMemory = false;
+        }
+
+        bufferMutex.reset(new std::mutex);
+    
+        if (createInfo.transferToLocalDeviceMemory) {
+            {
+                std::lock_guard<std::mutex> lock(bufferCreationMutex);
+                CreateBuffer(buffer, createInfo.usage | VK_BUFFER_USAGE_TRANSFER_DST_BIT, createInfo.size);
             }
+        
+            AllocateMemory(memory, buffer, createInfo.size, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+        
+            CreateBuffer(stagingBuffer, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, createInfo.size);
+            AllocateMemory(stagingMemory, stagingBuffer, createInfo.size,
+                        VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+                    
+            UploadDataToMemory(stagingMemory, createInfo.data, createInfo.size);
+        
+            RecordCopyCommandBuffer(createInfo.threadIndex, createInfo.size);
+        } else {
+            {
+                std::lock_guard<std::mutex> lock(bufferCreationMutex);
+                CreateBuffer(buffer, createInfo.usage, createInfo.size);
+            }
+        
+            AllocateMemory(memory, buffer, createInfo.size,
+                        VK_MEMORY_PROPERTY_HOST_COHERENT_BIT | VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT);
+                    
+            UploadDataToMemory(memory, createInfo.data, createInfo.size);
+        }
+    
+        if (!createInfo.signalSemaphore.IsInitialized()) {
+            createInfo.signalSemaphore = i_Semaphore(i_SemaphoreCreateInfo{});
+        }
+    
+        useCount = std::make_shared<uint32_t>(1);
+    }
 
-
-            bufferMutex.reset(new std::mutex);
-
-            if (createInfo.transferToLocalDeviceMemory) {
-                {
-                    std::lock_guard<std::mutex> lock(bufferCreationMutex);
-                    CreateBuffer(buffer, createInfo.usage | VK_BUFFER_USAGE_TRANSFER_DST_BIT, createInfo.size);
-                }
-
-                AllocateMemory(memory, buffer, createInfo.size, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
-
-                CreateBuffer(stagingBuffer, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, createInfo.size);
-                AllocateMemory(stagingMemory, stagingBuffer, createInfo.size,
+    void i_DataBuffer::UpdateData(void *data, size_t size, uint32_t threadIndex) {
+        if (createInfo.size != size) {
+            throw std::runtime_error(
+                "Size of data does not match size of buffer, you need to create a new buffer for this");
+        }
+        if (!createInfo.isDynamic) {
+            throw std::runtime_error("This buffer isn't dynamic, so it can't be changed");
+        }
+        if (!i_Device::DeviceMemoryFree()) {
+            createInfo.transferToLocalDeviceMemory = false;
+        }
+        if (createInfo.transferToLocalDeviceMemory) {
+            if (stagingMemory == VK_NULL_HANDLE) {
+                AllocateMemory(stagingMemory, stagingBuffer, size,
                             VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
-
-                UploadDataToMemory(stagingMemory, createInfo.data, createInfo.size);
-
-                RecordCopyCommandBuffer(createInfo.threadIndex, createInfo.size);
-            } else {
-                {
-                    std::lock_guard<std::mutex> lock(bufferCreationMutex);
-                    CreateBuffer(buffer, createInfo.usage, createInfo.size);
-                }
-
-                AllocateMemory(memory, buffer, createInfo.size,
-                            VK_MEMORY_PROPERTY_HOST_COHERENT_BIT | VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT);
-
-                UploadDataToMemory(memory, createInfo.data, createInfo.size);
             }
+            UploadDataToMemory(stagingMemory, data, size);
+            RecordCopyCommandBuffer(threadIndex, size);
+            return;
+        } 
+        
+        UploadDataToMemory(memory, data, size);
+        
 
-            if (!createInfo.signalSemaphore.IsInitialized()) {
-                createInfo.signalSemaphore = i_Semaphore(i_SemaphoreCreateInfo{});
-            }
-
-            useCount = std::make_shared<uint32_t>(1);
+    }
+    VkBuffer i_DataBuffer::GetBuffer() {
+        std::lock_guard<std::mutex> lock(bufferCreationMutex);
+        if (buffer == VK_NULL_HANDLE) {
+            throw std::runtime_error("Tried to return an uninitialized data buffer");
         }
-
-        void i_DataBuffer::UpdateData(void *data, size_t size, uint32_t threadIndex) {
-            if (createInfo.size != size) {
-                throw std::runtime_error(
-                    "Size of data does not match size of buffer, you need to create a new buffer for this");
-            }
-
-            if (!createInfo.isDynamic) {
-                throw std::runtime_error("This buffer isn't dynamic, so it can't be changed");
-            }
-
-            if (!i_Device::DeviceMemoryFree()) {
-                createInfo.transferToLocalDeviceMemory = false;
-            }
-
-            if (createInfo.transferToLocalDeviceMemory) {
-                if (stagingMemory == VK_NULL_HANDLE) {
-                    AllocateMemory(stagingMemory, stagingBuffer, size,
-                                VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
-                }
-
-                UploadDataToMemory(stagingMemory, data, size);
-
-                RecordCopyCommandBuffer(threadIndex, size);
-            } else {
-                UploadDataToMemory(memory, data, size);
-            }
-        }
-
-        VkBuffer i_DataBuffer::GetBuffer() {
-            std::lock_guard<std::mutex> lock(bufferCreationMutex);
-
-            if (buffer == VK_NULL_HANDLE) {
-                throw std::runtime_error("Tried to return an uninitialized data buffer");
-            }
 
         return buffer;
     }
@@ -279,7 +274,7 @@ namespace renderer {
         vkUnmapMemory(i_Device::GetDevice(), memory);
     }
 
-    i_CommandBuffer i_DataBuffer::RetrieveFreeStagingCommandBuffer(uint32_t threadIndex, i_Semaphore signalSemaphore,
+    i_CommandBuffer i_DataBuffer::RetrieveFreeStagingCommandBuffer(uint32_t threadIndex, i_Semaphore signalSemaphore, uint64_t signalSemaphoreValue,
                                                                    std::weak_ptr<std::mutex> mutex) {
         anyCommandBuffersRecorded = true;
 
@@ -303,13 +298,13 @@ namespace renderer {
         stagingCommandBufferInfo.threadIndex = threadIndex;
 
 
-        (*listFront).emplace_back(i_CommandBuffer(stagingCommandBufferInfo), mutex, false, signalSemaphore);
+        (*listFront).emplace_back(i_CommandBuffer(stagingCommandBufferInfo), mutex, false, signalSemaphore, signalSemaphoreValue);
         return (*listFront).back().commandBuffer;
     }
 
     void i_DataBuffer::RecordCopyCommandBuffer(uint32_t threadIndex, size_t size) {
         i_CommandBuffer commandBuffer = RetrieveFreeStagingCommandBuffer(
-            createInfo.threadIndex, createInfo.signalSemaphore, bufferMutex);
+            createInfo.threadIndex, createInfo.signalSemaphore, createInfo.signalSemaphoreValue, bufferMutex);
 
         commandBuffer.BeginCommandBuffer(nullptr, false);
 
@@ -333,6 +328,9 @@ namespace renderer {
         }
 
         std::vector<VkSubmitInfo> submitInfos{};
+
+        std::list<VkTimelineSemaphoreSubmitInfo> timelineSubmitInfos{};
+        std::list<uint64_t> timelineSignalSemaphoreValues{};
 
 
         std::vector<VkCommandBuffer> recordedCommandBuffers{};
@@ -370,8 +368,19 @@ namespace renderer {
                     commandBuffer.signalSemaphore.GetSemaphore()
                 });
 
+                timelineSignalSemaphoreValues.push_back(commandBuffer.signalSemaphoreValue);
+
+                VkTimelineSemaphoreSubmitInfo timelineSubmitInfo{};
+
+                timelineSubmitInfo.sType = VK_STRUCTURE_TYPE_TIMELINE_SEMAPHORE_SUBMIT_INFO;
+                timelineSubmitInfo.pSignalSemaphoreValues = &timelineSignalSemaphoreValues.back();
+                timelineSubmitInfo.signalSemaphoreValueCount = 1;
+
+                timelineSubmitInfos.push_back(timelineSubmitInfo);
+
                 VkSubmitInfo submitInfo{};
                 submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+                submitInfo.pNext = &submitInfos.back();
 
                 submitInfo.commandBufferCount = 1;
                 submitInfo.pCommandBuffers = &submitInfoReferenceList.front().first;
@@ -451,5 +460,9 @@ namespace renderer {
 
     void i_DataBuffer::SetSignalSemaphore(i_Semaphore signalSemaphore) {
         createInfo.signalSemaphore = signalSemaphore;
+    }
+
+    void i_DataBuffer::SetSignalSemapnoreValue(uint64_t value){
+        createInfo.signalSemaphoreValue = value;
     }
 }

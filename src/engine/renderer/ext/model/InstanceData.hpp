@@ -5,17 +5,18 @@
 
 #include "ModelInstance.hpp"
 
+
+//todo categorize them into static and non static and handle them seperately
+
 namespace renderer {
-    class i_StaticInstanceData {
+    class i_InstanceData {
     public:
-        i_StaticInstanceData(ModelHandle model, ShaderHandle shader);
+        i_InstanceData(ModelHandle model, ShaderHandle shader);
 
         void UpdateDataBuffer(uint32_t threadIndex);
         void RecordCommandBuffer(i_CommandBuffer commandBuffer);
 
         void AddInstance(const i_ModelInstanceHandleInternal& instance);
-
-        bool HasChangedSinceLastUpdate();
 
         [[nodiscard]] i_Semaphore GetDataUploadedSemaphore() const;
     private:

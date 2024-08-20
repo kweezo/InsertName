@@ -1,6 +1,6 @@
 #include "Renderer.hpp"
 
-#include "engine/renderer/ext/model/StaticInstanceManager.hpp"
+#include "engine/renderer/ext/model/InstanceManager.hpp"
 
 namespace renderer {
     std::array<i_Semaphore, MAX_FRAMES_IN_FLIGHT> Renderer::presentSemaphores{};
@@ -29,7 +29,7 @@ namespace renderer {
         i_GraphicsPipeline::Init();
         i_ShaderManager::Init();
         Camera::i_Init();
-        i_StaticInstanceManager::Init();
+        i_InstanceManager::Init();
 
         for (uint32_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
             for (uint32_t y = 0; y < DRAW_QUEUE_SUBMIT_COUNT; y++) {
@@ -67,7 +67,7 @@ namespace renderer {
         i_UniformBuffer::Update();
         Camera::i_Update();
         i_Texture::Update();
-        i_StaticInstanceManager::EarlyUpdate();
+        i_InstanceManager::EarlyUpdate();
 
         std::array<std::thread, 2> threads = {
             std::thread(i_DataBuffer::Update),
@@ -80,7 +80,7 @@ namespace renderer {
             }
         }
 
-        i_StaticInstanceManager::Update();
+        i_InstanceManager::Update();
     }
 
     void Renderer::Update() {
@@ -145,7 +145,7 @@ namespace renderer {
             semaphore.Destruct();
         }
 
-        i_StaticInstanceManager::Cleanup();
+        i_InstanceManager::Cleanup();
         ModelManager::i_Cleanup();
         i_ShaderManager::Cleanup();
         i_Swapchain::Cleanup();

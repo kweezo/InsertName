@@ -2,12 +2,12 @@
 // Created by jakob on 8/8/24.
 //
 
-#include "StaticInstanceData.hpp"
+#include "InstanceData.hpp"
 
 #include <utility>
 
 namespace renderer {
-    i_StaticInstanceData::i_StaticInstanceData(ModelHandle model, ShaderHandle shader): model(std::move(
+    i_InstanceData::i_InstanceData(ModelHandle model, ShaderHandle shader): model(std::move(
             model)),
         shader(std::move(shader)), buffer(), dataUploadedSemaphore(),
         drawCount(0), instances(), lastInstancesSize(0) {
@@ -15,16 +15,16 @@ namespace renderer {
         dataUploadedSemaphore = i_Semaphore(createInfo);
     }
 
-    void i_StaticInstanceData::AddInstance(const i_ModelInstanceHandleInternal &instance) {
+    void i_InstanceData::AddInstance(const i_ModelInstanceHandleInternal &instance) {
         instances.push_front(instance);
     }
 
-    void i_StaticInstanceData::UpdateDataBuffer(uint32_t threadIndex) {
+    void i_InstanceData::UpdateDataBuffer(uint32_t threadIndex) {
         GetDrawableInstances();
         UploadDataToBuffer(threadIndex);
     }
 
-    void i_StaticInstanceData::GetDrawableInstances() {
+    void i_InstanceData::GetDrawableInstances() {
         std::list<glm::mat4> transformInstanceDataLinked;
 
         auto iteratorInstances = instances.begin();
@@ -61,7 +61,7 @@ namespace renderer {
         }
     }
 
-    void i_StaticInstanceData::UploadDataToBuffer(uint32_t threadIndex) {
+    void i_InstanceData::UploadDataToBuffer(uint32_t threadIndex) {
         i_DataBufferCreateInfo createInfo{};
 
         createInfo.data = transformInstanceData.data();
@@ -77,7 +77,7 @@ namespace renderer {
         buffer = i_DataBuffer(createInfo);
     }
 
-    void i_StaticInstanceData::RecordCommandBuffer(i_CommandBuffer commandBuffer) {
+    void i_InstanceData::RecordCommandBuffer(i_CommandBuffer commandBuffer) {
         std::shared_ptr<i_Shader> shader = this->shader.lock();
         std::shared_ptr<i_Model> model = this->model.lock();
 
@@ -98,16 +98,8 @@ namespace renderer {
         model->RecordDrawCommands(commandBuffer, drawCount);
     }
 
-    i_Semaphore i_StaticInstanceData::GetDataUploadedSemaphore() const{
+    i_Semaphore i_InstanceData::GetDataUploadedSemaphore() const{
         return dataUploadedSemaphore;
     }
 
-    bool i_StaticInstanceData::HasChangedSinceLastUpdate(){
-        if(lastInstancesSize != instances.size()){
-            lastInstancesSize = instances.size();
-            return true;
-        }
-        
-        return false;
-    }
 }

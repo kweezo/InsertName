@@ -1,6 +1,6 @@
 #include "ModelInstance.hpp"
 
-#include "StaticInstanceManager.hpp"
+#include "InstanceManager.hpp"
 
 namespace renderer {
     ModelInstanceHandle ModelInstance::Create(ModelInstanceCreateInfo &createInfo) {
@@ -22,19 +22,21 @@ namespace renderer {
     }
 
     void ModelInstance::i_AddSelfToInstanceData(const std::shared_ptr<ModelInstance>& self) const {
-        if (!createInfo.isDynamic) {
-           i_StaticInstanceManager::AddInstance(self, createInfo.shader);
-        }
+        i_InstanceManager::AddInstance(self, createInfo.shader);
     }
 
     void ModelInstance::i_Draw(const i_Semaphore& presentSemaphore, const std::array<i_Fence, 2>& inFlightFences) {
-        i_StaticInstanceManager::Draw(presentSemaphore, inFlightFences[0]);
+        i_InstanceManager::Draw(presentSemaphore, inFlightFences[0]);
     }
 
     std::array<VkSemaphore, 2> ModelInstance::GetRenderFinishedSemaphores() {
-        return {i_StaticInstanceManager::GetRenderFinishedSemaphore(), i_StaticInstanceManager::GetRenderFinishedSemaphore()};
+        return {i_InstanceManager::GetRenderFinishedSemaphore(), i_InstanceManager::GetRenderFinishedSemaphore()};
     }
 
+    void ModelInstance::TranslatePosition(glm::vec3 pos){
+        model = glm::translate(model, pos);
+    }
+    
     glm::mat4 ModelInstance::GetModelMatrix() const{
         return model;
     }

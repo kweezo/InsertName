@@ -92,6 +92,7 @@ namespace renderer {
 
 
         VkPhysicalDeviceFeatures wantedFeatures{};
+
         wantedFeatures.samplerAnisotropy = VK_TRUE;
 
         for (uint32_t i = 0; i < sizeof(VkPhysicalDeviceFeatures) / sizeof(VkBool32); i++) {
@@ -134,14 +135,14 @@ namespace renderer {
             queueCreateInfos.push_back(queueFamilyInfo.transferQueueCreateInfo);
         }
 
-        VkPhysicalDeviceDescriptorIndexingFeatures indexingFeatures{};
-        indexingFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DESCRIPTOR_INDEXING_FEATURES;
-        indexingFeatures.pNext = nullptr;
-
+        VkPhysicalDeviceVulkan12Features vulkan12Features{};
+        vulkan12Features.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_2_FEATURES;
+        vulkan12Features.timelineSemaphore = VK_TRUE;
+        vulkan12Features.descriptorIndexing = VK_TRUE;
 
         VkPhysicalDeviceFeatures2 deviceFeatures{};
         deviceFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
-        deviceFeatures.pNext = &indexingFeatures;
+        deviceFeatures.pNext = &vulkan12Features;
         deviceFeatures.features.samplerAnisotropy = VK_TRUE;
 
 

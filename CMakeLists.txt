@@ -57,6 +57,7 @@ option(BUILD_ENGINE "Build the engine library" OFF)
 option(DEBUG "Build with debug flags" OFF)
 option(RELEASE "Build with release flags" OFF)
 option(GFX_RECONSTRUCT "Build with graphics reconstruction" OFF)
+option(SANITIZE_ADDRESS "Build with -fsanitize=address flag" OFF)
 
 if(BUILD_SERVER)
     set(BUILD_SERVER_AUTH ON)
@@ -67,7 +68,11 @@ if(BUILD_SERVER)
 endif()
 
 if(DEBUG)
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g -DNDEBUG -fsanitize=address")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g -DNDEBUG")
+endif()
+
+if(SANITIZE_ADDRESS)
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fsanitize=address")
 endif()
 
 if(RELEASE)
@@ -203,9 +208,7 @@ endif()
 if(BUILD_ENGINE)
     file(GLOB enginesrc src/engine/renderer/core/*.cpp src/engine/renderer/ext/*.cpp
      src/engine/renderer/window/*.cpp src/client/account/Settings.cpp src/engine/renderer/ext/**/*.cpp)
-    add_library(engine SHARED ${enginesrc}
-            src/engine/renderer/ext/model/StaticInstanceData.cpp
-            src/engine/renderer/ext/model/StaticInstanceData.hpp)
+    add_library(engine SHARED ${enginesrc})
 
     if(WIN32)
         target_link_libraries(engine PUBLIC

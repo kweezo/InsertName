@@ -28,6 +28,7 @@ namespace renderer {
         uint32_t threadIndex;
 
         i_Semaphore signalSemaphore;
+        uint64_t signalSemaphoreValue;
     };
 
     struct i_DataBufferStagingCommandBuferData {
@@ -35,6 +36,7 @@ namespace renderer {
         std::weak_ptr<std::mutex> mutex;
         bool free;
         i_Semaphore signalSemaphore;
+        uint64_t signalSemaphoreValue;
     };
 
     class i_DataBuffer {
@@ -60,7 +62,8 @@ namespace renderer {
 
         VkBuffer GetBuffer();
 
-        void SetSignalSemaphore(i_Semaphore signalSemaphore);
+        void SetSignalSemaphore(i_Semaphore signalSemaphore/*TODO value*/);
+        void SetSignalSemapnoreValue(uint64_t value);
 
         void Destruct();
 
@@ -74,7 +77,7 @@ namespace renderer {
     private:
         static void CreateCommandBuffers();
 
-        static i_CommandBuffer RetrieveFreeStagingCommandBuffer(uint32_t threadIndex, i_Semaphore signalSemaphore,
+        static i_CommandBuffer RetrieveFreeStagingCommandBuffer(uint32_t threadIndex, i_Semaphore signalSemaphore, uint64_t signalSemaphoreValue,
                                                                 std::weak_ptr<std::mutex> mutex);
 
         static void RecordPrimaryCommandBuffer();

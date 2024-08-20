@@ -149,6 +149,9 @@ int main(){
             continue;
         }
 
+
+        teapotInstance->TranslatePosition({0.01f, 0.f, 0.f});
+
         Renderer::Update();
     }
     vkDeviceWaitIdle(i_Device::GetDevice());
