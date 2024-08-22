@@ -206,8 +206,7 @@ endif()
 # endif()
 
 if(BUILD_ENGINE)
-    file(GLOB enginesrc src/engine/renderer/core/*.cpp src/engine/renderer/ext/*.cpp
-     src/engine/renderer/window/*.cpp src/client/account/Settings.cpp src/engine/renderer/ext/**/*.cpp)
+    file(GLOB enginesrc src/engine/*.cpp src/engine/renderer/base/*.cpp)
     add_library(engine SHARED ${enginesrc})
 
     if(WIN32)
@@ -225,6 +224,7 @@ if(BUILD_ENGINE)
         target_link_libraries(engine PUBLIC assimp)
         target_link_libraries(engine PUBLIC vulkan)
         target_link_libraries(engine PUBLIC boost_container)
+        target_link_libraries(engine PUBLIC enkiTS)
   #      target_link_libraries(engine PUBLIC GFSDK_Aftermath_Lib.x64)
     endif()
 endif()

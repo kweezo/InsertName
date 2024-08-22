@@ -3,26 +3,14 @@
 #include <thread>
 #include <chrono>
 
+#include "../engine/app.hpp"
+
 // #include "account/UserManager.hpp"
 #include "account/Settings.hpp"
-#include "engine/renderer/window/Window.hpp"
-#include "engine/renderer/core/Renderer.hpp"
-#include "engine/renderer/core/CommandBuffer.hpp"
-#include "engine/renderer/core/Swapchain.hpp"
-#include "engine/renderer/core/Shader.hpp"
-#include "engine/renderer/core/GraphicsPipeline.hpp"
-#include "engine/renderer/core/DataBuffer.hpp"
-#include "engine/renderer/core/Fence.hpp"
-#include "engine/renderer/core/DescriptorManager.hpp"
-#include "engine/renderer/core/UniformBuffer.hpp"
-#include "engine/renderer/core/Texture.hpp"
-#include "engine/renderer/ext/model/Model.hpp"
-#include "engine/renderer/ext/model/ModelInstance.hpp"
+
 
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
-
-using namespace renderer;//here beacuse this is again, all temp and i cant be bothered to actually refactor this properly
 
 //implement staging and index buffer support (I am going to kill myself)
 
@@ -115,54 +103,28 @@ int main(){
     // UserManager* userManager = new UserManager(settings.serverIP, settings.serverPort);
     // userTemp(userManager);
 
-    Window::CreateWindowContext(settings.windowWidth, settings.windowHeight, "Vulkan");
-    Renderer::Init();
-
-
-    ShaderHandle modelShader = i_ShaderManager::GetShader("basicMesh");
-
-    i_ModelCreateInfo modelCreateInfo{};
-    modelCreateInfo.path = dir + "res/models/teapot/teapot.fbx";
-    modelCreateInfo.name = "teapot";
-
-    ModelHandle teapot = ModelManager::Create(modelCreateInfo);
-
-
-    ModelInstanceCreateInfo instanceCreateInfo{};
-    instanceCreateInfo.model = teapot;
-    instanceCreateInfo.isDynamic = false;
-    instanceCreateInfo.shader = modelShader;
-    instanceCreateInfo.transform = {
-        glm::vec3(0.0f, 0.0f, -5.0f),
-        glm::vec4(0.0f, 0.0f, 0.0f, 1.0f),
-        glm::vec3(1.0f, 1.0f, 1.0f)
-    };
-
-    ModelInstanceHandle teapotInstance = ModelInstance::Create(instanceCreateInfo);
-
-    while(!glfwWindowShouldClose(Window::GetGLFWwindow())){
-        glfwPollEvents();
-
-        int width;
-        glfwGetWindowSize(Window::GetGLFWwindow(), &width, nullptr);
-        if(!width){
-            continue;
-        }
-
-
-        teapotInstance->TranslatePosition({0.01f, 0.f, 0.f});
-
-        Renderer::Update();
-    }
-    vkDeviceWaitIdle(i_Device::GetDevice());
-
-    teapotInstance.reset();
-
-    Renderer::Cleanup();
-    Window::DestroyWindowContext();
-
     // userManager->closeConnection();
     // delete userManager;
+
+    renderer::WindowCreateInfo windowInfo{};
+
+    windowInfo.fullscreen = false;
+    windowInfo.vsync = false;
+    windowInfo.windowName = "test";
+    windowInfo.width = 800;
+    windowInfo.height = 600;
+
+    renderer::AppCreateInfo appInfo{};
+    appInfo.name = "app";
+    appInfo.version = APP_VERSION(0, 0, 1);
+    appInfo.windowCreateInfo = windowInfo;
+
+    renderer::App::Create(appInfo);
+
+    while(!renderer::App::ShouldQuit()){
+
+    }
+
 
     return 0;
 }
