@@ -5,6 +5,7 @@
 #include <memory>
 #include <vector>
 #include <fstream>
+#include <iostream>
 
 #include <jsoncpp/json/json.h>
 
@@ -18,6 +19,8 @@ namespace renderer{
             static void Create(std::string appName, uint32_t version);
             static void Destroy();
 
+            static VkInstance GetInstance();
+
             ~i_Instance();
         private:
             i_Instance(std::string appName, uint32_t version);
@@ -30,10 +33,15 @@ namespace renderer{
             void GetRequiredExtensions();
             void LoadConfig();
             void CreateVulkanInstance(std::string appName, uint32_t version);
+            void SetupDebugMessenger();
 
             VkInstance vulkanInstance;
 
-            std::vector<const char*> extensions;
-            std::vector<const char*> layers;
+            uint32_t glfwExtensionCount;
+            std::vector<char*> extensions;
+
+            std::vector<char*> layers;
+
+            VkDebugUtilsMessengerEXT debugMessenger;
     };
 }

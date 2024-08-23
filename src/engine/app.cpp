@@ -27,6 +27,10 @@ namespace renderer{
 
         return glfwWindowShouldClose(i_Window::GetGLFWWindow());
     }
+    
+    void App::Update(){
+        glfwPollEvents();
+    }
 
 
    void App::AppCreationCheck(){

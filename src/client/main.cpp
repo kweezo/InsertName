@@ -122,7 +122,7 @@ int main(){
     renderer::App::Create(appInfo);
 
     while(!renderer::App::ShouldQuit()){
-
+        renderer::App::Update();
     }
 
 

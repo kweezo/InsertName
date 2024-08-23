@@ -28,6 +28,7 @@ namespace renderer{
     public:
         static void Create(AppCreateInfo& createInfo);
         static bool ShouldQuit();
+        static void Update();
 
     private:
         App(AppCreateInfo& createInfo);
@@ -38,7 +39,6 @@ namespace renderer{
         static void AppCreationCheck();
 
         static std::unique_ptr<App> app;
-
 
         enki::TaskScheduler scheduler;
 
