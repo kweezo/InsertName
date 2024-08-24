@@ -1,5 +1,5 @@
 #include "shared/ClientServiceLink.hpp"
-#include "shared/ClientHandler.hpp"
+#include "ClientHandler.hpp"
 #include "messageHandler.hpp"
 #include "Settings.hpp"
 #include "defines.hpp"

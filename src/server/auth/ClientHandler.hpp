@@ -1,6 +1,6 @@
 #pragma once
 
-#include "ClientServiceLink.hpp"
+#include "shared/ClientServiceLink.hpp"
 #include "defines.hpp"
 
 #include <boost/asio.hpp>
@@ -27,6 +27,8 @@ private:
     static void ReceiveData();
     static void ProcessData();
     static void SendData();
+
+    static void ProcessDataContent(std::string data);
 
     static boost::asio::io_context io_context;
     static boost::asio::ssl::context ssl_context;

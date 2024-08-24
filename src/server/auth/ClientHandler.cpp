@@ -98,8 +98,7 @@ void ClientHandler::ProcessData() {
             receiveBuffer.pop();
             lock.unlock();
 
-            // Process data (example: convert to uppercase)
-            std::transform(data.begin(), data.end(), data.begin(), ::toupper);
+            ProcessDataContent(data);
 
             std::lock_guard<std::mutex> processLock(processBufferMutex);
             processBuffer.push(data);
@@ -150,4 +149,8 @@ void ClientHandler::SendData() {
             sendLock.lock();
         }
     }
+}
+
+void ClientHandler::ProcessDataContent(std::string data) {
+    
 }

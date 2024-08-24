@@ -96,21 +96,12 @@ if(BUILD_SERVER_CONTROL OR BUILD_SERVER_AUTH OR BUILD_SERVER_WORLD OR BUILD_SERV
 
     if(WIN32)
         target_link_libraries(servershared PUBLIC
-            ws2_32
-            mswsock
             jsoncpp
-            ${BOOST_SYSTEM}
-            ${BOOST_THREAD}
-            ${SSL_LIBRARY}
-            ${CRYPTO_LIBRARY}
+            ws2_32
         )
     else()
         target_link_libraries(servershared PUBLIC
             jsoncpp
-            boost_system
-            boost_thread
-            ssl
-            crypto
         )
     endif()
 endif()
@@ -142,6 +133,11 @@ if(BUILD_SERVER_AUTH)
 
     if(WIN32)
         target_link_libraries(serverauth PUBLIC
+            mswsock
+            ${BOOST_SYSTEM}
+            ${BOOST_THREAD}
+            ${SSL_LIBRARY}
+            ${CRYPTO_LIBRARY}
             pqxx
             ${PQ_LIBRARY}
             servershared
@@ -150,6 +146,10 @@ if(BUILD_SERVER_AUTH)
         target_link_libraries(serverauth PUBLIC
             pqxx
             servershared
+            boost_system
+            boost_thread
+            ssl
+            crypto
         )
     endif()
 endif()
@@ -245,7 +245,7 @@ if(BUILD_ENGINE)
 endif()
 
 if(BUILD_CLIENT)    
-    file(GLOB clientsrc src/client/account/*.cpp)
+    file(GLOB clientsrc src/client/account/*.cpp src/client/network/*.cpp)
     add_executable(client ${clientsrc} src/client/main.cpp)
 
     link_directories(${CMAKE_SOURCE_DIR}/lib)
@@ -254,6 +254,8 @@ if(BUILD_CLIENT)
     if(WIN32)
         target_link_libraries(client PUBLIC
             ws2_32
+            ${BOOST_SYSTEM}
+            ${BOOST_THREAD}
             ${SSL_LIBRARY}
             ${CRYPTO_LIBRARY}
             engine
