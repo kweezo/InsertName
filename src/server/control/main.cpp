@@ -1,12 +1,13 @@
 #include "ServiceLink.hpp"
 #include "AdvancedSettingsManager.hpp"
 #include "AdminConsole.hpp"
+#include "defines.hpp"
 
 #include <thread>
 
 
 int main() {
-    AdvancedSettingsManager::LoadSettings("server_data/control/config.json");
+    AdvancedSettingsManager::LoadSettings(DIR + "control/config.json");
     AdminConsole::Init();
     Log::Init();
 

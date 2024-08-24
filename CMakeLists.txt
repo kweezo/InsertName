@@ -21,6 +21,14 @@ if(WIN32)
         NAMES libboost_container${BOOST_LIB_SUFFIX}
         PATHS lib\\win\\github_repos\\boost_1_85_0\\stage\\lib
     )
+    find_library(BOOST_SYSTEM
+        NAMES libboost_system${BOOST_LIB_SUFFIX}
+        PATHS lib\\win\\github_repos\\boost_1_85_0\\stage\\lib
+    )
+    find_library(BOOST_THREAD
+        NAMES libboost_thread${BOOST_LIB_SUFFIX}
+        PATHS lib\\win\\github_repos\\boost_1_85_0\\stage\\lib
+    )
     find_library(SSL_LIBRARY
         NAMES libssl.a
         PATHS lib\\win\\github_repos\\c\\lib
@@ -56,16 +64,17 @@ option(DEBUG "Build with debug flags" OFF)
 option(RELEASE "Build with release flags" OFF)
 option(GFX_RECONSTRUCT "Build with graphics reconstruction" OFF)
 
+if(DEBUG)
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g -DNDEBUG ")
+    add_definitions(-DDEBUG)
+endif()
+
 if(BUILD_SERVER)
     set(BUILD_SERVER_AUTH ON)
     set(BUILD_SERVER_WORLD ON)
     set(BUILD_SERVER_CHAT ON)
     set(BUILD_SERVER_VOICE ON)
     set(BUILD_SERVER_CONTROL ON)
-endif()
-
-if(DEBUG)
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g -DNDEBUG ")
 endif()
 
 if(RELEASE)
@@ -81,18 +90,27 @@ if(BUILD_INSTALLER)
     add_executable(installer ${installersrc} src/installer/main.cpp)
 endif()
 
-if(BUILD_SERVER_CONTROL OR BUILD_SERVER_AUTH OR BUILD_SERVER_WORLD OR BUILD_SERVER_CHAT OR BUILD_SERVER_VOICE)
+if(BUILD_SERVER_CONTROL OR BUILD_SERVER_AUTH OR BUILD_SERVER_WORLD OR BUILD_SERVER_CHAT OR BUILD_SERVER_VOICE) # Server shared library
     file(GLOB serversharedsrc src/server/shared/*.cpp)
     add_library(servershared SHARED ${serversharedsrc})
 
     if(WIN32)
         target_link_libraries(servershared PUBLIC
             ws2_32
+            mswsock
             jsoncpp
+            ${BOOST_SYSTEM}
+            ${BOOST_THREAD}
+            ${SSL_LIBRARY}
+            ${CRYPTO_LIBRARY}
         )
     else()
         target_link_libraries(servershared PUBLIC
             jsoncpp
+            boost_system
+            boost_thread
+            ssl
+            crypto
         )
     endif()
 endif()
@@ -126,7 +144,6 @@ if(BUILD_SERVER_AUTH)
         target_link_libraries(serverauth PUBLIC
             pqxx
             ${PQ_LIBRARY}
-            ws2_32
             servershared
         )
     else()
