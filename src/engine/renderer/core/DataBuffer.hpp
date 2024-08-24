@@ -16,11 +16,12 @@
 #include "CommandPool.hpp"
 #include "CommandBuffer.hpp"
 #include "Fence.hpp"
+#include "Semaphore.hpp"
 
 
 namespace renderer{
 
-struct __DataBufferCreateInfo{
+struct _DataBufferCreateInfo{
     void* data;
     size_t size;
 
@@ -28,45 +29,54 @@ struct __DataBufferCreateInfo{
     bool isDynamic;
     bool transferToLocalDeviceMemory;
     uint32_t threadIndex;
+
+    _Semaphore signalSemaphore;
 };
 
-class __DataBuffer{
+struct _DataBufferStagingCommandBuferData{
+    _CommandBuffer commandBuffer;
+    bool free;
+    _Semaphore signalSemaphore;
+};
+
+class _DataBuffer{
 public:
     static void Init();
     static void Update();
     static void Cleanup();
 
 
-    __DataBuffer();
-    __DataBuffer(__DataBufferCreateInfo createInfo);
+    _DataBuffer();
+    _DataBuffer(_DataBufferCreateInfo createInfo);
 
-    __DataBuffer(const __DataBuffer& other);
-    __DataBuffer operator=(const __DataBuffer& other);    
+    _DataBuffer(const _DataBuffer& other);
+    _DataBuffer& operator=(const _DataBuffer& other);    
 
-    ~__DataBuffer();
+    ~_DataBuffer();
 
     void UpdateData(void* data, size_t size, uint32_t threadIndex);
 
     VkBuffer GetBuffer();
 
+    void SetSignalSemaphore(_Semaphore signalSemaphore);
 
     static void CreateBuffer(VkBuffer& buffer, VkBufferUsageFlags usage, VkDeviceSize size);
     static void AllocateMemory(VkDeviceMemory& memory, VkBuffer buffer, size_t size, VkMemoryPropertyFlags properties);
     static void UploadDataToMemory(VkDeviceMemory memory, void* data, size_t size);
 private:
 
+    void Destruct();
+
     static void CreateCommandBuffers();
-    static __CommandBuffer RetrieveFreeStagingCommandBuffer(uint32_t threadIndex);
+    static _CommandBuffer RetrieveFreeStagingCommandBuffer(uint32_t threadIndex, _Semaphore signalSemaphore);
 
     static void RecordPrimaryCommandBuffer();
-    static void SubmitPrimaryCommandBuffer();
+    static void SubmitCommandBuffers();
     static void UpdateCleanup();
 
     void RecordCopyCommandBuffer(uint32_t threadIndex, size_t size);
 
-    size_t size;
-    bool transferToLocalDeviceMemory;
-    bool isDynamic;
+    _DataBufferCreateInfo createInfo;
 
     VkBuffer buffer;
     VkDeviceMemory memory;
@@ -74,12 +84,11 @@ private:
     VkBuffer stagingBuffer;
     VkDeviceMemory stagingMemory;
 
-    static __CommandBuffer primaryCommandBuffer;
-    static std::vector<std::vector<std::pair<__CommandBuffer, bool>>> stagingCommandBuffers;
+    static std::vector<std::vector<_DataBufferStagingCommandBuferData>> stagingCommandBuffers;
     static std::list<VkDeviceMemory> stagingMemoryDeleteQueue;
     static std::set<uint32_t> resetPoolIndexes;
-    static __Fence finishedCopyingFence;
-    static bool primaryCommandBufferRecorded;
+    static _Fence finishedCopyingFence;
+    static bool anyCommandBuffersRecorded;
 
     std::shared_ptr<uint32_t> useCount;
 };

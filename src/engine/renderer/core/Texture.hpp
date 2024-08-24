@@ -5,39 +5,45 @@
 #include <stdexcept>
 #include <unordered_map>
 #include <memory>
+#include <list>
 
 #include "../core/DataBuffer.hpp"
 #include "../core/Device.hpp"
-#include "../core/Image.hpp"
 #include "../core/DescriptorManager.hpp"
 #include "client/account/Settings.hpp"
+#include "../core/Image.hpp"
+#include "../core/Shader.hpp"
 
 namespace renderer{
 
-struct __TextureCreateInfo{
+struct _TextureCreateInfo{
     std::string path;
     uint32_t binding;
-    VkDescriptorSet descriptorSet;
+
+    std::vector<std::weak_ptr<_Shader>> shaders;
 };
 
-class __Texture{
+
+class _Texture{
 public:
     static void Update();
 
-    __Texture();
-    __Texture(__TextureCreateInfo createInfo);
-    __Texture(const __Texture& other);
-    __Texture operator=(const __Texture& other);
-    ~__Texture();
+    _Texture();
+    _Texture(_TextureCreateInfo createInfo);
+    _Texture(const _Texture& other);
+    _Texture operator=(const _Texture& other);
+    ~_Texture();
 
-    VkWriteDescriptorSet GetWriteDescriptorSet();
+    void SetBinding(uint32_t binding);
 
 private:
+    void Destruct();
+
     void LoadImageFile(const std::string path);
     void CreateImage();
     void CreateSampler();
 
-    __Image image;
+    _Image image;
     VkSampler sampler;
     VkDescriptorSet descriptorSet;
     
@@ -46,9 +52,15 @@ private:
     int channels;
     void* data;
 
+    std::vector<std::weak_ptr<_Shader>> shaders;
+
     uint32_t binding;
 
     std::shared_ptr<uint32_t> useCount;
+
+
+    static std::vector<VkWriteDescriptorSet> writeDescriptorSetsQueue;
+    static std::list<VkDescriptorImageInfo> imageInfoList;
 };
 
 }

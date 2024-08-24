@@ -2,54 +2,86 @@
 
 namespace renderer{
 
-std::array<__Semaphore, MAX_FRAMES_IN_FLIGHT> Renderer::presentSemaphores{};
-std::array<__Semaphore, MAX_FRAMES_IN_FLIGHT> Renderer::renderSemaphores{};
-std::array<__Fence, MAX_FRAMES_IN_FLIGHT> Renderer::inFlightFences{};
+std::array<_Semaphore, MAX_FRAMES_IN_FLIGHT> Renderer::presentSemaphores{};
+std::array<_Semaphore, MAX_FRAMES_IN_FLIGHT> Renderer::renderSemaphores{};
+std::array<std::array<_Fence, 2>, MAX_FRAMES_IN_FLIGHT> Renderer::inFlightFences{};
+std::array<std::array<VkFence, DRAW_QUEUE_SUBMIT_COUNT>, MAX_FRAMES_IN_FLIGHT> Renderer::inFlightFenceHandles{};
 std::array<std::vector<VkCommandBuffer>, MAX_FRAMES_IN_FLIGHT> Renderer::commandBuffers{};
 void Renderer::Init(){
     HardInit();
     SoftInit();
 }
 void Renderer::HardInit(){
-    __Instance::Init();
-    __Device::Init();
+    _Instance::Init();
+    _Device::Init();
     Window::Init();
-    __CommandBuffer::Init();
-    __Image::Init();
-    __DataBuffer::Init();
-    Camera::__Init();
+    _CommandPool::Init();
+    _CommandBuffer::Init();
+    _DataBuffer::Init();
+    _Image::Init();
 }
 
 void Renderer::SoftInit(){
-    __Swapchain::Init();
-    __GraphicsPipeline::Init();
-    __ShaderManager::Init();
+    _Swapchain::Init();
+    _GraphicsPipeline::Init();
+    _ShaderManager::Init();
+    Camera::__Init();
 
-    for(__Fence& fence : inFlightFences){
-        fence = __Fence(true);
+    for(uint32_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++){
+        for(uint32_t y = 0; y < DRAW_QUEUE_SUBMIT_COUNT; y++){
+            inFlightFences[i][y] = _Fence((i == 0));
+            inFlightFenceHandles[i][y] = inFlightFences[i][y].GetFence(); 
+        }
     }
 
-    for(__Semaphore& semaphore : renderSemaphores){
-        semaphore = __Semaphore();
+    _SemaphoreCreateInfo semaphoreInfo{};
+
+    for(_Semaphore& semaphore : renderSemaphores){
+        semaphore = _Semaphore(semaphoreInfo);
     }
 
-    for(__Semaphore& semaphore : presentSemaphores){
-        semaphore = __Semaphore();
+    for(_Semaphore& semaphore : presentSemaphores){
+        semaphore = _Semaphore(semaphoreInfo);
     }
 
+    ModelInstance::__Init();
 
-    __Image::Update();
+    _Image::Update();
+}
+
+void Renderer::UpdatePrepare(){
+
+    vkWaitForFences(_Device::GetDevice(), inFlightFenceHandles[_Swapchain::GetFrameInFlight()].size()-1, &inFlightFenceHandles[_Swapchain::GetFrameInFlight()][0], VK_TRUE, std::numeric_limits<uint64_t>::max());
+    vkResetFences(_Device::GetDevice(), inFlightFenceHandles[_Swapchain::GetFrameInFlight()].size(), inFlightFenceHandles[_Swapchain::GetFrameInFlight()].data());
+
+    _Swapchain::IncrementCurrentFrameInFlight();
+
+    _Swapchain::IncrementCurrentFrameIndex(presentSemaphores[_Swapchain::GetFrameInFlight()]);
+}
+
+void Renderer::UpdateComponents(){
+    _UniformBuffer::Update();
+    Camera::__Update();
+    _Texture::Update();
+
+
+    std::array<std::thread, 2> threads = {
+        std::thread(_DataBuffer::Update),
+        std::thread(_Image::Update)
+    };
+
+    for(std::thread& thread : threads){
+        if(thread.joinable()){
+            thread.join(); // TODO if proper sync we don't have to wait???
+        }
+    }
+    ModelInstance::__Update();
 }
 
 void Renderer::Update(){
-    std::array<VkFence, 1> waitFences = {inFlightFences[__Swapchain::GetFrameInFlight()].GetFence()}; 
-    vkWaitForFences(__Device::GetDevice(), waitFences.size(), waitFences.data(), VK_TRUE, std::numeric_limits<uint64_t>::max());
-    vkResetFences(__Device::GetDevice(), waitFences.size(), waitFences.data());
+    UpdatePrepare();
 
-    __Swapchain::IncrementCurrentFrameIndex(presentSemaphores[__Swapchain::GetFrameInFlight()]);
-
-    __DataBuffer::Update();
-    Camera::__Update();
+    UpdateComponents();
 
     Submit();
     Present(); 
@@ -58,32 +90,17 @@ void Renderer::Update(){
 }
 
 void Renderer::Submit(){
-    std::array<VkSemaphore, 1> waitSemaphores = {presentSemaphores[__Swapchain::GetFrameInFlight()].GetSemaphore()};
-    std::array<VkSemaphore, 1> signalSemaphores = {renderSemaphores[__Swapchain::GetFrameInFlight()].GetSemaphore()};
-    std::array<VkPipelineStageFlags, 1>  waitDestinationStageMask = {VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT};
+    std::array<_Fence, 2> instanceFences = {inFlightFences[_Swapchain::GetFrameInFlight()][0], inFlightFences[_Swapchain::GetFrameInFlight()][1]};
 
-    VkSubmitInfo submitInfo{};
-    submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
-
-    submitInfo.commandBufferCount = commandBuffers[__Swapchain::GetFrameInFlight()].size();
-    submitInfo.pCommandBuffers = commandBuffers[__Swapchain::GetFrameInFlight()].data();
-
-    submitInfo.waitSemaphoreCount = waitSemaphores.size();
-    submitInfo.pWaitSemaphores = waitSemaphores.data();
-    submitInfo.pWaitDstStageMask = waitDestinationStageMask.data();
-
-    submitInfo.signalSemaphoreCount = signalSemaphores.size();
-    submitInfo.pSignalSemaphores = signalSemaphores.data();
-
-    if(vkQueueSubmit(__Device::GetGraphicsQueue(), 1, &submitInfo, inFlightFences[__Swapchain::GetFrameInFlight()].GetFence()) != VK_SUCCESS){
-        throw std::runtime_error("Failed to submit rendering commands to queue");
-    }
+    ModelInstance::__Draw(presentSemaphores[_Swapchain::GetFrameInFlight()], instanceFences);
 }
 
 void Renderer::Present(){
-    std::array<VkSwapchainKHR, 1> swapchains = {__Swapchain::GetSwapchain()};
-    std::array<uint32_t, 1> imageIndices = {__Swapchain::GetImageIndex()};
-    std::array<VkSemaphore, 1> waitSemaphores = {renderSemaphores[__Swapchain::GetFrameInFlight()].GetSemaphore()};
+    std::array<VkSemaphore, 2> modelRenderFinishedSemaphores = ModelInstance::GetRenderFinishedSemaphores(_Swapchain::GetFrameInFlight());
+
+    std::array<VkSwapchainKHR, 1> swapchains = {_Swapchain::GetSwapchain()};
+    std::array<uint32_t, 1> imageIndices = {_Swapchain::GetImageIndex()};
+    std::array<VkSemaphore, 1> waitSemaphores = {modelRenderFinishedSemaphores[0]};
 
     VkPresentInfoKHR presentInfo{};
     presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
@@ -95,11 +112,9 @@ void Renderer::Present(){
     presentInfo.waitSemaphoreCount = waitSemaphores.size();
     presentInfo.pWaitSemaphores = waitSemaphores.data();
 
-    if(vkQueuePresentKHR(__Device::GetGraphicsQueue(), &presentInfo) != VK_SUCCESS){
+    if(vkQueuePresentKHR(_Device::GetGraphicsQueue(), &presentInfo) != VK_SUCCESS){
         throw std::runtime_error("Failed to present to screen");
     }
-
-    __Swapchain::IncrementCurrentFrameInFlight();
 }
 
 void Renderer::UpdateCleanup(){
@@ -108,22 +123,32 @@ void Renderer::UpdateCleanup(){
     }
 }
 
-void Renderer::AddCommandBuffer(__CommandBuffer& commandBuffer, uint32_t frameInFlight){
-    commandBuffers[frameInFlight].push_back(commandBuffer.GetCommandBuffer());
-}
-
 void Renderer::Cleanup(){
+    for(uint32_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++){
+        for(uint32_t y = 0; y < DRAW_QUEUE_SUBMIT_COUNT; y++){
+            inFlightFences[i][y].~_Fence();
+        }
+    }
+
+    for(_Semaphore& semaphore : renderSemaphores){
+        semaphore.~_Semaphore();
+    }
+
+    for(_Semaphore& semaphore : presentSemaphores){
+        semaphore.~_Semaphore();
+    }
+
     ModelInstance::__Cleanup();
-    __ShaderManager::Cleanup();
-    __Swapchain::Cleanup();
+    _ShaderManager::Cleanup();
+    _Swapchain::Cleanup();
     Camera::__Cleanup();
-    __DescriptorManager::Cleanup();
-    __DataBuffer::Cleanup();
-    __Image::Cleanup();
-    vkDestroySurfaceKHR(__Instance::GetInstance(), Window::GetVulkanSurface(), nullptr);
-    __GraphicsPipeline::Cleanup();
-    __CommandPool::Cleanup();
-    __Device::Cleanup();
-    __Instance::Cleanup();
+    _DescriptorManager::Cleanup();
+    _DataBuffer::Cleanup();
+    _Image::Cleanup();
+    vkDestroySurfaceKHR(_Instance::GetInstance(), Window::GetVulkanSurface(), nullptr);
+    _GraphicsPipeline::Cleanup();
+    _CommandPool::Cleanup();
+    _Device::Cleanup();
+    _Instance::Cleanup();
 }
 }

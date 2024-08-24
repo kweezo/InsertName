@@ -20,43 +20,35 @@
 
 namespace renderer{
 
-enum __CommandBufferType{
-    GENERIC = 1,
-    IMAGE = 2,
-    DATA = 3,
-    UNIFORM = 4,
-    INSTANCE = 5,
-    size = 5
-};
-
-struct __CommandBufferCreateInfo{
+struct _CommandBufferCreateInfo{
     VkCommandBufferLevel level;
     uint32_t flags;
-    __CommandBufferType type;
+    _CommandBufferType type;
     uint32_t threadIndex;
 };
 
-class __CommandBuffer{
+class _CommandBuffer{
 public:
     //You can ONLY pass the pipeline as nullptr if its a transfer command buffer
 
     static void Init();
 
-    __CommandBuffer(__CommandBufferCreateInfo createInfo);
-    __CommandBuffer();
-    ~__CommandBuffer();
+    _CommandBuffer(_CommandBufferCreateInfo createInfo);
+    _CommandBuffer();
+    ~_CommandBuffer();
 
-    __CommandBuffer(const __CommandBuffer& other);
-    __CommandBuffer operator=(const __CommandBuffer& other);
+    _CommandBuffer(const _CommandBuffer& other);
+    _CommandBuffer operator=(const _CommandBuffer& other);
 
     void ResetCommandBuffer();
-    static void ResetPools(__CommandBufferType type, uint32_t threadIndex);
+    static void ResetPools(_CommandBufferType type, uint32_t threadIndex);
 
     void BeginCommandBuffer(VkCommandBufferInheritanceInfo* inheritanceInfo, bool reset);
     void EndCommandBuffer();
 
     VkCommandBuffer GetCommandBuffer();
 private:
+    void Destruct();
 
     VkCommandBufferLevel level;
     uint32_t flags;

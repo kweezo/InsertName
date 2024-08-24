@@ -16,6 +16,8 @@
 
 #include <glm/glm.hpp>
 
+#include <boost/container/flat_map.hpp>
+
 #include "engine/renderer/core/Texture.hpp"
 #include "engine/renderer/core/Shader.hpp"
 #include "engine/renderer/core/CommandBuffer.hpp"
@@ -23,51 +25,58 @@
 
 #include "Mesh.hpp"
 
-#define ModelHandle void*
+#define MISSING_TEXTURE_PATH "./client_data/res/textures/no_texture.png"
+
+#define ModelHandle std::weak_ptr<_Model>
 
 namespace renderer{
 
-class __Model;
+class _Model;
 
-struct __ModelCreateInfo{
+struct _ModelCreateInfo{
     std::string path;
-    std::shared_ptr<__Shader> shader;
-    std::vector<VkVertexInputBindingDescription> vertexInputBindingDescriptions;
-    std::vector<VkVertexInputAttributeDescription> vertexInputAttributeDescriptions;
+    std::string name;
+    std::weak_ptr<_Shader> shader;
     std::function<void(void)> extraDrawCalls;
 };
 
 class ModelManager{
 public:
-    static ModelHandle Create(__ModelCreateInfo createInfo);
+    static ModelHandle Create(_ModelCreateInfo createInfo);
     static void Destoy(ModelHandle handle);
 
     static void Cleanup();
 private:
-    static boost::container::flat_map<ModelHandle, std::shared_ptr<__Model>> models;
+    static std::vector<std::shared_ptr<_Model>> models;
 };
 
 
-class __Model{
+class _Model{
 public:
-    __Model(__ModelCreateInfo createInfo);
+    _Model(_ModelCreateInfo createInfo);
 
-    void RecordDrawCommands(__CommandBuffer& commandBuffer, uint32_t instanceCount);
+    _Model(const _Model& other) = delete;
+    _Model(_Model&& other) = delete;
+    _Model& operator=(const _Model& other) = delete;
+    _Model& operator=(_Model&& other) = delete;
+
+    void RecordDrawCommands(_CommandBuffer& commandBuffer, uint32_t instanceCount);
     
-    std::shared_ptr<__Shader> GetShader();
+    std::weak_ptr<_Shader> GetShader();
     std::function<void(void)> GetExtraDrawCommands();
-    __VertexInputDescriptions GetExtraDescriptions();
+    std::string GetName();
 
 
 private: //copied from learnopengl.com *mostly* shamelessly
+    void LoadModelFile();
     void ProcessNode(aiNode* node, const aiScene* scene);
 
-    std::vector<__Mesh> meshes;
-    std::unordered_map<std::string, __Texture> loadedTextures;
-    std::function<void(void)> extraDrawCommands;
+    std::vector<_Mesh> meshes;
+    std::unordered_map<std::string, _Texture> loadedTextures;
 
-    std::shared_ptr<__Shader> shader;
     __VertexInputDescriptions extraDescriptions;
+
+    _ModelCreateInfo createInfo;
 
 };
 

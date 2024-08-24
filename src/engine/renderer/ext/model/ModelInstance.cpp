@@ -2,22 +2,57 @@
 
 namespace renderer{
 
-ModelInstance::ModelInstance(ModelHandle model, Transform transform, bool isStatic){
+ModelInstanceHandle ModelInstance::Create(ModelInstanceCreateInfo& createInfo){
+    return std::shared_ptr<ModelInstance>(new ModelInstance(createInfo));
+}
+
+ModelInstance::ModelInstance(ModelInstanceCreateInfo& createInfo){
     this->model = glm::mat4(1.0f);
-    this->model = glm::translate(this->model, transform.pos);
-    this->model = glm::scale(this->model, transform.scale);
+    this->model = glm::translate(this->model, createInfo.transform.pos);
+    this->model = glm::scale(this->model, createInfo.transform.scale);
     //todo, face your enemies (rotation)
 
-    if(isStatic){
-        staticModelInstanceMap[model].instanceList.push_back(this);
-        staticModelInstanceMap[model].model = static_cast<__Model*>(model);
+    if(!createInfo.isDynamic){
+        if(staticModelInstanceMap.find(createInfo.model.lock()->GetName()) == staticModelInstanceMap.end()){
+            _StaticModelData instanceData{};
+            instanceData.instanceList.emplace_back(this);
+
+            InitializeStaticInstanceData(instanceData, createInfo.model);
+
+            staticModelInstanceMap.insert({createInfo.model.lock()->GetName(), std::make_shared<_StaticModelData>(instanceData)});
+        }
+        else{
+            std::weak_ptr<_StaticModelData> instanceData = staticModelInstanceMap[createInfo.model.lock()->GetName()];
+            instanceData.lock()->instanceList.emplace_back(this);
+        }
+
     }
 
     shouldDraw = true;
 }
 
+void ModelInstance::__Init(){
+    StaticInit();
+}
+
+void ModelInstance::__Update(){
+    StaticUpdate();
+}
+
+void ModelInstance::__UpdateCleanup(){
+    StaticUpdateCleanup();
+}
+
+void ModelInstance::__Draw(_Semaphore presentSemaphore, std::array<_Fence, 2> inFlightFences){
+    StaticDraw(presentSemaphore, inFlightFences[0]);
+}
+
 void ModelInstance::__Cleanup(){
-    StaticModelInstance::Cleanup();
+    StaticCleanup();
+}
+
+std::array<VkSemaphore, 2> ModelInstance::GetRenderFinishedSemaphores(uint32_t imageIndex){
+    return {GetStaticRenderFinishedSemaphore(imageIndex), GetStaticRenderFinishedSemaphore(imageIndex)};
 }
 
 glm::mat4 ModelInstance::GetModelMatrix(){

@@ -12,18 +12,22 @@
 
 namespace renderer{
 
-class __Fence{
+class _Fence{
 public:
-    __Fence();
-    __Fence(bool signaled);
-    ~__Fence();
+    _Fence();
+    _Fence(bool signaled);
+    ~_Fence();
 
-    __Fence(const __Fence& other);
-    __Fence& operator=(const __Fence& other);
+    _Fence(const _Fence& other);
+    _Fence& operator=(const _Fence& other);
 
-    VkFence GetFence();
+    bool IsInitialized() const;
+
+    VkFence GetFence() const;
 private:
-    VkFence fence;
+    void Destruct();
+
+    VkFence fence = VK_NULL_HANDLE;
     
     std::shared_ptr<uint32_t> useCount;
 };

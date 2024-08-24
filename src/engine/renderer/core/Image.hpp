@@ -16,7 +16,9 @@
 
 namespace renderer{
 
-struct __ImageCreateInfo{
+class _Shader; //IM SORRY OKAY I HAD TO or else the dependencies go WEEEEEEEEEWOOOOOWEEEEWOOOO
+
+struct _ImageCreateInfo{
     VkImageLayout layout;
     VkFormat format;
     VkImageAspectFlags aspectMask;
@@ -25,23 +27,25 @@ struct __ImageCreateInfo{
 
     bool copyToLocalDeviceMemory;
 
+
     size_t size;
     void* data;
 
     uint32_t threadIndex;
 };
 
-class __Image{
+class _Image{
 public:
     static void Init();
     static void Update();
     static void Cleanup();
 
-    __Image();
-    __Image(__ImageCreateInfo createInfo);
-    __Image operator=(const __Image& other);
-    __Image(const __Image& other);
-    ~__Image();
+    _Image();
+    _Image(_ImageCreateInfo createInfo);
+    _Image operator=(const _Image& other);
+    _Image(const _Image& other);
+    ~_Image();
+
 
     static VkFormat GetSupportedFormat(std::vector<VkFormat> candidates, VkImageTiling tiling, VkFormatFeatureFlags features);
     static inline bool HasStencilComponent(VkFormat format);
@@ -52,36 +56,39 @@ public:
     VkImageView GetImageView();
 
 private:
+    void Destruct();
+
     void CreateImage();
     void CreateImageView();
     void AllocateMemory();
 
     void CopyDataToDevice();
 
-    static __CommandBuffer GetFreeCommandBuffer(uint32_t threadIndex);
-    static std::vector<std::vector<std::pair<__CommandBuffer, bool>>> secondaryCommandBuffers;
+    static _CommandBuffer GetFreeCommandBuffer(uint32_t threadIndex);
+    static std::vector<std::vector<std::pair<_CommandBuffer, bool>>> secondaryCommandBuffers;
 
-    static void RecordPrimaryCommandBuffer();
-    static void SubmitPrimaryCommandBuffer();
+    static void SubmitCommandBuffers();
     static void UpdateCleanup();
 
     static void CreateCommmandBuffers();
 
-    static __CommandBuffer primaryCommandBuffer;
-    static __Fence finishedPrimaryCommandBufferExecutionFence;
+    static _Fence commandBuffersFinishedExecutionFence;
     static std::set<uint32_t> commandPoolResetIndexes;
-    static bool primaryCommandBufferRecorded;
+    static bool anyCommandBuffersRecorded;
+
 
     VkImage image;
     VkImageView imageView;
     VkDeviceMemory memory;
 
-    VkBuffer stagingBuffer;
-    VkDeviceMemory stagingMemory;
+    std::shared_ptr<_DataBuffer> stagingBuffer;
 
-    __ImageCreateInfo createInfo;
+    _Semaphore waitSemaphore;
 
-    static std::list<std::pair<VkBuffer, VkDeviceMemory>> bufferAndMemoryCleanupQueue;
+    _ImageCreateInfo createInfo;
+
+    static std::list<std::shared_ptr<_DataBuffer>> bufferCleanupQueue;
+    static std::vector<VkWriteDescriptorSet> writeDescriptorSetsQueue;
 
 
     std::shared_ptr<uint32_t> useCount;

@@ -2,7 +2,7 @@
 
 const std::vector<const char*> validationLayers = {
     "VK_LAYER_KHRONOS_validation",
-//    "VK_LAYER_LUNARG_api_dump",
+   // "VK_LAYER_LUNARG_api_dump",
 #ifdef GFX_RECONSTRUCT
     //"VK_LAYER_LUNARG_gfxreconstruct",
 #endif
@@ -33,10 +33,10 @@ VkResult CreateDebugUtilsMessengerEXT(VkInstance instance, const VkDebugUtilsMes
     }
 }
 
-VkInstance __Instance::instance = VK_NULL_HANDLE;
-VkDebugUtilsMessengerEXT __Instance::debugMessenger = VK_NULL_HANDLE;
+VkInstance _Instance::instance = VK_NULL_HANDLE;
+VkDebugUtilsMessengerEXT _Instance::debugMessenger = VK_NULL_HANDLE;
 
-void __Instance::Init(){
+void _Instance::Init(){
     if (instance != VK_NULL_HANDLE) {
         throw std::runtime_error("Vulkan instance already created");
     }
@@ -83,7 +83,7 @@ void __Instance::Init(){
 #endif
 }
 
-void __Instance::SetupDebugMessenger() {
+void _Instance::SetupDebugMessenger() {
     VkDebugUtilsMessengerCreateInfoEXT createInfo{};
     createInfo.sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT;
     createInfo.messageSeverity = VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT |
@@ -97,14 +97,14 @@ void __Instance::SetupDebugMessenger() {
     }
 }
 
-VkInstance __Instance::GetInstance(){
+VkInstance _Instance::GetInstance(){
     if (instance == VK_NULL_HANDLE) {
         throw std::runtime_error("Vulkan instance not created");
     }
     return instance;
 }
 
-void __Instance::Cleanup(){
+void _Instance::Cleanup(){
     if (debugMessenger != VK_NULL_HANDLE) {
         auto func = (PFN_vkDestroyDebugUtilsMessengerEXT) vkGetInstanceProcAddr(instance, "vkDestroyDebugUtilsMessengerEXT");
         if (func != nullptr) {

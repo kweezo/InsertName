@@ -21,25 +21,44 @@
 #include "engine/renderer/core/Fence.hpp"
 #include "engine/renderer/core/Semaphore.hpp"
 
-#define ModelInstanceHandle ModelInstanceImpl*
 
-
+#define ModelInstanceHandle std::shared_ptr<ModelInstance> 
 
 namespace renderer{
 
-class ModelInstance : public StaticModelInstance{
-public:
-    ModelInstance(ModelHandle model, Transform transform, bool isStatic);
+struct ModelInstanceCreateInfo{
+    Transform transform;
+    bool isDynamic;
+    ModelHandle model;
+};
 
+
+class ModelInstance : public _StaticModelInstance{
+public:
+    static void __Init();
     static void __Update();
-    static void __Draw(uint32_t imageIndex);
+    static void __UpdateCleanup();
     static void __Cleanup();
+
+    static ModelInstanceHandle Create(ModelInstanceCreateInfo& createInfo);
+
+    ModelInstance& operator=(const ModelInstance& other) = delete;
+    ModelInstance& operator=(ModelInstance&& other) = delete;
+    ModelInstance(const ModelInstance& other) = delete;
+    ModelInstance(ModelInstance&& other) = delete;
+
+
+    static std::array<VkSemaphore, 2> GetRenderFinishedSemaphores(uint32_t imageIndex);
+
+    static void __Draw(_Semaphore presentSemaphore, std::array<_Fence, 2> inFlightFences);
 
     bool GetShouldDraw() override;
     void SetShouldDraw(bool shouldDraw);
     glm::mat4 GetModelMatrix() override;
 
 private:
+    ModelInstance(ModelInstanceCreateInfo& createInfo);
+
     bool shouldDraw;
     glm::mat4 model; 
 };
