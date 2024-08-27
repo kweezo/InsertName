@@ -1,5 +1,7 @@
 #pragma once
 
+#include "clientDefines.hpp"
+
 #include <boost/asio.hpp>
 #include <boost/asio/ssl.hpp>
 #include <boost/thread.hpp>

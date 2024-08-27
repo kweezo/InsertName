@@ -138,8 +138,8 @@ using namespace renderer;//here beacuse this is again, all temp and i cant be bo
 // }
 
 void networkTemp(){
-    std::string server = "example.com";
-    unsigned short port = 443;
+    std::string server = "127.0.0.1";
+    unsigned short port = 8083;
 
     NetworkClient client(server, port);
 

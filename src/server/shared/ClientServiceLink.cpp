@@ -72,6 +72,9 @@ void ClientServiceLink::HandleConnection() {
 
         std::lock_guard<std::mutex> lock(bufferMutex);
         messageBuffer.push_back(std::string(buffer, bytesReceived));
+        #ifdef DEBUG
+            std::cout << "Received message: " << std::string(buffer, bytesReceived) << std::endl;
+        #endif
     }
 }
 

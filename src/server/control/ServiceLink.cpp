@@ -48,8 +48,8 @@ void ServiceLink::ProcessSendBuffer() {
                 }
             }
         }
-        bufferLock.unlock();
         if (!wasNewMessage) {
+            bufferLock.unlock();
             std::this_thread::sleep_for(std::chrono::milliseconds(100));
         }
     }
@@ -246,11 +246,23 @@ void ServiceLink::HandleMessageContent(Message msg) {
     int serviceId = msg.serviceId;
     std::string action = GetFirstParameter(msg.content);
     std::string content = msg.content;
+    auto settings = AdvancedSettingsManager::GetSettings();
 
     if (action == "CONNECT") {
         Log::Print("Service " + std::to_string(serviceId) + " connected", 1);
         std::lock_guard<std::mutex> lock(socketMutex);
         serviceSockets[serviceId] = stoi(GetFirstParameter(content));
+
+        if (serviceId == 3) { // Auth service
+            std::string dbConnString = "host=" + settings.dbhostaddr + 
+                                       " port=" + std::to_string(settings.dbport) + 
+                                       " dbname=" + settings.dbname + 
+                                       " user=" + settings.dbuser + 
+                                       " password=" + settings.dbpassword;
+
+            SendData(serviceId, "SETTING_SET_dbConnString", dbConnString);
+            SendData(serviceId, "SETTING_SET_port", std::to_string(settings.authServicePort));     
+        }
 
     } else if (action == "DISCONNECT") {
         Log::Print("Service " + std::to_string(serviceId) + " disconnected", 2);

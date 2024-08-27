@@ -3,6 +3,7 @@ cmake_minimum_required(VERSION 3.20)
 project(InsertName)
 
 include_directories("src")
+include_directories("src/client")
 include_directories("src/server")
 
 if(WIN32)

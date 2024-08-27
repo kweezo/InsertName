@@ -23,7 +23,9 @@ void AdvancedSettingsManager::LoadSettings(const std::string& file_) {
         &config.dbport,
         
         &config.commandPrompt,
-        &config.commandWindowHeight
+        &config.commandWindowHeight,
+
+        &config.authServicePort
     };
 
     std::lock_guard<std::mutex> lock(mutex);
@@ -70,6 +72,10 @@ void AdvancedSettingsManager::LoadSettings(const std::string& file_) {
         if (root.isMember("commandWindowHeight")) {
             config.commandWindowHeight = root["commandWindowHeight"].asInt();
         }
+
+        if (root.isMember("authServicePort")) {
+            config.authServicePort = root["authServicePort"].asInt();
+        }
     }
 }
 
@@ -91,6 +97,8 @@ void AdvancedSettingsManager::SaveSettings() {
 
     root["commandPrompt"] = config.commandPrompt;
     root["commandWindowHeight"] = config.commandWindowHeight;
+
+    root["authServicePort"] = config.authServicePort;
 
     std::ofstream configFile(file, std::ofstream::binary);
     configFile << root;
@@ -117,7 +125,10 @@ void AdvancedSettingsManager::SetSettings(
     std::optional<int> dbport,
 
     std::optional<std::string> commandPrompt,
-    std::optional<int> commandWindowHeight) {
+    std::optional<int> commandWindowHeight,
+
+    std::optional<int> authServicePort
+) {
 
     std::lock_guard<std::mutex> lock(mutex);
 
@@ -153,6 +164,9 @@ void AdvancedSettingsManager::SetSettings(
     }
     if (commandWindowHeight.has_value()) {
         config.commandWindowHeight = commandWindowHeight.value();
+    }
+    if (authServicePort.has_value()) {
+        config.authServicePort = authServicePort.value();
     }
 }
 

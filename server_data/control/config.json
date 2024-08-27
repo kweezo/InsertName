@@ -1,4 +1,5 @@
 {
+	"authServicePort" : 8083,
 	"commandPrompt" : "> ",
 	"commandWindowHeight" : 4,
 	"controlServiceIp" : "127.0.0.1",

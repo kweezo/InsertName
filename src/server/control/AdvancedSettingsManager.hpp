@@ -28,6 +28,8 @@ struct Config {
 
     std::string commandPrompt = "> ";
     int commandWindowHeight = 3;
+
+    int authServicePort = 8083;
 };
 
 class AdvancedSettingsManager {
@@ -49,7 +51,9 @@ public:
         std::optional<int> dbport = std::nullopt,
 
         std::optional<std::string> commandPrompt = std::nullopt,
-        std::optional<int> commandWindowHeight = std::nullopt
+        std::optional<int> commandWindowHeight = std::nullopt,
+        
+        std::optional<int> authServicePort = std::nullopt
     );
     static void SetSetting(size_t index, const std::variant<int, std::string>& value);
     static std::string GetSetting(size_t index);

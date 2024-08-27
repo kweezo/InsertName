@@ -94,7 +94,9 @@ void AdminConsole::AddCommands() {
         "dbport",
 
         "commandprompt",
-        "commandwindowheight"
+        "commandwindowheight",
+
+        "authserviceport"
     };
     secParam[2] = {"all", "setting", "logs"};
 }
@@ -569,7 +571,7 @@ void AdminConsole::ProcessLine(const std::string& line) {
             return;
         }
 
-        // Size is 3
+        // cmdSize is 3
         if (index >= 4 && index <= 6) {
             AdvancedSettingsManager::SetSetting(index, commands[2]);
             CmdReport("Setting '" + commands[1] + "' is set to: '" + commands[2] + '\'', 2);
@@ -590,7 +592,7 @@ void AdminConsole::ProcessLine(const std::string& line) {
             CmdReport("Invalid argument for config command. Argument should be type int", 4);
             return;
         }
-        if ((index == 1 || index == 8) && (value < 1 || value > 65535)) {
+        if ((index == 1 || index == 8 || index == 11) && (value < 1 || value > 65535)) {
             CmdReport("Port must be greater than 0 and smaller than 65536", 4);
         } else if ((index == 0 || index == 3 || index == 10) && value < 0) {
             CmdReport("This value must be greater or equal to 0", 4);

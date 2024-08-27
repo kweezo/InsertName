@@ -11,7 +11,7 @@ NetworkClient::NetworkClient(const std::string& server, unsigned short port)
 void NetworkClient::Start() {
     running = true;
     ssl_context.set_verify_mode(boost::asio::ssl::verify_peer);
-    ssl_context.load_verify_file("ca.pem");
+    ssl_context.load_verify_file(DIR + "network/ca.pem");
 
     Connect();
 
