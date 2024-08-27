@@ -109,7 +109,7 @@
             {
                 "binding": 1,
                 "stride": 64,
-                "inputRate": 0
+                "inputRate": 1
             }
 
         ]

@@ -47,7 +47,9 @@ endif()
 
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
+
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY bin)
+
 set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY lib)
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY lib)
 
@@ -64,11 +66,8 @@ option(BUILD_ENGINE "Build the engine library" OFF)
 option(DEBUG "Build with debug flags" OFF)
 option(RELEASE "Build with release flags" OFF)
 option(GFX_RECONSTRUCT "Build with graphics reconstruction" OFF)
+option(SANITIZE_ADDRESS "Build with -fsanitize=address flag" OFF)
 
-if(DEBUG)
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g -DNDEBUG ")
-    add_definitions(-DDEBUG)
-endif()
 
 if(BUILD_SERVER)
     set(BUILD_SERVER_AUTH ON)
@@ -76,6 +75,14 @@ if(BUILD_SERVER)
     set(BUILD_SERVER_CHAT ON)
     set(BUILD_SERVER_VOICE ON)
     set(BUILD_SERVER_CONTROL ON)
+endif()
+
+if(DEBUG)
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g -DNDEBUG -DDEBUG")
+endif()
+
+if(SANITIZE_ADDRESS)
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fsanitize=address")
 endif()
 
 if(RELEASE)
@@ -223,8 +230,7 @@ endif()
 # endif()
 
 if(BUILD_ENGINE)
-    file(GLOB enginesrc src/engine/renderer/core/*.cpp src/engine/renderer/ext/*.cpp
-     src/engine/renderer/window/*.cpp src/client/account/Settings.cpp src/engine/renderer/ext/**/*.cpp)
+    file(GLOB enginesrc src/engine/*.cpp src/engine/renderer/base/*.cpp)
     add_library(engine SHARED ${enginesrc})
 
     if(WIN32)
@@ -242,13 +248,14 @@ if(BUILD_ENGINE)
         target_link_libraries(engine PUBLIC assimp)
         target_link_libraries(engine PUBLIC vulkan)
         target_link_libraries(engine PUBLIC boost_container)
+        target_link_libraries(engine PUBLIC enkiTS)
+  #      target_link_libraries(engine PUBLIC GFSDK_Aftermath_Lib.x64)
     endif()
 endif()
 
 if(BUILD_CLIENT)    
     file(GLOB clientsrc src/client/account/*.cpp src/client/network/*.cpp)
     add_executable(client ${clientsrc} src/client/main.cpp)
-
     link_directories(${CMAKE_SOURCE_DIR}/lib)
     include_directories(${CMAKE_SOURCE_DIR}/src)
     

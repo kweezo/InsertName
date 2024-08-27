@@ -3,26 +3,14 @@
 #include <thread>
 #include <chrono>
 
+#include "../engine/app.hpp"
+
 #include "network/NetworkClient.hpp"
 #include "account/Settings.hpp"
-#include "engine/renderer/window/Window.hpp"
-#include "engine/renderer/core/Renderer.hpp"
-#include "engine/renderer/core/CommandBuffer.hpp"
-#include "engine/renderer/core/Swapchain.hpp"
-#include "engine/renderer/core/Shader.hpp"
-#include "engine/renderer/core/GraphicsPipeline.hpp"
-#include "engine/renderer/core/DataBuffer.hpp"
-#include "engine/renderer/core/Fence.hpp"
-#include "engine/renderer/core/DescriptorManager.hpp"
-#include "engine/renderer/core/UniformBuffer.hpp"
-#include "engine/renderer/core/Texture.hpp"
-#include "engine/renderer/ext/model/Model.hpp"
-#include "engine/renderer/ext/model/ModelInstance.hpp"
+
 
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
-
-using namespace renderer;//here beacuse this is again, all temp and i cant be bothered to actually refactor this properly
 
 //implement staging and index buffer support (I am going to kill myself)
 
@@ -168,6 +156,28 @@ int main(){
 
     Settings& settings = Settings::GetInstance();
     settings.LoadSettings(dir + "settings.cfg");
+    
+    networkTemp();
+
+    renderer::WindowCreateInfo windowInfo{};
+
+    windowInfo.fullscreen = false;
+    windowInfo.vsync = false;
+    windowInfo.windowName = "test";
+    windowInfo.width = 800;
+    windowInfo.height = 600;
+
+    renderer::AppCreateInfo appInfo{};
+    appInfo.name = "app";
+    appInfo.version = APP_VERSION(0, 0, 1);
+    appInfo.windowCreateInfo = windowInfo;
+
+    renderer::App::Create(appInfo);
+
+    while(!renderer::App::ShouldQuit()){
+        renderer::App::Update();
+    }
+
     networkTemp();
 
     Window::CreateWindowContext(settings.windowWidth, settings.windowHeight, "Vulkan");
