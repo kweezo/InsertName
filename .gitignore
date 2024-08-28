@@ -12,3 +12,4 @@ bin/*
 client_data/settings.cfg
 lib/*
 TODO
+build

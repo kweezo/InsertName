@@ -17,6 +17,7 @@ if(WIN32)
     link_directories(lib\\win\\github_repos\\libpqxx-master\\build\\libpqxx\\lib)
     link_directories(lib\\win\\github_repos\\assimp-master\\build\\Assimp\\lib)
     link_directories(lib\\win\\github_repos\\jsoncpp-master\\build\\jsoncpp\\lib)
+    link_directories(lib\\win\\github_repos\\enkiTS-master\\build)
 
     find_library(BOOST_CONTAINER
         NAMES libboost_container${BOOST_LIB_SUFFIX}
@@ -242,6 +243,7 @@ if(BUILD_ENGINE)
             vulkan-1
             jsoncpp
             ${BOOST_CONTAINER}
+            enkiTS
         )
     else()
         target_link_libraries(engine PUBLIC glfw)
@@ -273,5 +275,7 @@ if(BUILD_CLIENT)
         target_link_libraries(client PUBLIC crypto)
         target_link_libraries(client PUBLIC engine)
         target_link_libraries(client PUBLIC jsoncpp)
+        target_link_libraries(client PUBLIC boost_system)
+        target_link_libraries(client PUBLIC boost_thread)
     endif()
 endif()

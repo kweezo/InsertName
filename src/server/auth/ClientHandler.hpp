@@ -10,6 +10,7 @@
 
 #include <queue>
 #include <mutex>
+#include <thread>
 #include <string>
 #include <atomic>
 #include <iostream>
@@ -48,7 +49,6 @@ private:
     static std::mutex sendBufferMutex;
     static std::condition_variable sendBufferCond;
 
-    static boost::thread_group acceptThreadPool;
     static boost::thread_group receiveThreadPool;
     static boost::thread_group processThreadPool;
     static boost::thread_group sendThreadPool;

@@ -18,7 +18,6 @@ std::queue<std::string> ClientHandler::sendBuffer;
 std::mutex ClientHandler::sendBufferMutex;
 std::condition_variable ClientHandler::sendBufferCond;
 
-boost::thread_group ClientHandler::acceptThreadPool;
 boost::thread_group ClientHandler::receiveThreadPool;
 boost::thread_group ClientHandler::processThreadPool;
 boost::thread_group ClientHandler::sendThreadPool;
@@ -40,7 +39,7 @@ void ClientHandler::Init(unsigned short port) {
 }
 
 void ClientHandler::Start() {
-    acceptThreadPool.create_thread(boost::bind(&ClientHandler::AcceptConnections));
+    std::thread(&ClientHandler::AcceptConnections).detach();
     receiveThreadPool.create_thread(boost::bind(&ClientHandler::ReceiveData));
     processThreadPool.create_thread(boost::bind(&ClientHandler::ProcessData));
     sendThreadPool.create_thread(boost::bind(&ClientHandler::SendData));
@@ -55,9 +54,6 @@ void ClientHandler::AcceptConnections() {
                     if (!error) {
                         std::lock_guard<std::mutex> lock(clientSocketsMutex);
                         clientSockets.push_back(socket);
-                        if (acceptThreadPool.size() < maxThreads) {
-                            acceptThreadPool.create_thread(boost::bind(&ClientHandler::AcceptConnections));
-                        }
                     }
                 });
             }

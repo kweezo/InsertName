@@ -144,7 +144,7 @@ void ClientServiceLink::StartClient(const std::string& dir) {
 
         DisconnectFromTcpServer();
         std::cerr << "Disconnected from serice link server.\n";
-        std::this_thread::sleep_for(std::chrono::milliseconds(250));
+        std::this_thread::sleep_for(std::chrono::seconds(5));
     }
 
     messageThread.join();

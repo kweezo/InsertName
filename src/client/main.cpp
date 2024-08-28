@@ -3,7 +3,7 @@
 #include <thread>
 #include <chrono>
 
-#include "../engine/app.hpp"
+#include "engine/app.hpp"
 
 #include "network/NetworkClient.hpp"
 #include "account/Settings.hpp"
