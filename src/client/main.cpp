@@ -3,14 +3,14 @@
 #include <thread>
 #include <chrono>
 
-#include "engine/app.hpp"
+// #include "engine/app.hpp"
 
 #include "network/NetworkClient.hpp"
-#include "account/Settings.hpp"
+// #include "account/Settings.hpp"
 
 
-#include <glm/glm.hpp>
-#include <glm/gtc/matrix_transform.hpp>
+// #include <glm/glm.hpp>
+// #include <glm/gtc/matrix_transform.hpp>
 
 //implement staging and index buffer support (I am going to kill myself)
 
@@ -145,82 +145,82 @@ void networkTemp(){
     }
 }
 
-struct ModelDat{
-    glm::mat4 model;
-    glm::mat4 view;
-    glm::mat4 proj;
-};
+// struct ModelDat{
+//     glm::mat4 model;
+//     glm::mat4 view;
+//     glm::mat4 proj;
+// };
 
 int main(){
-    std::string dir = "./client_data/";
+    // std::string dir = "./client_data/";
 
-    Settings& settings = Settings::GetInstance();
-    settings.LoadSettings(dir + "settings.cfg");
+    // Settings& settings = Settings::GetInstance();
+    // settings.LoadSettings(dir + "settings.cfg");
     
     networkTemp();
 
-    renderer::WindowCreateInfo windowInfo{};
+    // renderer::WindowCreateInfo windowInfo{};
 
-    windowInfo.fullscreen = false;
-    windowInfo.vsync = false;
-    windowInfo.windowName = "test";
-    windowInfo.width = 800;
-    windowInfo.height = 600;
+    // windowInfo.fullscreen = false;
+    // windowInfo.vsync = false;
+    // windowInfo.windowName = "test";
+    // windowInfo.width = 800;
+    // windowInfo.height = 600;
 
-    renderer::AppCreateInfo appInfo{};
-    appInfo.name = "app";
-    appInfo.version = APP_VERSION(0, 0, 1);
-    appInfo.windowCreateInfo = windowInfo;
+    // renderer::AppCreateInfo appInfo{};
+    // appInfo.name = "app";
+    // appInfo.version = APP_VERSION(0, 0, 1);
+    // appInfo.windowCreateInfo = windowInfo;
 
-    renderer::App::Create(appInfo);
+    // renderer::App::Create(appInfo);
 
-    while(!renderer::App::ShouldQuit()){
-        renderer::App::Update();
-    }
+    // while(!renderer::App::ShouldQuit()){
+    //     renderer::App::Update();
+    // }
 
-    networkTemp();
+    // networkTemp();
 
-    Window::CreateWindowContext(settings.windowWidth, settings.windowHeight, "Vulkan");
-    Renderer::Init();
-
-
-    std::weak_ptr<_Shader> modelShader = _ShaderManager::GetShader("basicMesh");
-
-    _ModelCreateInfo modelCreateInfo{};
-    modelCreateInfo.path = dir + "res/models/teapot/teapot.fbx";
-    modelCreateInfo.shader = _ShaderManager::GetShader("basicMesh");
-    modelCreateInfo.name = "teapot";
-
-    ModelHandle teapot = ModelManager::Create(modelCreateInfo);
+    // Window::CreateWindowContext(settings.windowWidth, settings.windowHeight, "Vulkan");
+    // Renderer::Init();
 
 
-    ModelInstanceCreateInfo instanceCreateInfo{};
-    instanceCreateInfo.model = teapot;
-    instanceCreateInfo.isDynamic = false;
-    instanceCreateInfo.transform = {
-        glm::vec3(0.0f, 0.0f, -0.0f),
-        glm::vec4(0.0f, 0.0f, 0.0f, 1.0f),
-        glm::vec3(1.0f, 1.0f, 1.0f)
-    };
+    // std::weak_ptr<_Shader> modelShader = _ShaderManager::GetShader("basicMesh");
 
-    ModelInstanceHandle teapotInstance = ModelInstance::Create(instanceCreateInfo);
+    // _ModelCreateInfo modelCreateInfo{};
+    // modelCreateInfo.path = dir + "res/models/teapot/teapot.fbx";
+    // modelCreateInfo.shader = _ShaderManager::GetShader("basicMesh");
+    // modelCreateInfo.name = "teapot";
 
-    while(!glfwWindowShouldClose(Window::GetGLFWwindow())){
-        glfwPollEvents();
-
-        int width;
-        glfwGetWindowSize(Window::GetGLFWwindow(), &width, nullptr);
-        if(!width){
-            continue;
-        }
-
-        Renderer::Update();
-    }
-    vkDeviceWaitIdle(_Device::GetDevice());
+    // ModelHandle teapot = ModelManager::Create(modelCreateInfo);
 
 
-    Renderer::Cleanup();
-    Window::DestroyWindowContext();
+    // ModelInstanceCreateInfo instanceCreateInfo{};
+    // instanceCreateInfo.model = teapot;
+    // instanceCreateInfo.isDynamic = false;
+    // instanceCreateInfo.transform = {
+    //     glm::vec3(0.0f, 0.0f, -0.0f),
+    //     glm::vec4(0.0f, 0.0f, 0.0f, 1.0f),
+    //     glm::vec3(1.0f, 1.0f, 1.0f)
+    // };
+
+    // ModelInstanceHandle teapotInstance = ModelInstance::Create(instanceCreateInfo);
+
+    // while(!glfwWindowShouldClose(Window::GetGLFWwindow())){
+    //     glfwPollEvents();
+
+    //     int width;
+    //     glfwGetWindowSize(Window::GetGLFWwindow(), &width, nullptr);
+    //     if(!width){
+    //         continue;
+    //     }
+
+    //     Renderer::Update();
+    // }
+    // vkDeviceWaitIdle(_Device::GetDevice());
+
+
+    // Renderer::Cleanup();
+    // Window::DestroyWindowContext();
 
     return 0;
 }

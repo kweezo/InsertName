@@ -1,7 +1,7 @@
 #include "NetworkClient.hpp"
 
 boost::asio::io_context NetworkClient::io_context;
-boost::asio::ssl::context NetworkClient::ssl_context(boost::asio::ssl::context::sslv23);
+boost::asio::ssl::context NetworkClient::ssl_context(boost::asio::ssl::context::tlsv13);
 
 NetworkClient::NetworkClient(const std::string& server, unsigned short port)
     : server(server), port(port), running(false) {
@@ -13,11 +13,22 @@ void NetworkClient::Start() {
     ssl_context.set_verify_mode(boost::asio::ssl::verify_peer);
     ssl_context.load_verify_file(DIR + "network/ca.pem");
 
+     //* For self-signed certificates
+    std::ifstream certFile(DIR + "network/server.crt");
+    if (!certFile) {
+        throw std::runtime_error("Could not open certificate file");
+    }
+    std::stringstream certBuffer;
+    certBuffer << certFile.rdbuf();
+    ssl_context.add_certificate_authority(boost::asio::buffer(certBuffer.str()));
+
     Connect();
 
-    receiveThread = boost::thread(boost::bind(&NetworkClient::ReceiveData, this));
-    processThread = boost::thread(boost::bind(&NetworkClient::ProcessData, this));
-    sendThread = boost::thread(boost::bind(&NetworkClient::SendData, this));
+    // receiveThread = boost::thread(boost::bind(&NetworkClient::ReceiveData, this));
+    // processThread = boost::thread(boost::bind(&NetworkClient::ProcessData, this));
+    // sendThread = boost::thread(boost::bind(&NetworkClient::SendData, this));
+
+    io_context.run();
 }
 
 void NetworkClient::Stop() {
@@ -29,13 +40,17 @@ void NetworkClient::Stop() {
 }
 
 void NetworkClient::Connect() {
+    std::cout << "Resolving server address..." << std::endl;
     boost::asio::ip::tcp::resolver resolver(io_context);
     auto endpoints = resolver.resolve(server, std::to_string(port));
+    
+    std::cout << "Attempting to connect to server..." << std::endl;
     boost::asio::async_connect(socket->lowest_layer(), endpoints, [this](const boost::system::error_code& error, const boost::asio::ip::tcp::endpoint&) {
         if (!error) {
+            std::cout << "Connected to server" << std::endl;
             socket->async_handshake(boost::asio::ssl::stream_base::client, [this](const boost::system::error_code& error) {
                 if (!error) {
-                    std::cout << "Connected to server" << std::endl;
+                    std::cout << "Handshake successful" << std::endl;
                 } else {
                     std::cerr << "Handshake failed: " << error.message() << std::endl;
                 }
@@ -44,7 +59,6 @@ void NetworkClient::Connect() {
             std::cerr << "Connect failed: " << error.message() << std::endl;
         }
     });
-    io_context.run();
 }
 
 void NetworkClient::ReceiveData() {
@@ -59,7 +73,10 @@ void NetworkClient::ReceiveData() {
                 std::cerr << "Receive failed: " << error.message() << std::endl;
             }
         });
-        io_context.run();
+        if (io_context.stopped()) {
+            io_context.restart();
+        }
+        io_context.run_one();
     }
 }
 

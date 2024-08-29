@@ -3,16 +3,18 @@
 #include "clientDefines.hpp"
 
 #include <boost/asio.hpp>
-#include <boost/asio/ssl.hpp>
 #include <boost/thread.hpp>
+#include <boost/asio/ssl.hpp>
 
-#include <iostream>
 #include <queue>
 #include <mutex>
-#include <condition_variable>
 #include <atomic>
 #include <vector>
 #include <memory>
+#include <fstream>
+#include <sstream>
+#include <iostream>
+#include <condition_variable>
 
 class NetworkClient {
 public:

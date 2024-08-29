@@ -268,7 +268,7 @@ if(BUILD_CLIENT)
             ${BOOST_THREAD}
             ${SSL_LIBRARY}
             ${CRYPTO_LIBRARY}
-            engine
+            # engine
         )
     else()
         target_link_libraries(client PUBLIC ssl)

@@ -1,7 +1,7 @@
 #include "ClientHandler.hpp"
 
 boost::asio::io_context ClientHandler::io_context;
-boost::asio::ssl::context ClientHandler::ssl_context(boost::asio::ssl::context::sslv23);
+boost::asio::ssl::context ClientHandler::ssl_context(boost::asio::ssl::context::tlsv13);
 boost::asio::ip::tcp::acceptor ClientHandler::acceptor(io_context);
 std::vector<std::shared_ptr<boost::asio::ssl::stream<boost::asio::ip::tcp::socket>>> ClientHandler::clientSockets;
 std::mutex ClientHandler::clientSocketsMutex;
@@ -24,10 +24,14 @@ boost::thread_group ClientHandler::sendThreadPool;
 
 std::atomic<bool> ClientHandler::running(true);
 
-
 void ClientHandler::Init(unsigned short port) {
     const std::string certFile = DIR + "auth/network/server.crt";
     const std::string keyFile = DIR + "auth/network/server.key";
+
+    if (!std::filesystem::exists(certFile) || !std::filesystem::exists(keyFile)) {
+        throw std::runtime_error("Certificate or key file not found");
+    }
+
     ssl_context.use_certificate_chain_file(certFile);
     ssl_context.use_private_key_file(keyFile, boost::asio::ssl::context::pem);
 
@@ -40,26 +44,53 @@ void ClientHandler::Init(unsigned short port) {
 
 void ClientHandler::Start() {
     std::thread(&ClientHandler::AcceptConnections).detach();
-    receiveThreadPool.create_thread(boost::bind(&ClientHandler::ReceiveData));
-    processThreadPool.create_thread(boost::bind(&ClientHandler::ProcessData));
-    sendThreadPool.create_thread(boost::bind(&ClientHandler::SendData));
+    // receiveThreadPool.create_thread(boost::bind(&ClientHandler::ReceiveData));
+    // processThreadPool.create_thread(boost::bind(&ClientHandler::ProcessData));
+    // sendThreadPool.create_thread(boost::bind(&ClientHandler::SendData));
+
+    std::cout << "Running io_context..." << std::endl;
+    while (running) {
+        io_context.run();
+        std::cout << "io_context stopped. Restarting..." << std::endl;
+        io_context.restart();
+    }
 }
 
 void ClientHandler::AcceptConnections() {
-    while (running) {
-        auto socket = std::make_shared<boost::asio::ssl::stream<boost::asio::ip::tcp::socket>>(io_context, ssl_context);
-        acceptor.async_accept(socket->lowest_layer(), [socket](const boost::system::error_code& error) {
-            if (!error) {
-                socket->async_handshake(boost::asio::ssl::stream_base::server, [socket](const boost::system::error_code& error) {
-                    if (!error) {
-                        std::lock_guard<std::mutex> lock(clientSocketsMutex);
-                        clientSockets.push_back(socket);
-                    }
-                });
-            }
-        });
-        io_context.run();
-    }
+    #ifdef DEBUG
+        std::cout << "Waiting to accept connections..." << std::endl;
+    #endif
+    auto socket = std::make_shared<boost::asio::ssl::stream<boost::asio::ip::tcp::socket>>(io_context, ssl_context);
+    acceptor.async_accept(socket->lowest_layer(), [socket](const boost::system::error_code& error) {
+        if (!error) {
+            #ifdef DEBUG
+                std::cout << "Accepted connection" << std::endl;
+            #endif
+            socket->async_handshake(boost::asio::ssl::stream_base::server, [socket](const boost::system::error_code& error) {
+                if (!error) {
+                    std::lock_guard<std::mutex> lock(clientSocketsMutex);
+                    clientSockets.push_back(socket);
+                    #ifdef DEBUG
+                        std::cout << "Handshake successful" << std::endl;
+                    #endif
+                } else {
+                    std::cerr << "Handshake failed: " << error.message() << std::endl;
+                }
+                // Continue accepting new connections regardless of handshake result
+                #ifdef DEBUG
+                    std::cout << "Ready to accept new connections after handshake" << std::endl;
+                #endif
+                AcceptConnections();
+            });
+        } else {
+            std::cerr << "Accept failed: " << error.message() << std::endl;
+            // Continue accepting new connections
+            #ifdef DEBUG
+                std::cout << "Ready to accept new connections after accept failure" << std::endl;
+            #endif
+            AcceptConnections();
+        }
+    });
 }
 
 void ClientHandler::ReceiveData() {
@@ -76,11 +107,12 @@ void ClientHandler::ReceiveData() {
                         if (receiveThreadPool.size() < maxThreads) {
                             receiveThreadPool.create_thread(boost::bind(&ClientHandler::ReceiveData));
                         }
+                    } else {
+                        std::cerr << "Receive failed: " << error.message() << std::endl;
                     }
                 });
             }
         }
-        io_context.run();
     }
 }
 
@@ -136,7 +168,6 @@ void ClientHandler::SendData() {
                     boost::asio::async_write(*socket, boost::asio::buffer(data), [](const boost::system::error_code& error, std::size_t) {
                         if (error) {
                             std::cerr << "Error sending data: " << error.message() << std::endl;
-                            ClientServiceLink::SendData("L", "Error sending data: " + error.message(), 2);
                         }
                     });
                 }
@@ -148,5 +179,5 @@ void ClientHandler::SendData() {
 }
 
 void ClientHandler::ProcessDataContent(std::string data) {
-    
+    // Process data here
 }
