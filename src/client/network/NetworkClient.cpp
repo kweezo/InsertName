@@ -13,7 +13,7 @@ void NetworkClient::Start() {
     ssl_context.set_verify_mode(boost::asio::ssl::verify_peer);
     ssl_context.load_verify_file(DIR + "network/ca.pem");
 
-     //* For self-signed certificates
+    //* For self-signed certificates
     std::ifstream certFile(DIR + "network/server.crt");
     if (!certFile) {
         throw std::runtime_error("Could not open certificate file");
@@ -24,9 +24,9 @@ void NetworkClient::Start() {
 
     Connect();
 
-    // receiveThread = boost::thread(boost::bind(&NetworkClient::ReceiveData, this));
-    // processThread = boost::thread(boost::bind(&NetworkClient::ProcessData, this));
-    // sendThread = boost::thread(boost::bind(&NetworkClient::SendData, this));
+    receiveThread = boost::thread(boost::bind(&NetworkClient::ReceiveData, this));
+    processThread = boost::thread(boost::bind(&NetworkClient::ProcessData, this));
+    sendThread = boost::thread(boost::bind(&NetworkClient::SendData, this));
 
     io_context.run();
 }
@@ -43,40 +43,27 @@ void NetworkClient::Connect() {
     std::cout << "Resolving server address..." << std::endl;
     boost::asio::ip::tcp::resolver resolver(io_context);
     auto endpoints = resolver.resolve(server, std::to_string(port));
-    
+
     std::cout << "Attempting to connect to server..." << std::endl;
-    boost::asio::async_connect(socket->lowest_layer(), endpoints, [this](const boost::system::error_code& error, const boost::asio::ip::tcp::endpoint&) {
-        if (!error) {
-            std::cout << "Connected to server" << std::endl;
-            socket->async_handshake(boost::asio::ssl::stream_base::client, [this](const boost::system::error_code& error) {
-                if (!error) {
-                    std::cout << "Handshake successful" << std::endl;
-                } else {
-                    std::cerr << "Handshake failed: " << error.message() << std::endl;
-                }
-            });
-        } else {
-            std::cerr << "Connect failed: " << error.message() << std::endl;
-        }
-    });
+    boost::asio::connect(socket->lowest_layer(), endpoints);
+
+    std::cout << "Connected to server" << std::endl;
+    socket->handshake(boost::asio::ssl::stream_base::client);
+    std::cout << "Handshake successful" << std::endl;
 }
 
 void NetworkClient::ReceiveData() {
     while (running) {
         auto buffer = std::make_shared<std::vector<char>>(1024);
-        socket->async_read_some(boost::asio::buffer(*buffer), [this, buffer](const boost::system::error_code& error, std::size_t bytes_transferred) {
-            if (!error) {
-                std::lock_guard<std::mutex> lock(receiveBufferMutex);
-                receiveBuffer.push(std::string(buffer->data(), bytes_transferred));
-                receiveBufferCond.notify_one();
-            } else {
-                std::cerr << "Receive failed: " << error.message() << std::endl;
-            }
-        });
-        if (io_context.stopped()) {
-            io_context.restart();
+        boost::system::error_code error;
+        std::size_t bytes_transferred = socket->read_some(boost::asio::buffer(*buffer), error);
+        if (!error) {
+            std::lock_guard<std::mutex> lock(receiveBufferMutex);
+            receiveBuffer.push(std::string(buffer->data(), bytes_transferred));
+            receiveBufferCond.notify_one();
+        } else {
+            std::cerr << "Receive failed: " << error.message() << std::endl;
         }
-        io_context.run_one();
     }
 }
 
@@ -126,11 +113,11 @@ void NetworkClient::SendData() {
             sendBuffer.pop();
             sendLock.unlock();
 
-            boost::asio::async_write(*socket, boost::asio::buffer(data), [](const boost::system::error_code& error, std::size_t) {
-                if (error) {
-                    std::cerr << "Error sending data: " << error.message() << std::endl;
-                }
-            });
+            boost::system::error_code error;
+            boost::asio::write(*socket, boost::asio::buffer(data), error);
+            if (error) {
+                std::cerr << "Error sending data: " << error.message() << std::endl;
+            }
 
             sendLock.lock();
         }
@@ -144,5 +131,5 @@ void NetworkClient::SendMessage(const std::string& message) {
 }
 
 void NetworkClient::ProcessDataContent(std::string& data) {
-    
+    // Implement your data processing logic here
 }

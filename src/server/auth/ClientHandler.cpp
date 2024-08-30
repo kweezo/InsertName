@@ -44,9 +44,9 @@ void ClientHandler::Init(unsigned short port) {
 
 void ClientHandler::Start() {
     std::thread(&ClientHandler::AcceptConnections).detach();
-    // receiveThreadPool.create_thread(boost::bind(&ClientHandler::ReceiveData));
-    // processThreadPool.create_thread(boost::bind(&ClientHandler::ProcessData));
-    // sendThreadPool.create_thread(boost::bind(&ClientHandler::SendData));
+    receiveThreadPool.create_thread(boost::bind(&ClientHandler::ReceiveData));
+    processThreadPool.create_thread(boost::bind(&ClientHandler::ProcessData));
+    sendThreadPool.create_thread(boost::bind(&ClientHandler::SendData));
 
     std::cout << "Running io_context..." << std::endl;
     while (running) {
