@@ -4,13 +4,16 @@
 #include <string>
 #include <mutex>
 #include <exception>
-
-#include <enkiTS/TaskScheduler.h>
+#include <functional>
 
 #include <vulkan/vulkan.h>
 
 #include "renderer/base/window.hpp"
 #include "renderer/base/instance.hpp"
+#include "renderer/base/physicalDevice.hpp"
+#include "renderer/base/logicalDevice.hpp"
+#include "renderer/base/swapchain.hpp"
+
 
 #define APP_VERSION(major, minor, patch) VK_MAKE_VERSION(major, minor, patch)
 
@@ -24,12 +27,24 @@ namespace renderer{
         WindowCreateInfo windowCreateInfo;
     };
 
+    enum UpdateInvokeTime{
+        START,
+        EARLY,
+        MID,
+        LATE,
+        END
+    };
+
     class App{
     public:
         static void Create(AppCreateInfo& createInfo);
         static bool ShouldQuit();
         static void Update();
+        static void Destroy();
 
+//        static void AddUpdateFunc(std::function<void(void)> func, UpdateInvokeTime invokeTime); needed?
+
+        ~App();
     private:
         App(AppCreateInfo& createInfo);
         App(const App& other) = delete;
@@ -39,9 +54,6 @@ namespace renderer{
         static void AppCreationCheck();
 
         static std::unique_ptr<App> app;
-
-        enki::TaskScheduler scheduler;
-
     };
 
 

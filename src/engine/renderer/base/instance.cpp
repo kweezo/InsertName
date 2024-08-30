@@ -48,6 +48,10 @@ namespace renderer{
     }
 
     i_Instance::i_Instance(std::string appName, uint32_t version){
+        if(glfwInit() == GLFW_FALSE){// because I Have to ok
+            throw std::runtime_error("ERROR: Failed to init GLFW");
+        }
+
         GetRequiredExtensions();
         LoadConfig();
         CreateVulkanInstance(appName, version);
@@ -60,11 +64,11 @@ namespace renderer{
     i_Instance::~i_Instance(){  
         extensions.erase(extensions.begin(), extensions.begin() + glfwExtensionCount);
         for(char* ext : extensions){
-            delete ext;
+            delete[] ext;
         }
 
         for(char* layer : layers){
-            delete layer;
+            delete[] layer;
         }
 
 #ifdef NDEBUG
@@ -108,14 +112,45 @@ namespace renderer{
         }
 
 
-        const Json::Value& extensions = root["extensions"];
-        for(const Json::Value& extension : extensions){
+        const Json::Value& extensions_required = root["extensions_required"];
+        for(const Json::Value& extension : extensions_required){
             const char* buff = extension.asCString();
             this->extensions.push_back(new char[strlen(buff)+1]);
 
             strcpy(this->extensions.back(), buff);
         }
-    
+
+        std::list<uint32_t> unsupportedExtensionIndexes = CheckExtensionSupport(extensions);
+        if(!unsupportedExtensionIndexes.empty()){
+            std::cerr << "ERROR: Not all required extensions are supported: \n";
+            for(uint32_t i : unsupportedExtensionIndexes){
+                std::cerr << "\t" << extensions[i] << "\n"; 
+            }
+            throw std::runtime_error("Program is terminating");
+        }
+
+
+        const Json::Value& extensions_optional = root["extensions_optional"];
+        for(const Json::Value& extension : extensions_optional){
+            const char* buff = extension.asCString();
+            this->supportedOptionalExtensions.push_back(new char[strlen(buff)+1]);
+
+            strcpy(this->supportedOptionalExtensions.back(), buff);
+        }
+
+        unsupportedExtensionIndexes = CheckExtensionSupport(supportedOptionalExtensions);
+        if(!unsupportedExtensionIndexes.empty()){
+            uint32_t erasedExtCount = 0;
+            std::cout << "INFO: Not all optional extensions are supported: \n";
+            for(uint32_t i : unsupportedExtensionIndexes){
+                std::cout << "\t" << supportedOptionalExtensions[i-erasedExtCount] << "\n"; 
+                supportedOptionalExtensions.erase(supportedOptionalExtensions.begin() + i - erasedExtCount);
+
+                erasedExtCount++;
+            }
+        } 
+        
+        extensions.insert(extensions.begin(), supportedOptionalExtensions.begin(), supportedOptionalExtensions.end());
 
         stream.close();
     }
@@ -176,5 +211,41 @@ namespace renderer{
     VkInstance i_Instance::GetInstance(){
         return instance->vulkanInstance;
     }
+    
+    
+    std::list<uint32_t> i_Instance::CheckExtensionSupport(const std::vector<char*>& extensions){
+        std::list<uint32_t> unsupportedExtensionIndexes;
+
+        uint32_t propertyCount;
+        vkEnumerateInstanceExtensionProperties(nullptr, &propertyCount, nullptr);
+
+        std::vector<VkExtensionProperties> properties(propertyCount);
+        vkEnumerateInstanceExtensionProperties(nullptr, &propertyCount, properties.data());
+
+
+        for(uint32_t i = 0; i < extensions.size(); i++){
+            bool match = false;
+            for(uint32_t y = 0; y < properties.size(); y++){
+                if(strcmp(extensions[i], properties[y].extensionName) == 0){
+                    match = true;
+                    break;
+                }
+            }
+
+            if(match){
+                continue;
+            }
+
+            unsupportedExtensionIndexes.push_back(i);
+        }
+        
+        return unsupportedExtensionIndexes;
+    }
+
+    const std::vector<char*>& i_Instance::GetSupportedOptionalExtensions(){
+        return instance->supportedOptionalExtensions;
+    }
+
+
 
 }

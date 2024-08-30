@@ -125,6 +125,7 @@ int main(){
         renderer::App::Update();
     }
 
+    renderer::App::Destroy();
 
     return 0;
 }

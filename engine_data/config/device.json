@@ -1,0 +1,5 @@
+{
+    "extensions": [
+        "VK_KHR_swapchain"
+    ]
+}

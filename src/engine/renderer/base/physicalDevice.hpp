@@ -1,12 +1,22 @@
 #pragma once
 
 #include <memory>
+#include <exception>
+#include <list>
+#include <tuple>
 
 #include <vulkan/vulkan.h>
 
 #include "instance.hpp"
 
 namespace renderer{
+
+    enum QueueType{
+        GRAPHICS = 0,
+        COMPUTE = 1,
+        TRANSFER = 2,
+        size = 3
+    };
 
     class i_PhysicalDevice {
         public:
@@ -15,7 +25,6 @@ namespace renderer{
 
             static VkPhysicalDevice GetDevice();
 
-            ~i_PhysicalDevice();
         private:
             i_PhysicalDevice();
             i_PhysicalDevice(const i_PhysicalDevice& other) = delete;
@@ -24,10 +33,9 @@ namespace renderer{
 
             static std::unique_ptr<i_PhysicalDevice> device;
 
-            VkPhysicalDevice physicalDevice;
-
-
             void PickDevice();
+
+            VkPhysicalDevice physicalDevice;
     };
 
 }

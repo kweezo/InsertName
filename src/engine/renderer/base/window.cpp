@@ -13,13 +13,13 @@ namespace renderer{
 
 
     i_Window::i_Window(WindowCreateInfo& createInfo):
-        glfwWindow(nullptr), fullscreen(createInfo.fullscreen), vsync(createInfo.vsync){
+        glfwWindow(nullptr), surface(nullptr), createInfo(createInfo), fullscreen(createInfo.fullscreen), vsync(createInfo.vsync){
 
-        if(glfwInit() == GLFW_FALSE){
-            throw std::runtime_error("ERROR: Failed to init GLFW");
-        }
+        CreateWindow();
+        CreateSurface();
+    }
 
-
+    void i_Window::CreateWindow(){
         const GLFWvidmode* mode = glfwGetVideoMode(glfwGetPrimaryMonitor());
 
         glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
@@ -40,14 +40,36 @@ namespace renderer{
         }
 
     }
+
+    void i_Window::CreateSurface(){
+#ifdef _WIN32
+        VkWin32SurfaceCreateInfoKHR createInfo{};
+        createInfo.sType = VK_STRUCTURE_TYPE_WIN32_SURFACE_CREATE_INFO_KHR;
+        createInfo.hwnd = glfwGetWin32Window(window);
+        createInfo.hinstance = GetModuleHandle(nullptr);
+
+        if (vkCreateWin32SurfaceKHR(renderer::__Instance::GetInstance(), &createInfo, nullptr, &surface) != VK_SUCCESS) {
+            throw std::runtime_error("ERROR: Failed to create window surface!");
+        }
+#else
+        if(glfwCreateWindowSurface(i_Instance::GetInstance(), glfwWindow, nullptr, &surface) != VK_SUCCESS){
+            throw std::runtime_error("ERROR: Failed to create window surface!");
+        }
+#endif
+    }
     
     i_Window::~i_Window(){
+        vkDestroySurfaceKHR(i_Instance::GetInstance(), surface, nullptr);
         glfwDestroyWindow(glfwWindow);
         glfwTerminate();
     }
 
     GLFWwindow* i_Window::GetGLFWWindow(){
         return window->glfwWindow;
+    }
+    
+    VkSurfaceKHR i_Window::GetSurface(){
+        return window->surface;
     }
 
 }

@@ -6,12 +6,14 @@
 #include <vector>
 #include <fstream>
 #include <iostream>
+#include <list>
 
 #include <jsoncpp/json/json.h>
 
 #include <vulkan/vulkan.h>
 
 #include <GLFW/glfw3.h>
+
 
 namespace renderer{
     class i_Instance{
@@ -20,6 +22,7 @@ namespace renderer{
             static void Destroy();
 
             static VkInstance GetInstance();
+            static const std::vector<char*>& GetSupportedOptionalExtensions();
 
             ~i_Instance();
         private:
@@ -35,10 +38,13 @@ namespace renderer{
             void CreateVulkanInstance(std::string appName, uint32_t version);
             void SetupDebugMessenger();
 
+            std::list<uint32_t> CheckExtensionSupport(const std::vector<char*>& extensions);
+
             VkInstance vulkanInstance;
 
             uint32_t glfwExtensionCount;
             std::vector<char*> extensions;
+            std::vector<char*> supportedOptionalExtensions;
 
             std::vector<char*> layers;
 

@@ -3,7 +3,19 @@
         "VK_LAYER_KHRONOS_validation"
     ],
 
-    "extensions": [
+    "extensions_required": [
         "VK_EXT_debug_utils"
+    ],
+
+    "extensions_optional": [
+        "VK_KHR_dedicated_allocation",
+        "VK_KHR_bind_memory2",
+        "VK_KHR_maintenance4",
+        "VK_KHR_maintenance5",
+        "VK_EXT_memory_budget",
+        "VK_KHR_buffer_device_address",
+        "VK_EXT_memory_priority",
+        "VK_AMD_device_coherent_memory",
+        "VK_KHR_external_memory_win32"
     ]
 }

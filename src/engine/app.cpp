@@ -11,16 +11,19 @@ namespace renderer{
 
         app.reset(new App(createInfo));
     }
+    
+    void App::Destroy(){
+        app.reset();
+    }
 
 
     App::App(AppCreateInfo& createInfo){
-        i_Window::Create(createInfo.windowCreateInfo);
         i_Instance::Create(createInfo.name, createInfo.version);
-
-
-        scheduler.Initialize();
+        i_Window::Create(createInfo.windowCreateInfo);
+        i_PhysicalDevice::Create();
+        i_LogicalDevice::Create();
+        i_Swapchain::Create();
     }
-
 
     bool App::ShouldQuit(){
         AppCreationCheck();
@@ -32,10 +35,18 @@ namespace renderer{
         glfwPollEvents();
     }
 
-
    void App::AppCreationCheck(){
         if(app == nullptr){
             throw std::runtime_error("ERROR: Tried to use the app before creating it");
         }
    }
+
+    App::~App(){
+        i_Swapchain::Destroy();
+        i_LogicalDevice::Destroy();
+        i_PhysicalDevice::Destroy();
+        i_Window::Destroy();
+        i_Instance::Destroy();
+    }
+
 }
