@@ -1,7 +1,7 @@
 #pragma once
 
-#include "shared/ClientServiceLink.hpp"
 #include "defines.hpp"
+#include "shared/ClientServiceLink.hpp"
 
 #include <boost/asio.hpp>
 #include <boost/thread.hpp>
@@ -16,6 +16,8 @@
 #include <iostream>
 #include <algorithm>
 #include <filesystem>
+#include <unordered_map>
+#include <unordered_set>
 #include <condition_variable>
 
 
@@ -50,9 +52,7 @@ private:
     static std::mutex sendBufferMutex;
     static std::condition_variable sendBufferCond;
 
-    static boost::thread_group receiveThreadPool;
     static boost::thread_group processThreadPool;
-    static boost::thread_group sendThreadPool;
 
     static std::atomic<bool> running;
     static const int maxThreads = 1024;

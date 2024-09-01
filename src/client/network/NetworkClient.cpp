@@ -13,15 +13,6 @@ void NetworkClient::Start() {
     ssl_context.set_verify_mode(boost::asio::ssl::verify_peer);
     ssl_context.load_verify_file(DIR + "network/ca.pem");
 
-    //* For self-signed certificates
-    std::ifstream certFile(DIR + "network/server.crt");
-    if (!certFile) {
-        throw std::runtime_error("Could not open certificate file");
-    }
-    std::stringstream certBuffer;
-    certBuffer << certFile.rdbuf();
-    ssl_context.add_certificate_authority(boost::asio::buffer(certBuffer.str()));
-
     Connect();
 
     receiveThread = boost::thread(boost::bind(&NetworkClient::ReceiveData, this));
@@ -58,6 +49,9 @@ void NetworkClient::ReceiveData() {
         boost::system::error_code error;
         std::size_t bytes_transferred = socket->read_some(boost::asio::buffer(*buffer), error);
         if (!error) {
+            #ifdef DEBUG
+                std::cout << "Received data: " << std::string(buffer->data(), bytes_transferred) << "\n";
+            #endif
             std::lock_guard<std::mutex> lock(receiveBufferMutex);
             receiveBuffer.push(std::string(buffer->data(), bytes_transferred));
             receiveBufferCond.notify_one();

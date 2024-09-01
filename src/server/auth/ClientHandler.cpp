@@ -18,9 +18,7 @@ std::queue<std::string> ClientHandler::sendBuffer;
 std::mutex ClientHandler::sendBufferMutex;
 std::condition_variable ClientHandler::sendBufferCond;
 
-boost::thread_group ClientHandler::receiveThreadPool;
 boost::thread_group ClientHandler::processThreadPool;
-boost::thread_group ClientHandler::sendThreadPool;
 
 std::atomic<bool> ClientHandler::running(true);
 
@@ -44,15 +42,18 @@ void ClientHandler::Init(unsigned short port) {
 
 void ClientHandler::Start() {
     std::thread(&ClientHandler::AcceptConnections).detach();
-    receiveThreadPool.create_thread(boost::bind(&ClientHandler::ReceiveData));
+    std::thread(&ClientHandler::ReceiveData).detach();
     processThreadPool.create_thread(boost::bind(&ClientHandler::ProcessData));
-    sendThreadPool.create_thread(boost::bind(&ClientHandler::SendData));
+    std::thread(&ClientHandler::SendData).detach();
 
     std::cout << "Running io_context..." << std::endl;
-    while (running) {
-        io_context.run();
-        std::cout << "io_context stopped. Restarting..." << std::endl;
-        io_context.restart();
+    for (int i = 0; i < std::thread::hardware_concurrency(); ++i) {
+        std::thread([]() {
+            while (running) {
+                io_context.run();
+                io_context.restart();
+            }
+        }).detach();
     }
 }
 
@@ -94,25 +95,54 @@ void ClientHandler::AcceptConnections() {
 }
 
 void ClientHandler::ReceiveData() {
+    using lowest_layer_type = boost::asio::ssl::stream<boost::asio::ip::tcp::socket>::lowest_layer_type;
+    std::unordered_map<lowest_layer_type*, bool> readingSockets;
+    std::unordered_set<lowest_layer_type*> closedSockets;
+
     while (running) {
         std::lock_guard<std::mutex> lock(clientSocketsMutex);
-        for (auto& socket : clientSockets) {
-            if (socket && socket->lowest_layer().is_open()) {
-                auto buffer = std::make_shared<std::vector<char>>(1024);
-                socket->async_read_some(boost::asio::buffer(*buffer), [buffer](const boost::system::error_code& error, std::size_t bytes_transferred) {
+        for (auto it = clientSockets.begin(); it != clientSockets.end(); ) {
+            auto& socket = *it;
+            if (!socket || !socket->lowest_layer().is_open()) {
+                it = clientSockets.erase(it);
+                continue;
+            }
+
+            auto& isReading = readingSockets[&socket->lowest_layer()];
+            if (isReading) {
+                ++it;
+                continue;
+            }
+
+            isReading = true;
+            auto buffer = std::make_shared<std::vector<char>>(1024);
+            auto weak_socket = std::weak_ptr<boost::asio::ssl::stream<boost::asio::ip::tcp::socket>>(socket);
+            socket->async_read_some(boost::asio::buffer(*buffer), [buffer, &isReading, weak_socket, &closedSockets](const boost::system::error_code& error, std::size_t bytes_transferred) mutable {
+                isReading = false;
+                if (auto socket = weak_socket.lock()) {
                     if (!error) {
                         std::lock_guard<std::mutex> lock(receiveBufferMutex);
                         receiveBuffer.push(std::string(buffer->data(), bytes_transferred));
                         receiveBufferCond.notify_one();
-                        if (receiveThreadPool.size() < maxThreads) {
-                            receiveThreadPool.create_thread(boost::bind(&ClientHandler::ReceiveData));
-                        }
                     } else {
-                        std::cerr << "Receive failed: " << error.message() << std::endl;
+                        std::lock_guard<std::mutex> lock(clientSocketsMutex);
+                        if (closedSockets.find(&socket->lowest_layer()) == closedSockets.end()) {
+                            std::cerr << "Receive failed: " << error.message() << std::endl;
+                            closedSockets.insert(&socket->lowest_layer());
+                        }
+                        if (error == boost::asio::error::eof || error == boost::asio::error::connection_reset || error == boost::asio::error::operation_aborted) {
+                            auto it = std::find(clientSockets.begin(), clientSockets.end(), socket);
+                            if (it != clientSockets.end()) {
+                                clientSockets.erase(it);
+                            }
+                        }
                     }
-                });
-            }
+                }
+            });
+
+            ++it;
         }
+        std::this_thread::sleep_for(std::chrono::milliseconds(10)); // Add sleep to reduce CPU usage
     }
 }
 
