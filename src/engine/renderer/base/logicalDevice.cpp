@@ -165,6 +165,10 @@ namespace renderer{
         return device->logicalDevice;
     }
 
+    VmaAllocator i_LogicalDevice::GetAllocator(){
+        return device->vmaAllocator;
+    }
+
     i_LogicalDevice::~i_LogicalDevice(){
         vmaDestroyAllocator(vmaAllocator);
         vkDestroyDevice(logicalDevice, nullptr);

@@ -19,7 +19,6 @@
 
 
 namespace renderer{
-
     struct WindowCreateInfo{
         uint32_t width;
         uint32_t height;

@@ -1,0 +1,5 @@
+{
+    "models":{
+        "teapot": "client_data/res/models/teapot/teapot.fbx"
+    }
+}

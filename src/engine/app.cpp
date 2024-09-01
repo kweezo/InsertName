@@ -23,6 +23,8 @@ namespace renderer{
         i_PhysicalDevice::Create();
         i_LogicalDevice::Create();
         i_Swapchain::Create();
+        i_Scheduler::Create();
+        ModelManager::Create();
     }
 
     bool App::ShouldQuit(){
@@ -42,6 +44,8 @@ namespace renderer{
    }
 
     App::~App(){
+        ModelManager::Destroy();
+        i_Scheduler::Destroy();
         i_Swapchain::Destroy();
         i_LogicalDevice::Destroy();
         i_PhysicalDevice::Destroy();

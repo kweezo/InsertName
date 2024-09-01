@@ -4,6 +4,7 @@
 #include <chrono>
 
 #include "../engine/app.hpp"
+#include "../engine/renderer/ui/modelManager.hpp"
 
 // #include "account/UserManager.hpp"
 #include "account/Settings.hpp"
@@ -120,6 +121,8 @@ int main(){
     appInfo.windowCreateInfo = windowInfo;
 
     renderer::App::Create(appInfo);
+
+    renderer::ModelManager::LoadSegment("test");
 
     while(!renderer::App::ShouldQuit()){
         renderer::App::Update();

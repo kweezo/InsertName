@@ -6,8 +6,7 @@
 
 #include <vulkan/vulkan.h>
 
-#define VMA_VULKAN_VERSION 1003000
-#include <VulkanMemoryAllocator/Common.h>
+#include <VulkanMemoryAllocator/vk_mem_alloc.h>
 
 #include "physicalDevice.hpp"
 
@@ -24,6 +23,7 @@ namespace renderer{
             static void Destroy();
 
             static VkDevice GetDevice();
+            static VmaAllocator GetAllocator();
 
             ~i_LogicalDevice();
     

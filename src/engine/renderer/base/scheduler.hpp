@@ -11,16 +11,18 @@ namespace renderer{
             static void Create();
             static void Destroy();
 
+            static enki::TaskScheduler& GetScheduler();
+
             ~i_Scheduler();
         private:
             i_Scheduler();
             i_Scheduler(const i_Scheduler& other) = delete;
             i_Scheduler& operator=(const i_Scheduler& other) = delete;
 
-        static std::unique_ptr<i_Scheduler> scheduler;
+            static std::unique_ptr<i_Scheduler> scheduler;
 
-        void CreateScheduler();
+            void CreateScheduler();
 
-        enki::TaskScheduler enkiScheduler;
+            enki::TaskScheduler enkiScheduler;
     };
 }

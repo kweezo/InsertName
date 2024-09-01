@@ -27,4 +27,8 @@ namespace renderer{
 
         enkiScheduler.Initialize(conf);
     }
+    
+    enki::TaskScheduler& i_Scheduler::GetScheduler(){
+        return scheduler->enkiScheduler;
+    }
 }

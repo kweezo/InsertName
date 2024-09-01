@@ -206,7 +206,8 @@ endif()
 # endif()
 
 if(BUILD_ENGINE)
-    file(GLOB enginesrc src/engine/*.cpp src/engine/renderer/base/*.cpp)
+    file(GLOB enginesrc src/engine/*.cpp src/engine/renderer/base/*.cpp src/engine/renderer/ui/* src/engine/renderer/util/mem/*
+     src/engine/renderer/util/*)
     add_library(engine SHARED ${enginesrc})
 
     if(WIN32)

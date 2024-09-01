@@ -13,6 +13,8 @@
 #include "renderer/base/physicalDevice.hpp"
 #include "renderer/base/logicalDevice.hpp"
 #include "renderer/base/swapchain.hpp"
+#include "renderer/base/scheduler.hpp"
+#include "renderer/ui/modelManager.hpp"
 
 
 #define APP_VERSION(major, minor, patch) VK_MAKE_VERSION(major, minor, patch)
