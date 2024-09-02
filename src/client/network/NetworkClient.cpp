@@ -73,10 +73,6 @@ void NetworkClient::ProcessData() {
 
             ProcessDataContent(data);
 
-            std::lock_guard<std::mutex> processLock(processBufferMutex);
-            processBuffer.push(data);
-            processBufferCond.notify_one();
-
             lock.lock();
         }
     }
@@ -84,21 +80,6 @@ void NetworkClient::ProcessData() {
 
 void NetworkClient::SendData() {
     while (running) {
-        std::unique_lock<std::mutex> lock(processBufferMutex);
-        processBufferCond.wait(lock, [this] { return !processBuffer.empty() || !running; });
-
-        while (!processBuffer.empty()) {
-            std::string data = processBuffer.front();
-            processBuffer.pop();
-            lock.unlock();
-
-            std::lock_guard<std::mutex> sendLock(sendBufferMutex);
-            sendBuffer.push(data);
-            sendBufferCond.notify_one();
-
-            lock.lock();
-        }
-
         std::unique_lock<std::mutex> sendLock(sendBufferMutex);
         sendBufferCond.wait(sendLock, [this] { return !sendBuffer.empty() || !running; });
 
