@@ -10,19 +10,13 @@ std::queue<std::string> ClientHandler::receiveBuffer;
 std::mutex ClientHandler::receiveBufferMutex;
 std::condition_variable ClientHandler::receiveBufferCond;
 
-std::queue<std::string> ClientHandler::processBuffer;
-std::mutex ClientHandler::processBufferMutex;
-std::condition_variable ClientHandler::processBufferCond;
-
 std::queue<std::string> ClientHandler::sendBuffer;
 std::mutex ClientHandler::sendBufferMutex;
 std::condition_variable ClientHandler::sendBufferCond;
 
-boost::thread_group ClientHandler::receiveThreadPool;
-boost::thread_group ClientHandler::processThreadPool;
-boost::thread_group ClientHandler::sendThreadPool;
-
 std::atomic<bool> ClientHandler::running(true);
+
+boost::asio::thread_pool ClientHandler::threadPool(std::thread::hardware_concurrency());
 
 void ClientHandler::Init(unsigned short port) {
     const std::string certFile = DIR + "auth/network/server.crt";
@@ -40,19 +34,24 @@ void ClientHandler::Init(unsigned short port) {
     acceptor.set_option(boost::asio::ip::tcp::acceptor::reuse_address(true));
     acceptor.bind(endpoint);
     acceptor.listen();
+
+
 }
 
 void ClientHandler::Start() {
     std::thread(&ClientHandler::AcceptConnections).detach();
-    receiveThreadPool.create_thread(boost::bind(&ClientHandler::ReceiveData));
-    processThreadPool.create_thread(boost::bind(&ClientHandler::ProcessData));
-    sendThreadPool.create_thread(boost::bind(&ClientHandler::SendData));
+    std::thread(&ClientHandler::ReceiveData).detach();
+    std::thread(&ClientHandler::ProcessData).detach();
+    std::thread(&ClientHandler::SendDataFromBuffer).detach();
 
     std::cout << "Running io_context..." << std::endl;
-    while (running) {
-        io_context.run();
-        std::cout << "io_context stopped. Restarting..." << std::endl;
-        io_context.restart();
+    for (int i = 0; i < std::thread::hardware_concurrency(); ++i) {
+        std::thread([]() {
+            while (running) {
+                io_context.run();
+                io_context.restart();
+            }
+        }).detach();
     }
 }
 
@@ -94,25 +93,60 @@ void ClientHandler::AcceptConnections() {
 }
 
 void ClientHandler::ReceiveData() {
+    using lowest_layer_type = boost::asio::ssl::stream<boost::asio::ip::tcp::socket>::lowest_layer_type;
+    std::unordered_map<lowest_layer_type*, bool> readingSockets;
+    std::unordered_set<lowest_layer_type*> closedSockets;
+
     while (running) {
         std::lock_guard<std::mutex> lock(clientSocketsMutex);
-        for (auto& socket : clientSockets) {
-            if (socket && socket->lowest_layer().is_open()) {
-                auto buffer = std::make_shared<std::vector<char>>(1024);
-                socket->async_read_some(boost::asio::buffer(*buffer), [buffer](const boost::system::error_code& error, std::size_t bytes_transferred) {
-                    if (!error) {
-                        std::lock_guard<std::mutex> lock(receiveBufferMutex);
-                        receiveBuffer.push(std::string(buffer->data(), bytes_transferred));
-                        receiveBufferCond.notify_one();
-                        if (receiveThreadPool.size() < maxThreads) {
-                            receiveThreadPool.create_thread(boost::bind(&ClientHandler::ReceiveData));
-                        }
-                    } else {
-                        std::cerr << "Receive failed: " << error.message() << std::endl;
-                    }
-                });
+        for (auto it = clientSockets.begin(); it != clientSockets.end(); ) {
+            auto& socket = *it;
+            if (!socket || !socket->lowest_layer().is_open()) {
+                it = clientSockets.erase(it);
+                continue;
             }
+
+            auto& isReading = readingSockets[&socket->lowest_layer()];
+            if (isReading) {
+                ++it;
+                continue;
+            }
+
+            isReading = true;
+            auto buffer = std::make_shared<std::vector<char>>(1024);
+            auto weak_socket = std::weak_ptr<boost::asio::ssl::stream<boost::asio::ip::tcp::socket>>(socket);
+            socket->async_read_some(boost::asio::buffer(*buffer), [buffer, &isReading, weak_socket, &closedSockets](const boost::system::error_code& error, std::size_t bytes_transferred) mutable {
+                isReading = false;
+                auto socket = weak_socket.lock();
+                if (!socket) return;
+
+                if (!error) {
+                    std::lock_guard<std::mutex> lock(receiveBufferMutex);
+                    receiveBuffer.push(std::string(buffer->data(), bytes_transferred));
+                    receiveBufferCond.notify_one();
+                    #ifdef DEBUG
+                        std::cout << "Received data from client: " << std::string(buffer->data(), bytes_transferred) << "\n";
+                    #endif
+                    return;
+                }
+
+                std::lock_guard<std::mutex> lock(clientSocketsMutex);
+                if (closedSockets.find(&socket->lowest_layer()) == closedSockets.end()) {
+                    std::cerr << "Receive failed: " << error.message() << std::endl;
+                    closedSockets.insert(&socket->lowest_layer());
+                }
+
+                if (error == boost::asio::error::eof || error == boost::asio::error::connection_reset || error == boost::asio::error::operation_aborted) {
+                    auto it = std::find(clientSockets.begin(), clientSockets.end(), socket);
+                    if (it != clientSockets.end()) {
+                        clientSockets.erase(it);
+                    }
+                }
+            });
+
+            ++it;
         }
+        std::this_thread::sleep_for(std::chrono::milliseconds(10)); // Add sleep to reduce CPU usage
     }
 }
 
@@ -126,34 +160,17 @@ void ClientHandler::ProcessData() {
             receiveBuffer.pop();
             lock.unlock();
 
-            ProcessDataContent(data);
-
-            std::lock_guard<std::mutex> processLock(processBufferMutex);
-            processBuffer.push(data);
-            processBufferCond.notify_one();
+            boost::asio::post(threadPool, [data]() {
+                ProcessDataContent(data);
+            });
 
             lock.lock();
         }
     }
 }
 
-void ClientHandler::SendData() {
+void ClientHandler::SendDataFromBuffer() {
     while (running) {
-        std::unique_lock<std::mutex> lock(processBufferMutex);
-        processBufferCond.wait(lock, [] { return !processBuffer.empty() || !running; });
-
-        while (!processBuffer.empty()) {
-            std::string data = processBuffer.front();
-            processBuffer.pop();
-            lock.unlock();
-
-            std::lock_guard<std::mutex> sendLock(sendBufferMutex);
-            sendBuffer.push(data);
-            sendBufferCond.notify_one();
-
-            lock.lock();
-        }
-
         std::unique_lock<std::mutex> sendLock(sendBufferMutex);
         sendBufferCond.wait(sendLock, [] { return !sendBuffer.empty() || !running; });
 
@@ -179,5 +196,5 @@ void ClientHandler::SendData() {
 }
 
 void ClientHandler::ProcessDataContent(std::string data) {
-    // Process data here
+    //TODO Process data here
 }

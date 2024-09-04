@@ -49,6 +49,9 @@ void NetworkClient::ReceiveData() {
         boost::system::error_code error;
         std::size_t bytes_transferred = socket->read_some(boost::asio::buffer(*buffer), error);
         if (!error) {
+            #ifdef DEBUG
+                std::cout << "Received data: " << std::string(buffer->data(), bytes_transferred) << "\n";
+            #endif
             std::lock_guard<std::mutex> lock(receiveBufferMutex);
             receiveBuffer.push(std::string(buffer->data(), bytes_transferred));
             receiveBufferCond.notify_one();
@@ -70,10 +73,6 @@ void NetworkClient::ProcessData() {
 
             ProcessDataContent(data);
 
-            std::lock_guard<std::mutex> processLock(processBufferMutex);
-            processBuffer.push(data);
-            processBufferCond.notify_one();
-
             lock.lock();
         }
     }
@@ -81,21 +80,6 @@ void NetworkClient::ProcessData() {
 
 void NetworkClient::SendData() {
     while (running) {
-        std::unique_lock<std::mutex> lock(processBufferMutex);
-        processBufferCond.wait(lock, [this] { return !processBuffer.empty() || !running; });
-
-        while (!processBuffer.empty()) {
-            std::string data = processBuffer.front();
-            processBuffer.pop();
-            lock.unlock();
-
-            std::lock_guard<std::mutex> sendLock(sendBufferMutex);
-            sendBuffer.push(data);
-            sendBufferCond.notify_one();
-
-            lock.lock();
-        }
-
         std::unique_lock<std::mutex> sendLock(sendBufferMutex);
         sendBufferCond.wait(sendLock, [this] { return !sendBuffer.empty() || !running; });
 

@@ -39,10 +39,6 @@ private:
 	std::mutex receiveBufferMutex;
 	std::condition_variable receiveBufferCond;
 
-	std::queue<std::string> processBuffer;
-	std::mutex processBufferMutex;
-	std::condition_variable processBufferCond;
-
 	std::queue<std::string> sendBuffer;
 	std::mutex sendBufferMutex;
 	std::condition_variable sendBufferCond;
