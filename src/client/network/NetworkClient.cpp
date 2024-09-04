@@ -13,15 +13,6 @@ void NetworkClient::Start() {
     ssl_context.set_verify_mode(boost::asio::ssl::verify_peer);
     ssl_context.load_verify_file(DIR + "network/ca.pem");
 
-    //* For self-signed certificates
-    std::ifstream certFile(DIR + "network/server.crt");
-    if (!certFile) {
-        throw std::runtime_error("Could not open certificate file");
-    }
-    std::stringstream certBuffer;
-    certBuffer << certFile.rdbuf();
-    ssl_context.add_certificate_authority(boost::asio::buffer(certBuffer.str()));
-
     Connect();
 
     receiveThread = boost::thread(boost::bind(&NetworkClient::ReceiveData, this));
