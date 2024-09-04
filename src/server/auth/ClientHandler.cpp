@@ -6,13 +6,11 @@ boost::asio::ip::tcp::acceptor ClientHandler::acceptor(io_context);
 std::vector<std::shared_ptr<boost::asio::ssl::stream<boost::asio::ip::tcp::socket>>> ClientHandler::clientSockets;
 std::mutex ClientHandler::clientSocketsMutex;
 
-std::queue<std::string> ClientHandler::receiveBuffer;
-std::mutex ClientHandler::receiveBufferMutex;
-std::condition_variable ClientHandler::receiveBufferCond;
+std::queue<std::string> ClientHandler::recieveBuffer;
+std::mutex ClientHandler::recieveBufferMutex;
 
 std::queue<std::string> ClientHandler::sendBuffer;
 std::mutex ClientHandler::sendBufferMutex;
-std::condition_variable ClientHandler::sendBufferCond;
 
 std::atomic<bool> ClientHandler::running(true);
 
@@ -40,7 +38,7 @@ void ClientHandler::Init(unsigned short port) {
 
 void ClientHandler::Start() {
     std::thread(&ClientHandler::AcceptConnections).detach();
-    std::thread(&ClientHandler::ReceiveData).detach();
+    std::thread(&ClientHandler::RecieveData).detach();
     std::thread(&ClientHandler::ProcessData).detach();
     std::thread(&ClientHandler::SendDataFromBuffer).detach();
 
@@ -92,7 +90,7 @@ void ClientHandler::AcceptConnections() {
     });
 }
 
-void ClientHandler::ReceiveData() {
+void ClientHandler::RecieveData() {
     using lowest_layer_type = boost::asio::ssl::stream<boost::asio::ip::tcp::socket>::lowest_layer_type;
     std::unordered_map<lowest_layer_type*, bool> readingSockets;
     std::unordered_set<lowest_layer_type*> closedSockets;
@@ -121,9 +119,8 @@ void ClientHandler::ReceiveData() {
                 if (!socket) return;
 
                 if (!error) {
-                    std::lock_guard<std::mutex> lock(receiveBufferMutex);
-                    receiveBuffer.push(std::string(buffer->data(), bytes_transferred));
-                    receiveBufferCond.notify_one();
+                    std::lock_guard<std::mutex> lock(recieveBufferMutex);
+                    recieveBuffer.push(std::string(buffer->data(), bytes_transferred));
                     #ifdef DEBUG
                         std::cout << "Received data from client: " << std::string(buffer->data(), bytes_transferred) << "\n";
                     #endif
@@ -152,45 +149,54 @@ void ClientHandler::ReceiveData() {
 
 void ClientHandler::ProcessData() {
     while (running) {
-        std::unique_lock<std::mutex> lock(receiveBufferMutex);
-        receiveBufferCond.wait(lock, [] { return !receiveBuffer.empty() || !running; });
-
-        while (!receiveBuffer.empty()) {
-            std::string data = receiveBuffer.front();
-            receiveBuffer.pop();
-            lock.unlock();
+        while (true) {
+            std::string data;
+            {
+                std::lock_guard<std::mutex> guard(recieveBufferMutex);
+                if (recieveBuffer.empty()) {
+                    break;
+                }
+                data = recieveBuffer.front();
+                recieveBuffer.pop();
+            }
 
             boost::asio::post(threadPool, [data]() {
                 ProcessDataContent(data);
             });
-
-            lock.lock();
         }
+
+        std::this_thread::sleep_for(std::chrono::milliseconds(1));
     }
 }
 
 void ClientHandler::SendDataFromBuffer() {
     while (running) {
-        std::unique_lock<std::mutex> sendLock(sendBufferMutex);
-        sendBufferCond.wait(sendLock, [] { return !sendBuffer.empty() || !running; });
-
-        while (!sendBuffer.empty()) {
-            std::string data = sendBuffer.front();
-            sendBuffer.pop();
-            sendLock.unlock();
-
-            std::lock_guard<std::mutex> lock(clientSocketsMutex);
-            for (auto& socket : clientSockets) {
-                if (socket && socket->lowest_layer().is_open()) {
-                    boost::asio::async_write(*socket, boost::asio::buffer(data), [](const boost::system::error_code& error, std::size_t) {
-                        if (error) {
-                            std::cerr << "Error sending data: " << error.message() << std::endl;
-                        }
-                    });
-                }
+        while (true) {
+            std::unique_lock<std::mutex> sendLock(sendBufferMutex);
+            if (sendBuffer.empty()) {
+                sendLock.unlock();
+                std::this_thread::sleep_for(std::chrono::milliseconds(1));
+                continue;
             }
 
-            sendLock.lock();
+            while (!sendBuffer.empty()) {
+                std::string data = sendBuffer.front();
+                sendBuffer.pop();
+                sendLock.unlock();
+
+                std::lock_guard<std::mutex> lock(clientSocketsMutex);
+                for (auto& socket : clientSockets) {
+                    if (socket && socket->lowest_layer().is_open()) {
+                        boost::asio::async_write(*socket, boost::asio::buffer(data), [](const boost::system::error_code& error, std::size_t) {
+                            if (error) {
+                                std::cerr << "Error sending data: " << error.message() << std::endl;
+                            }
+                        });
+                    }
+                }
+
+                sendLock.lock();
+            }
         }
     }
 }

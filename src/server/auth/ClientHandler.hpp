@@ -31,7 +31,7 @@ public:
 
 private:
     static void AcceptConnections();
-    static void ReceiveData();
+    static void RecieveData();
     static void ProcessData();
     static void SendDataFromBuffer();
 
@@ -50,13 +50,11 @@ private:
     static std::vector<std::shared_ptr<boost::asio::ssl::stream<boost::asio::ip::tcp::socket>>> clientSockets;
     static std::mutex clientSocketsMutex;
 
-    static std::queue<std::string> receiveBuffer;
-    static std::mutex receiveBufferMutex;
-    static std::condition_variable receiveBufferCond;
+    static std::queue<std::string> recieveBuffer;
+    static std::mutex recieveBufferMutex;
 
     static std::queue<std::string> sendBuffer;
     static std::mutex sendBufferMutex;
-    static std::condition_variable sendBufferCond;
 
     static std::atomic<bool> running;
     static const int maxThreads = 1024;
@@ -71,7 +69,6 @@ void ClientHandler::SendData(const Args&... args) {
     std::string msg = CreateMessage(args...);
     std::lock_guard<std::mutex> sendLock(sendBufferMutex);
     sendBuffer.push(msg);
-    sendBufferCond.notify_one();
 }
 
 template<typename T>

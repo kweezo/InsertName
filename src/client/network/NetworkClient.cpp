@@ -15,7 +15,7 @@ void NetworkClient::Start() {
 
     Connect();
 
-    receiveThread = boost::thread(boost::bind(&NetworkClient::ReceiveData, this));
+    receiveThread = boost::thread(boost::bind(&NetworkClient::RecieveData, this));
     processThread = boost::thread(boost::bind(&NetworkClient::ProcessData, this));
     sendThread = boost::thread(boost::bind(&NetworkClient::SendData, this));
 
@@ -43,7 +43,7 @@ void NetworkClient::Connect() {
     std::cout << "Handshake successful" << std::endl;
 }
 
-void NetworkClient::ReceiveData() {
+void NetworkClient::RecieveData() {
     while (running) {
         auto buffer = std::make_shared<std::vector<char>>(1024);
         boost::system::error_code error;
@@ -52,9 +52,9 @@ void NetworkClient::ReceiveData() {
             #ifdef DEBUG
                 std::cout << "Received data: " << std::string(buffer->data(), bytes_transferred) << "\n";
             #endif
-            std::lock_guard<std::mutex> lock(receiveBufferMutex);
-            receiveBuffer.push(std::string(buffer->data(), bytes_transferred));
-            receiveBufferCond.notify_one();
+            std::lock_guard<std::mutex> lock(recieveBufferMutex);
+            recieveBuffer.push(std::string(buffer->data(), bytes_transferred));
+            recieveBufferCond.notify_one();
         } else {
             std::cerr << "Receive failed: " << error.message() << std::endl;
         }
@@ -63,12 +63,12 @@ void NetworkClient::ReceiveData() {
 
 void NetworkClient::ProcessData() {
     while (running) {
-        std::unique_lock<std::mutex> lock(receiveBufferMutex);
-        receiveBufferCond.wait(lock, [this] { return !receiveBuffer.empty() || !running; });
+        std::unique_lock<std::mutex> lock(recieveBufferMutex);
+        recieveBufferCond.wait(lock, [this] { return !recieveBuffer.empty() || !running; });
 
-        while (!receiveBuffer.empty()) {
-            std::string data = receiveBuffer.front();
-            receiveBuffer.pop();
+        while (!recieveBuffer.empty()) {
+            std::string data = recieveBuffer.front();
+            recieveBuffer.pop();
             lock.unlock();
 
             ProcessDataContent(data);
@@ -103,6 +103,7 @@ void NetworkClient::SendMessage(const std::string& message) {
     std::lock_guard<std::mutex> lock(sendBufferMutex);
     sendBuffer.push(message);
     sendBufferCond.notify_one();
+    std::cerr << "Sent message: " << message << std::endl;
 }
 
 void NetworkClient::ProcessDataContent(std::string& data) {

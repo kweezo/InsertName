@@ -26,7 +26,7 @@ public:
 
 private:
 	void Connect();
-	void ReceiveData();
+	void RecieveData();
 	void ProcessData();
 	void SendData();
 	void ProcessDataContent(std::string& data);
@@ -35,9 +35,9 @@ private:
 	static boost::asio::ssl::context ssl_context;
 	std::shared_ptr<boost::asio::ssl::stream<boost::asio::ip::tcp::socket>> socket;
 
-	std::queue<std::string> receiveBuffer;
-	std::mutex receiveBufferMutex;
-	std::condition_variable receiveBufferCond;
+	std::queue<std::string> recieveBuffer;
+	std::mutex recieveBufferMutex;
+	std::condition_variable recieveBufferCond;
 
 	std::queue<std::string> sendBuffer;
 	std::mutex sendBufferMutex;
