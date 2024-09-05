@@ -3,13 +3,14 @@
 #include "Log.hpp"
 #include "AdvancedSettingsManager.hpp"
 
-#include <string>
-#include <vector>
 #include <array> 
 #include <deque>
 #include <mutex>
-#include <algorithm>
+#include <atomic>
+#include <vector>
 #include <thread>
+#include <string>
+#include <algorithm>
 
 #ifdef _WIN32
     #undef MOUSE_MOVED
@@ -26,16 +27,11 @@ public:
     static std::string ReadLine();
     static void ProcessLine(const std::string& line);
     static void PrintLog(const std::string& msg, int colorPair = 0);
-    
-    static bool IsShuttingDown();
-    static bool IsRunning();
+
+    static std::atomic<bool> isShuttingDown;
+    static std::atomic<bool> isRunning;
 
 private:
-    static bool isShuttingDown;
-    static std::mutex isShuttingDownMutex;
-    static bool isRunning;
-    static std::mutex isRunningMutex;
-
     static std::array<std::string, COMMAND_COUNT> commands;
     static std::array<std::vector<std::string>, COMMAND_COUNT> secParam;
 

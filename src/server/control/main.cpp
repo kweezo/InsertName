@@ -17,7 +17,7 @@ int main() {
 
     std::thread adminConsoleThread([]() {
         std::string line;
-        while (AdminConsole::IsRunning()) {
+        while (AdminConsole::isRunning) {
             line = AdminConsole::ReadLine();
             AdminConsole::ProcessLine(line);
         }

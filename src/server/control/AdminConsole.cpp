@@ -2,10 +2,8 @@
 
 #include "ServiceLink.hpp"
 
-bool AdminConsole::isShuttingDown;
-std::mutex AdminConsole::isShuttingDownMutex;
-bool AdminConsole::isRunning;
-std::mutex AdminConsole::isRunningMutex;
+std::atomic<bool> AdminConsole::isShuttingDown;
+std::atomic<bool> AdminConsole::isRunning;
 std::array<std::string, COMMAND_COUNT> AdminConsole::commands;
 std::array<std::vector<std::string>, COMMAND_COUNT> AdminConsole::secParam;
 WINDOW* AdminConsole::logWindow = nullptr;
@@ -40,14 +38,9 @@ void AdminConsole::InitVariables() {
     commandWindowHeight = AdvancedSettingsManager::GetSettings().commandWindowHeight;
     prompt = AdvancedSettingsManager::GetSettings().commandPrompt;
 
-    {
-        std::lock_guard<std::mutex> lock(isShuttingDownMutex);
-        isShuttingDown = false;
-    }
-    {
-        std::lock_guard<std::mutex> lock(isRunningMutex);
-        isRunning = true;
-    }
+    isShuttingDown = false;
+    isRunning = true;
+
     currentCommand = -1;
     selectionStart = std::string::npos;
     selectionEnd = std::string::npos;
@@ -99,16 +92,6 @@ void AdminConsole::AddCommands() {
         "authserviceport"
     };
     secParam[2] = {"all", "setting", "logs"};
-}
-
-bool AdminConsole::IsRunning() {
-    std::lock_guard<std::mutex> lock(isRunningMutex);
-    return isRunning;
-}
-
-bool AdminConsole::IsShuttingDown() {
-    std::lock_guard<std::mutex> lock(isShuttingDownMutex);
-    return isShuttingDown;
 }
 
 std::string AdminConsole::ReadLine() {
@@ -492,12 +475,7 @@ void AdminConsole::PrintLog(const std::string& msg, int colorPair) {
 }
 
 void AdminConsole::ProcessLine(const std::string& line) {
-    bool isRunning_;
-    {
-        std::lock_guard<std::mutex> lock(isRunningMutex);
-        isRunning_ = isRunning;
-    }
-    if (line.empty() || !isRunning_) {
+    if (line.empty() || !isRunning) {
         return;
     }
 
@@ -646,10 +624,9 @@ void AdminConsole::ProcessLine(const std::string& line) {
 
 void AdminConsole::Stop(double waitTime) {
     CmdReport("Stopping server in " + std::to_string(waitTime) + " minutes...", 2);
-    {
-        std::lock_guard<std::mutex> lock(isShuttingDownMutex);
-        isShuttingDown = true;
-    }
+
+    isShuttingDown = true;
+
     ServiceLink::NotifyConnection();
 
     std::thread([waitTime]() {
@@ -658,10 +635,8 @@ void AdminConsole::Stop(double waitTime) {
 
         CmdReport("Stopping server...", 2);
         Log::Print("Server stopped by admin command", 1);
-        {
-            std::lock_guard<std::mutex> lock(isRunningMutex);
-            isRunning = false;
-        }
+        
+        isRunning = false;
 
         AdvancedSettingsManager::SaveSettings();
         Log::Destroy();

@@ -30,7 +30,7 @@ bool ServiceLink::SendDataFromBuffer(int serviceId, const std::string& message) 
 }
 
 void ServiceLink::ProcessSendBuffer() {
-    while (AdminConsole::IsRunning()) {
+    while (AdminConsole::isRunning) {
         bool wasNewMessage = false;
         std::unique_lock<std::mutex> bufferLock(sendBufferMutex);
         for (int i = 0; i < MAX_CONNECTIONS; i++) {
@@ -159,10 +159,10 @@ void ServiceLink::StartTcpServer(int port) {
     while (true) {
         {
             std::unique_lock<std::mutex> lock(connectionMutex);
-            connectionCond.wait(lock, []{ return AdminConsole::IsShuttingDown() || activeConnections < MAX_CONNECTIONS; });
+            connectionCond.wait(lock, []{ return AdminConsole::isShuttingDown || activeConnections < MAX_CONNECTIONS; });
         }
 
-        if (AdminConsole::IsShuttingDown()) {
+        if (AdminConsole::isShuttingDown) {
             break;
         }
 
@@ -190,7 +190,7 @@ void ServiceLink::StartTcpServer(int port) {
             t.detach();
         }
 
-        if (AdminConsole::IsShuttingDown()) {
+        if (AdminConsole::isShuttingDown) {
             break;
         }
     }
@@ -226,7 +226,7 @@ std::string ServiceLink::GetFirstParameter(std::string& message) {
 
 void ServiceLink::ProcessMessages() {
     bool messageBufferEmpty = false;
-    while (AdminConsole::IsRunning() || !messageBufferEmpty) {
+    while (AdminConsole::isRunning || !messageBufferEmpty) {
         std::unique_lock<std::mutex> lock(bufferMutex);
         messageBufferEmpty = messageBuffer.empty();
         if (!messageBufferEmpty) {
