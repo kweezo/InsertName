@@ -1,12 +1,11 @@
 #pragma once
 
-#include <string>
 #include <mutex>
-#include <fstream>
-#include <optional>
-#include <regex>
+#include <string>
 #include <vector>
 #include <variant>
+#include <fstream>
+#include <optional>
 
 #include <jsoncpp/json/json.h>
 
@@ -57,10 +56,6 @@ public:
     );
     static void SetSetting(size_t index, const std::variant<int, std::string>& value);
     static std::string GetSetting(size_t index);
-
-    static bool TryPassDouble(const std::string& s, double& d);
-    static bool TryPassInt(const std::string& s, int& i);
-    static bool IsValidIPv4(const std::string& ip);
 
 private:
     static std::string file;

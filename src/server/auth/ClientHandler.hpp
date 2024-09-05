@@ -1,8 +1,5 @@
 #pragma once
 
-#include "defines.hpp"
-#include "shared/ClientServiceLink.hpp"
-
 #include <boost/asio.hpp>
 #include <boost/asio/ssl.hpp>
 #include <boost/asio/post.hpp>
@@ -18,6 +15,10 @@
 #include <filesystem>
 #include <unordered_map>
 #include <unordered_set>
+
+#include "defines.hpp"
+#include "common/TypeUtils.hpp"
+#include "shared/ClientServiceLink.hpp"
 
 
 class ClientHandler {
@@ -35,13 +36,6 @@ private:
     static void SendDataFromBuffer();
 
     static void ProcessDataContent(std::string data);
-
-    template<typename T>
-    static void addToStream(std::stringstream& ss, const T& value);
-    template<typename T, typename... Args>
-    static void addToStream(std::stringstream& ss, const T& first, const Args&... args);
-    template<typename... Args>
-    static std::string CreateMessage(const Args&... args);
 
     static boost::asio::io_context io_context;
     static boost::asio::ssl::context ssl_context;
@@ -65,25 +59,7 @@ private:
 
 template<typename... Args>
 void ClientHandler::SendData(const Args&... args) {
-    std::string msg = CreateMessage(args...);
+    std::string msg = TypeUtils::stickParams(args...);
     std::lock_guard<std::mutex> sendLock(sendBufferMutex);
     sendBuffer.push(msg);
-}
-
-template<typename T>
-void ClientHandler::addToStream(std::stringstream& ss, const T& value) {
-    ss << value;
-}
-
-template<typename T, typename... Args>
-void ClientHandler::addToStream(std::stringstream& ss, const T& first, const Args&... args) {
-    ss << first << static_cast<char>(30);
-    addToStream(ss, args...);
-}
-
-template<typename... Args>
-std::string ClientHandler::CreateMessage(const Args&... args) {
-    std::stringstream ss;
-    addToStream(ss, args...);
-    return ss.str();
 }

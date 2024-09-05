@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Log.hpp"
+#include "common/TypeUtils.hpp"
 #include "AdvancedSettingsManager.hpp"
 
 #include <array> 

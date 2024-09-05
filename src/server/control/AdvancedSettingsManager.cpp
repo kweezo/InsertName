@@ -209,23 +209,3 @@ std::string AdvancedSettingsManager::GetSetting(size_t index) {
         }
     }, settings[index]);
 }
-
-bool AdvancedSettingsManager::TryPassDouble(const std::string& s, double& d) {
-    std::istringstream iss(s);
-    iss >> d;
-    return iss.eof() && !iss.fail();
-}
-
-bool AdvancedSettingsManager::TryPassInt(const std::string& s, int& i) {
-    std::istringstream iss(s);
-    iss >> i;
-    return iss.eof() && !iss.fail();
-}
-
-bool AdvancedSettingsManager::IsValidIPv4(const std::string& ip) {
-    std::regex ipRegex("^((25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\\.){3}(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$");
-    if (std::regex_match(ip, ipRegex)) {
-        return true;
-    }
-    return false;
-}

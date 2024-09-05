@@ -514,7 +514,7 @@ void AdminConsole::ProcessLine(const std::string& line) {
     if (commands[0] == "stop") {
         double value;
         if (cmdSize == 2) {
-            if (AdvancedSettingsManager::TryPassDouble(commands[1], value)) {
+            if (TypeUtils::tryPassDouble(commands[1], value)) {
                 Stop(value);
             } else {
                 CmdReport("Invalid argument for 'stop' command. Argument should be type double.", 4);
@@ -550,23 +550,14 @@ void AdminConsole::ProcessLine(const std::string& line) {
         }
 
         // cmdSize is 3
-        if (index >= 4 && index <= 6) {
+        if ((index >= 4 && index <= 7) || index == 0) {
             AdvancedSettingsManager::SetSetting(index, commands[2]);
             CmdReport("Setting '" + commands[1] + "' is set to: '" + commands[2] + '\'', 2);
             return;
         }
-        if (index == 7 || index == 0) {
-            if (AdvancedSettingsManager::IsValidIPv4(commands[2])) {
-                AdvancedSettingsManager::SetSetting(index, commands[2]);
-                CmdReport("Setting '" + commands[1] + "' is set to: '" + commands[2] + '\'', 2);
-                return;
-            }
-            CmdReport("Invalid IPv4 address", 4);
-            return;
-        }
 
         int value;
-        if (!AdvancedSettingsManager::TryPassInt(commands[2], value)) {
+        if (!TypeUtils::tryPassInt(commands[2], value)) {
             CmdReport("Invalid argument for config command. Argument should be type int", 4);
             return;
         }
@@ -580,6 +571,7 @@ void AdminConsole::ProcessLine(const std::string& line) {
             AdvancedSettingsManager::SetSetting(index, value);
             CmdReport("Setting '" + commands[1] + "' is set to: '" + std::to_string(value) + '\'', 2);
         }
+
     } else if (commands[0] == "save") {
         if (cmdSize == 1) {
             CmdReport("Saving all...", 2);

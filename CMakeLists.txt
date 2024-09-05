@@ -100,7 +100,7 @@ if(BUILD_INSTALLER)
 endif()
 
 if(BUILD_SERVER_CONTROL OR BUILD_SERVER_AUTH OR BUILD_SERVER_WORLD OR BUILD_SERVER_CHAT OR BUILD_SERVER_VOICE) # Server shared library
-    file(GLOB serversharedsrc src/server/shared/*.cpp)
+    file(GLOB serversharedsrc src/server/shared/*.cpp src/common/*.cpp)
     add_library(servershared SHARED ${serversharedsrc})
 
     if(WIN32)
@@ -256,7 +256,7 @@ if(BUILD_ENGINE)
 endif()
 
 if(BUILD_CLIENT)    
-    file(GLOB clientsrc src/client/account/*.cpp src/client/network/*.cpp)
+    file(GLOB clientsrc src/client/network/*.cpp src/common/*.cpp)
     add_executable(client ${clientsrc} src/client/main.cpp)
     link_directories(${CMAKE_SOURCE_DIR}/lib)
     include_directories(${CMAKE_SOURCE_DIR}/src)
