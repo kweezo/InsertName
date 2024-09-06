@@ -1,6 +1,7 @@
 #pragma once
 
 #include "clientDefines.hpp"
+#include "common/TypeUtils.hpp"
 
 #include <boost/asio.hpp>
 #include <boost/thread.hpp>
@@ -14,7 +15,6 @@
 #include <fstream>
 #include <sstream>
 #include <iostream>
-#include <condition_variable>
 
 class NetworkClient {
 public:
@@ -22,7 +22,8 @@ public:
 	void Start();
 	void Stop();
 
-    void SendMessage(const std::string& message);
+	template <typename... Args>
+	void SendMessage(const Args&... args);
 
 private:
 	void Connect();
@@ -37,11 +38,9 @@ private:
 
 	std::queue<std::string> recieveBuffer;
 	std::mutex recieveBufferMutex;
-	std::condition_variable recieveBufferCond;
 
 	std::queue<std::string> sendBuffer;
 	std::mutex sendBufferMutex;
-	std::condition_variable sendBufferCond;
 
 	std::atomic<bool> running;
 	boost::thread receiveThread;
@@ -51,3 +50,13 @@ private:
 	std::string server;
 	unsigned short port;
 };
+
+template <typename... Args>
+void NetworkClient::SendMessage(const Args&... args) {
+	std::string message = TypeUtils::stickParams(args...);
+    std::lock_guard<std::mutex> lock(sendBufferMutex);
+    sendBuffer.push(message);
+	#ifdef DEBUG
+    	std::cerr << "Sent message: " << message << std::endl;
+	#endif
+}

@@ -54,7 +54,6 @@ void NetworkClient::RecieveData() {
             #endif
             std::lock_guard<std::mutex> lock(recieveBufferMutex);
             recieveBuffer.push(std::string(buffer->data(), bytes_transferred));
-            recieveBufferCond.notify_one();
         } else {
             std::cerr << "Receive failed: " << error.message() << std::endl;
         }
@@ -64,7 +63,12 @@ void NetworkClient::RecieveData() {
 void NetworkClient::ProcessData() {
     while (running) {
         std::unique_lock<std::mutex> lock(recieveBufferMutex);
-        recieveBufferCond.wait(lock, [this] { return !recieveBuffer.empty() || !running; });
+
+        if (recieveBuffer.empty()) {
+            lock.unlock();
+            std::this_thread::sleep_for(std::chrono::milliseconds(1));
+            continue;
+        }
 
         while (!recieveBuffer.empty()) {
             std::string data = recieveBuffer.front();
@@ -81,7 +85,12 @@ void NetworkClient::ProcessData() {
 void NetworkClient::SendData() {
     while (running) {
         std::unique_lock<std::mutex> sendLock(sendBufferMutex);
-        sendBufferCond.wait(sendLock, [this] { return !sendBuffer.empty() || !running; });
+
+        if (sendBuffer.empty()) {
+            sendLock.unlock();
+            std::this_thread::sleep_for(std::chrono::milliseconds(1));
+            continue;
+        }
 
         while (!sendBuffer.empty()) {
             std::string data = sendBuffer.front();
@@ -97,13 +106,6 @@ void NetworkClient::SendData() {
             sendLock.lock();
         }
     }
-}
-
-void NetworkClient::SendMessage(const std::string& message) {
-    std::lock_guard<std::mutex> lock(sendBufferMutex);
-    sendBuffer.push(message);
-    sendBufferCond.notify_one();
-    std::cerr << "Sent message: " << message << std::endl;
 }
 
 void NetworkClient::ProcessDataContent(std::string& data) {

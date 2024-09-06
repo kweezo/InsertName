@@ -131,18 +131,11 @@ void networkTemp(){
 
     NetworkClient client(server, port);
 
-    try {
-        client.Start();
+    client.Start();
 
-        std::this_thread::sleep_for(std::chrono::seconds(2));
-        client.SendMessage("Hello, server!");
+    client.SendMessage("Hello, server!");
 
-        std::this_thread::sleep_for(std::chrono::seconds(5));
-
-        client.Stop();
-    } catch (const std::exception& e) {
-        std::cerr << "Exception: " << e.what() << std::endl;
-    }
+    client.Stop();
 }
 
 // struct ModelDat{
