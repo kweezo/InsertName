@@ -22,7 +22,6 @@ namespace renderer{
     }
     
     void Model::ExecuteRange(enki::TaskSetPartition range, uint32_t threadNum){
-        throw std::runtime_error(":D");
     }
 
     void Model::CopyFrom(const Model& other){

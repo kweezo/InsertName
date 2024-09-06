@@ -3,10 +3,14 @@
 #include <exception>
 #include <tuple>
 #include <memory>
+#include <vector>
 
 #include <vulkan/vulkan.h>
 
+#define VMA_VULKAN_VERSION 1003000
 #include <VulkanMemoryAllocator/vk_mem_alloc.h>
+
+#include <boost/container/flat_map.hpp>
 
 #include "physicalDevice.hpp"
 
@@ -15,6 +19,8 @@ namespace renderer{
     struct i_QueueBatch{
         std::list<VkQueue> queues;
         VkQueueFlags flags;
+
+        uint32_t queueFamilyIndex;
     };
 
     class i_LogicalDevice{
@@ -24,6 +30,7 @@ namespace renderer{
 
             static VkDevice GetDevice();
             static VmaAllocator GetAllocator();
+            static std::vector<uint32_t> GetQueueFamilyIndices(VkQueueFlags flags);
 
             ~i_LogicalDevice();
     
@@ -49,6 +56,5 @@ namespace renderer{
 
             VkDevice logicalDevice;
             VmaAllocator vmaAllocator;
-
     };
 }

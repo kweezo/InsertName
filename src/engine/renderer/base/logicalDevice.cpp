@@ -60,6 +60,9 @@ namespace renderer{
         if(vkCreateDevice(i_PhysicalDevice::GetDevice(), &createInfo, nullptr, &logicalDevice) != VK_SUCCESS){
             throw std::runtime_error("ERROR: Failed to create a logical device");
         }
+
+        queueBatches.clear();
+        queuePriorities.clear();
     }
 
 
@@ -105,6 +108,7 @@ namespace renderer{
 
             i_QueueBatch queueBatch{};
             queueBatch.flags = createInfo.flags;
+            queueBatch.queueFamilyIndex = i;
 
             queueBatches.push_back(queueBatch);
 
@@ -167,6 +171,37 @@ namespace renderer{
 
     VmaAllocator i_LogicalDevice::GetAllocator(){
         return device->vmaAllocator;
+    }
+
+    std::vector<uint32_t> i_LogicalDevice::GetQueueFamilyIndices(VkQueueFlags flags){//TODO fix
+        VkQueueFlags remainingFlags = flags;
+        std::vector<uint32_t> indices;
+
+        //unceremoniously written by chatgpt
+        for (uint32_t i = 0; i < device->queueBatches.size() && remainingFlags != 0; i++) {
+            VkQueueFlags queueFlags = device->queueBatches[i].flags;
+
+            VkQueueFlags intersection = remainingFlags & queueFlags;
+            if (intersection != 0 && intersection != queueFlags) {
+                indices.push_back(i);
+                remainingFlags &= ~queueFlags;    
+            }
+        }
+
+        for (uint32_t i = 0; i < device->queueBatches.size() && remainingFlags != 0; i++) {
+            VkQueueFlags queueFlags = device->queueBatches[i].flags;
+
+            if (queueFlags & remainingFlags) {
+                indices.push_back(i);
+                remainingFlags &= ~queueFlags;     
+            }
+        }
+
+        if (remainingFlags != 0) {
+            throw std::runtime_error("Failed to find a suitable queue family(bruh)");
+        }
+
+        return indices;
     }
 
     i_LogicalDevice::~i_LogicalDevice(){

@@ -208,27 +208,28 @@ endif()
 if(BUILD_ENGINE)
     file(GLOB enginesrc src/engine/*.cpp src/engine/renderer/base/*.cpp src/engine/renderer/ui/* src/engine/renderer/util/mem/*
      src/engine/renderer/util/*)
-    add_library(engine SHARED ${enginesrc})
+     add_library(engine SHARED ${enginesrc})
+     
+     if(WIN32)
+     target_link_libraries(engine PUBLIC
+     glfw3
+     glfw3dll
+     assimp
+     gdi32
+     vulkan-1
+     jsoncpp
+     ${BOOST_CONTAINER}
+     )
+     else()
+     target_link_libraries(engine PUBLIC vulkan)
+     target_link_libraries(engine PUBLIC glfw)
+     target_link_libraries(engine PUBLIC assimp)
+     target_link_libraries(engine PUBLIC boost_container)
+     target_link_libraries(engine PUBLIC enkiTS)
+     target_link_libraries(engine PUBLIC VulkanMemoryAllocator)
+     #      target_link_libraries(engine PUBLIC GFSDK_Aftermath_Lib.x64)
+     endif()
 
-    if(WIN32)
-        target_link_libraries(engine PUBLIC
-            glfw3
-            glfw3dll
-            assimp
-            gdi32
-            vulkan-1
-            jsoncpp
-            ${BOOST_CONTAINER}
-        )
-    else()
-        target_link_libraries(engine PUBLIC glfw)
-        target_link_libraries(engine PUBLIC assimp)
-        target_link_libraries(engine PUBLIC vulkan)
-        target_link_libraries(engine PUBLIC boost_container)
-        target_link_libraries(engine PUBLIC enkiTS)
-        target_link_libraries(engine PUBLIC VulkanMemoryAllocator)
-  #      target_link_libraries(engine PUBLIC GFSDK_Aftermath_Lib.x64)
-    endif()
 endif()
 
 if(BUILD_CLIENT)    

@@ -67,8 +67,10 @@ namespace renderer{
 
             if(properties.deviceType == VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU){
                 this->physicalDevice = device;
+                memFree = true;
             } else if(properties.deviceType == VK_PHYSICAL_DEVICE_TYPE_INTEGRATED_GPU){
                 fallbackDevice = device;
+                memFree = false;
             }
         }
 
@@ -81,4 +83,9 @@ namespace renderer{
         }
     }
     
+    bool i_PhysicalDevice::DeviceMemoryAvailable(){
+        return device->memFree;        
+    }
+
 }
+

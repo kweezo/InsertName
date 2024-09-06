@@ -25,6 +25,18 @@ namespace renderer{
         i_Swapchain::Create();
         i_Scheduler::Create();
         ModelManager::Create();
+
+
+        std::vector<float> whoops = {1.0f};
+        i_DataBufferCreateInfo info{};
+
+        info.data = (void*)whoops.data();
+        info.size = 4;
+        info.usage = VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
+
+        i_DataBuffer buffer = i_DataBuffer(info);
+
+        i_Scheduler::GetScheduler().WaitforAll();
     }
 
     bool App::ShouldQuit(){

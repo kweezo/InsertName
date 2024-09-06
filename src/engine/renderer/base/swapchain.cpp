@@ -36,7 +36,12 @@ namespace renderer{
             std::clamp(surfaceCapabilites.currentExtent.height, surfaceCapabilites.minImageExtent.height, surfaceCapabilites.maxImageExtent.height)
         };
 
-        uint32_t imageCount = std::clamp(prefferedImageCount, surfaceCapabilites.minImageCount, surfaceCapabilites.maxImageCount);
+        uint32_t imageCount;
+        if(surfaceCapabilites.maxImageCount == 0){
+            imageCount = std::max(prefferedImageCount, surfaceCapabilites.minImageCount);
+        }else{
+            imageCount = std::clamp(prefferedImageCount, surfaceCapabilites.minImageCount, surfaceCapabilites.maxImageCount);
+        }
 
         uint32_t surfaceFormatCount;
         vkGetPhysicalDeviceSurfaceFormatsKHR(i_PhysicalDevice::GetDevice(), i_Window::GetSurface(), &surfaceFormatCount, nullptr);
@@ -64,7 +69,7 @@ namespace renderer{
         VkSwapchainCreateInfoKHR createInfo{};
         createInfo.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
         createInfo.surface = i_Window::GetSurface();
-        createInfo.minImageCount = 2;//TODO make mutable
+        createInfo.minImageCount = imageCount;
         createInfo.imageArrayLayers = 1;
         createInfo.imageFormat = swapchainFormat.format;
         createInfo.imageExtent = currentExtent;

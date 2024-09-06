@@ -23,6 +23,8 @@ namespace renderer{
             static void Create();
             static void Destroy();
 
+            static bool DeviceMemoryAvailable();
+
             static VkPhysicalDevice GetDevice();
 
         private:
@@ -36,6 +38,7 @@ namespace renderer{
             void PickDevice();
 
             VkPhysicalDevice physicalDevice;
+            bool memFree;
     };
 
 }

@@ -15,6 +15,7 @@
 #include "renderer/base/swapchain.hpp"
 #include "renderer/base/scheduler.hpp"
 #include "renderer/ui/modelManager.hpp"
+#include "renderer/util/mem/dataBuffer.hpp"
 
 
 #define APP_VERSION(major, minor, patch) VK_MAKE_VERSION(major, minor, patch)
