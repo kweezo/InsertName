@@ -13,7 +13,6 @@ void Log::Init() {
     logLevel = AdvancedSettingsManager::GetSettings().logLevel;
     maxLogBufferSize = AdvancedSettingsManager::GetSettings().maxLogBufferSize;
 
-#ifndef NO_DB
     std::lock_guard<std::mutex> dbLock(dbMutex);
     std::string conn_str = "dbname=" + AdvancedSettingsManager::GetSettings().dbname +
                           " user=" + AdvancedSettingsManager::GetSettings().dbuser +
@@ -29,15 +28,15 @@ void Log::Init() {
     pqxx::work w(*c);
     w.exec("CREATE TABLE IF NOT EXISTS logs (timestamp DOUBLE PRECISION, alert_level INT, message TEXT)");
     w.commit();
-#endif
 }
 
 void Log::Destroy() {
     std::lock_guard<std::mutex> lock(mutex);
-#ifndef NO_DB
     // Send all remaining logs to the database
     SendLogsToDatabase();
-#endif
+
+    c->close();
+    c = nullptr;
 }
 
 void Log::Print(const std::string& msg, int alertLevel) {
@@ -59,7 +58,6 @@ void Log::Print(const std::string& msg, int alertLevel) {
         AdminConsole::PrintLog(logMsg, colorPair);
     }
 
-#ifndef NO_DB
     // Add log to the buffer
     logsBuffer.push_back({now, alertLevel, msg});
 
@@ -67,7 +65,6 @@ void Log::Print(const std::string& msg, int alertLevel) {
     if (logsBuffer.size() >= maxLogBufferSize) {
         SendLogsToDatabase();
     }
-#endif
 }
 
 void Log::SendLogsToDatabase() {

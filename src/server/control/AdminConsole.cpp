@@ -619,6 +619,11 @@ void AdminConsole::Stop(double waitTime) {
 
     isShuttingDown = true;
 
+    ServiceLink::SendData(0, "SHUTTING_DOWN");
+    ServiceLink::SendData(1, "SHUTTING_DOWN");
+    ServiceLink::SendData(2, "SHUTTING_DOWN");
+    ServiceLink::SendData(3, "SHUTTING_DOWN");
+
     ServiceLink::NotifyConnection();
 
     std::thread([waitTime]() {
@@ -629,6 +634,11 @@ void AdminConsole::Stop(double waitTime) {
         Log::Print("Server stopped by admin command", 1);
         
         isRunning = false;
+
+        ServiceLink::SendData(0, "SHUTDOWN");
+        ServiceLink::SendData(1, "SHUTDOWN");
+        ServiceLink::SendData(2, "SHUTDOWN");
+        ServiceLink::SendData(3, "SHUTDOWN");
 
         AdvancedSettingsManager::SaveSettings();
         Log::Destroy();

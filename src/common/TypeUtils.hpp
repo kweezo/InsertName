@@ -10,6 +10,7 @@ namespace TypeUtils {
 bool tryPassDouble(const std::string& s, double& d);
 bool tryPassInt(const std::string& s, int& i);
 
+std::string getFirstParam(std::string& message);
 
 template<typename T>
 void addToStream(std::stringstream& ss, const T& value) {

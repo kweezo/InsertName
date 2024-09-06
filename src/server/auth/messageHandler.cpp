@@ -2,7 +2,7 @@
 
 
 void handleMessageContent(std::string message) {
-    std::string action = ClientServiceLink::GetFirstParameter(message);
+    std::string action = TypeUtils::getFirstParam(message);
 
     if (action == "SETTING_SET_dbConnString") {
         settings.dbConnString = message;

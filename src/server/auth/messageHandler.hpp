@@ -1,7 +1,8 @@
 #pragma once
 
-#include "shared/ClientServiceLink.hpp"
 #include "Settings.hpp"
+#include "common/TypeUtils.hpp"
+#include "shared/ClientServiceLink.hpp"
 
 #include <string>
 #include <iostream>

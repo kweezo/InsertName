@@ -13,15 +13,15 @@
 	#include <Ws2tcpip.h>
 	#pragma comment(lib, "Ws2_32.lib")
 #else
+	#include <arpa/inet.h>
 	#include <sys/socket.h>
 	#include <sys/select.h>
 	#include <netinet/in.h>
-	#include <arpa/inet.h>
 #endif
 
 #include "Log.hpp"
-#include "common/TypeUtils.hpp"
 #include "AdminConsole.hpp"
+#include "common/TypeUtils.hpp"
 
 #define MAX_CONNECTIONS 4
 
@@ -45,7 +45,6 @@ public:
 private:
 	static void HandleConnection(int socket);
 	static void HandleMessageContent(Message msg);
-	static std::string GetFirstParameter(std::string& message);
 	static bool SendDataFromBuffer(int serviceId, const std::string& message);
 
 	static std::mutex connectionMutex;

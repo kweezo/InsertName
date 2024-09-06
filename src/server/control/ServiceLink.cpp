@@ -73,7 +73,7 @@ void ServiceLink::HandleConnection(int socket) {
         }
 
         std::string receivedMessage(buffer, bytesReceived);
-        serviceId = stoi(GetFirstParameter(receivedMessage));
+        serviceId = stoi(TypeUtils::getFirstParam(receivedMessage));
 
         {
             std::lock_guard<std::mutex> lock(socketMutex);
@@ -208,22 +208,6 @@ void ServiceLink::NotifyConnection() {
     connectionCond.notify_all();
 }
 
-std::string ServiceLink::GetFirstParameter(std::string& message) {
-    size_t pos = message.find(static_cast<char>(30));
-    
-    if (pos == std::string::npos) {
-        std::string result = message;
-        message.clear();
-        return result;
-    }
-    
-    std::string firstParam = message.substr(0, pos);
-    
-    message.erase(0, pos + 1);
-    
-    return firstParam;
-}
-
 void ServiceLink::ProcessMessages() {
     bool messageBufferEmpty = false;
     while (AdminConsole::isRunning || !messageBufferEmpty) {
@@ -244,14 +228,14 @@ void ServiceLink::ProcessMessages() {
 
 void ServiceLink::HandleMessageContent(Message msg) {
     int serviceId = msg.serviceId;
-    std::string action = GetFirstParameter(msg.content);
+    std::string action = TypeUtils::getFirstParam(msg.content);
     std::string content = msg.content;
     auto settings = AdvancedSettingsManager::GetSettings();
 
     if (action == "CONNECT") {
         Log::Print("Service " + std::to_string(serviceId) + " connected", 1);
         std::lock_guard<std::mutex> lock(socketMutex);
-        serviceSockets[serviceId] = stoi(GetFirstParameter(content));
+        serviceSockets[serviceId] = stoi(TypeUtils::getFirstParam(content));
 
         if (serviceId == 3) { // Auth service
             std::string dbConnString = "host=" + settings.dbhostaddr + 
