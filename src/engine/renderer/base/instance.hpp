@@ -22,7 +22,6 @@ namespace renderer{
             static void Destroy();
 
             static VkInstance GetInstance();
-            static const std::vector<char*>& GetSupportedOptionalExtensions();
 
             ~i_Instance();
         private:

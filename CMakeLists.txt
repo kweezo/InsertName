@@ -209,6 +209,14 @@ if(BUILD_ENGINE)
     file(GLOB enginesrc src/engine/*.cpp src/engine/renderer/base/*.cpp src/engine/renderer/ui/* src/engine/renderer/util/mem/*
      src/engine/renderer/util/*)
      add_library(engine SHARED ${enginesrc})
+
+    set(VulkanMemoryAllocator_DIR "${CMAKE_SOURCE_DIR}/external/VulkanMemoryAllocator/")
+
+    add_library(VulkanMemoryAllocator INTERFACE)
+    target_include_directories(VulkanMemoryAllocator INTERFACE "${CMAKE_SOURCE_DIR}")
+
+    target_link_libraries(engine PUBLIC VulkanMemoryAllocator)
+
      
      if(WIN32)
      target_link_libraries(engine PUBLIC

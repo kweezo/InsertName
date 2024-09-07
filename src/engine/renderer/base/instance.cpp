@@ -138,7 +138,6 @@ namespace renderer{
             strcpy(this->supportedOptionalExtensions.back(), buff);
         }
 
-        unsupportedExtensionIndexes = CheckExtensionSupport(supportedOptionalExtensions);
         if(!unsupportedExtensionIndexes.empty()){
             uint32_t erasedExtCount = 0;
             std::cout << "INFO: Not all optional extensions are supported: \n";
@@ -161,7 +160,7 @@ namespace renderer{
         VkApplicationInfo appInfo{};
         appInfo.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
 
-        appInfo.apiVersion = VK_MAKE_API_VERSION(1, 3, 0, 0);
+        appInfo.apiVersion = VK_API_VERSION_1_3;
         appInfo.applicationVersion = version;
         appInfo.engineVersion = VK_MAKE_VERSION(0, 0, 0);
 
@@ -241,11 +240,4 @@ namespace renderer{
         
         return unsupportedExtensionIndexes;
     }
-
-    const std::vector<char*>& i_Instance::GetSupportedOptionalExtensions(){
-        return instance->supportedOptionalExtensions;
-    }
-
-
-
 }

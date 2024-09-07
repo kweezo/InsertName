@@ -35,19 +35,55 @@ namespace renderer{
         }
 
 
-        const Json::Value& extensions = root["extensions"];
+        const Json::Value& requiredExtensions = root["extensions_required"];
 
-        for(const Json::Value& extension : extensions){
+        for(const Json::Value& extension : requiredExtensions){
             const char* buff = extension.asCString();
             this->extensions.push_back(new char[strlen(buff)+1]);
 
             strcpy(this->extensions.back(), buff);
         }
+        
+        
+        std::list<uint32_t> unsupportedExtensionIndexes = CheckExtensionSupport(extensions);
+        if(!unsupportedExtensionIndexes.empty()){
+            std::cerr << "ERROR: Not all required extensions are supported: \n";
+            for(uint32_t i : unsupportedExtensionIndexes){
+                std::cerr << "\t" << extensions[i] << "\n"; 
+            }
+            throw std::runtime_error("Program is terminating");
+        }
+
+
+
+        const Json::Value& optionalExtensions = root["extensions_optional"];
+
+        for(const Json::Value& extension : optionalExtensions){
+            const char* buff = extension.asCString();
+            this->supportedOptionalExtensions.push_back(new char[strlen(buff)+1]);
+
+            strcpy(this->supportedOptionalExtensions.back(), buff);
+        }
+
+        unsupportedExtensionIndexes = CheckExtensionSupport(supportedOptionalExtensions);
+        if(!unsupportedExtensionIndexes.empty()){
+            uint32_t erasedExtCount = 0;
+            std::cout << "INFO: Not all optional extensions are supported: \n";
+            for(uint32_t i : unsupportedExtensionIndexes){
+                std::cout << "\t" << supportedOptionalExtensions[i-erasedExtCount] << "\n"; 
+                supportedOptionalExtensions.erase(supportedOptionalExtensions.begin() + i - erasedExtCount);
+
+                erasedExtCount++;
+            }
+        } 
+
+        extensions.insert(extensions.begin(), supportedOptionalExtensions.begin(), supportedOptionalExtensions.end());
 
         stream.close();
     }
 
     void i_LogicalDevice::CreateDevice(){
+
         VkDeviceCreateInfo createInfo{};
         createInfo.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
         createInfo.pQueueCreateInfos = queueCreateInfos.data();
@@ -130,12 +166,9 @@ namespace renderer{
             //{"VK_KHR_external_memory_win32", VMA_ALLOCATOR_CREATE_KHR_EXTERNAL_MEMORY_WIN32_BIT}//WHY NO WORKY???'
         };
 
-        const std::vector<char*> supportedOptionalExtensions = i_Instance::GetSupportedOptionalExtensions();
-
         VmaVulkanFunctions vulkanFunctions = {};
         vulkanFunctions.vkGetInstanceProcAddr = &vkGetInstanceProcAddr;
         vulkanFunctions.vkGetDeviceProcAddr = &vkGetDeviceProcAddr;
-
         VmaAllocatorCreateFlags flags{};
 
         for(std::pair<std::string, VmaAllocatorCreateFlagBits> extension : optionalExtensions){
@@ -202,6 +235,35 @@ namespace renderer{
         }
 
         return indices;
+    }
+
+    std::list<uint32_t> i_LogicalDevice::CheckExtensionSupport(const std::vector<char*>& extensions){
+        std::list<uint32_t> unsupportedExtensionIndexes;
+
+        uint32_t propertyCount;
+        vkEnumerateDeviceExtensionProperties(i_PhysicalDevice::GetDevice(), nullptr, &propertyCount, nullptr);
+
+        std::vector<VkExtensionProperties> properties(propertyCount);
+        vkEnumerateDeviceExtensionProperties(i_PhysicalDevice::GetDevice(), nullptr, &propertyCount, properties.data());
+
+
+        for(uint32_t i = 0; i < extensions.size(); i++){
+            bool match = false;
+            for(uint32_t y = 0; y < properties.size(); y++){
+                if(strcmp(extensions[i], properties[y].extensionName) == 0){
+                    match = true;
+                    break;
+                }
+            }
+
+            if(match){
+                continue;
+            }
+
+            unsupportedExtensionIndexes.push_back(i);
+        }
+        
+        return unsupportedExtensionIndexes;
     }
 
     i_LogicalDevice::~i_LogicalDevice(){

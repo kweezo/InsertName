@@ -7,7 +7,7 @@
 
 #include <vulkan/vulkan.h>
 
-#define VMA_VULKAN_VERSION 1003000
+#define VMA_STATIC_VULKAN_FUNCTIONS 0
 #include <VulkanMemoryAllocator/vk_mem_alloc.h>
 
 #include <boost/container/flat_map.hpp>
@@ -46,6 +46,8 @@ namespace renderer{
             void CreateDevice();
             void RetrieveQueues();
             void CreateVulkanAllocator();
+            
+            std::list<uint32_t> CheckExtensionSupport(const std::vector<char*>& extensions);
 
             std::vector<i_QueueBatch> queueBatches;
 
@@ -53,6 +55,7 @@ namespace renderer{
             std::list<std::vector<float>> queuePriorities;
 
             std::vector<char*> extensions;
+            std::vector<char*> supportedOptionalExtensions;
 
             VkDevice logicalDevice;
             VmaAllocator vmaAllocator;
