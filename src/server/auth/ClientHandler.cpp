@@ -13,6 +13,7 @@ std::queue<std::string> ClientHandler::sendBuffer;
 std::mutex ClientHandler::sendBufferMutex;
 
 std::atomic<bool> ClientHandler::running(true);
+std::atomic<bool> ClientHandler::shutdown(false);
 
 boost::asio::thread_pool ClientHandler::threadPool(std::thread::hardware_concurrency());
 
@@ -45,7 +46,7 @@ void ClientHandler::Start() {
     std::cout << "Running io_context..." << std::endl;
     for (int i = 0; i < std::thread::hardware_concurrency(); ++i) {
         std::thread([]() {
-            while (running) {
+            while (!shutdown) {
                 io_context.run();
                 io_context.restart();
             }
@@ -53,17 +54,41 @@ void ClientHandler::Start() {
     }
 }
 
+void ClientHandler::InitiateShutdown() {
+    running = false;
+}
+
+void ClientHandler::Shutdown() {
+    std::lock_guard<std::mutex> lock(clientSocketsMutex);
+    shutdown = true;
+
+    for (auto& socket : clientSockets) {
+        boost::system::error_code ec;
+        socket->lowest_layer().shutdown(boost::asio::ip::tcp::socket::shutdown_both, ec);
+        socket->lowest_layer().close(ec);
+    }
+    clientSockets.clear();
+    io_context.stop();
+    std::cout << "Server has been shut down." << std::endl;
+}
+
 void ClientHandler::AcceptConnections() {
+    if (shutdown) return;
+
     #ifdef DEBUG
         std::cout << "Waiting to accept connections..." << std::endl;
     #endif
     auto socket = std::make_shared<boost::asio::ssl::stream<boost::asio::ip::tcp::socket>>(io_context, ssl_context);
     acceptor.async_accept(socket->lowest_layer(), [socket](const boost::system::error_code& error) {
+        if (shutdown) return;
+
         if (!error) {
             #ifdef DEBUG
                 std::cout << "Accepted connection" << std::endl;
             #endif
             socket->async_handshake(boost::asio::ssl::stream_base::server, [socket](const boost::system::error_code& error) {
+                if (shutdown) return;
+
                 if (!error) {
                     std::lock_guard<std::mutex> lock(clientSocketsMutex);
                     clientSockets.push_back(socket);
@@ -95,7 +120,7 @@ void ClientHandler::RecieveData() {
     std::unordered_map<lowest_layer_type*, bool> readingSockets;
     std::unordered_set<lowest_layer_type*> closedSockets;
 
-    while (running) {
+    while (!shutdown) {
         std::lock_guard<std::mutex> lock(clientSocketsMutex);
         for (auto it = clientSockets.begin(); it != clientSockets.end(); ) {
             auto& socket = *it;
@@ -143,12 +168,12 @@ void ClientHandler::RecieveData() {
 
             ++it;
         }
-        std::this_thread::sleep_for(std::chrono::milliseconds(10)); // Add sleep to reduce CPU usage
+        std::this_thread::sleep_for(std::chrono::milliseconds(1)); // Add sleep to reduce CPU usage
     }
 }
 
 void ClientHandler::ProcessData() {
-    while (running) {
+    while (!shutdown) {
         while (true) {
             std::string data;
             {
@@ -170,7 +195,7 @@ void ClientHandler::ProcessData() {
 }
 
 void ClientHandler::SendDataFromBuffer() {
-    while (running) {
+    while (!shutdown) {
         while (true) {
             std::unique_lock<std::mutex> sendLock(sendBufferMutex);
             if (sendBuffer.empty()) {

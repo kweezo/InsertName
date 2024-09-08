@@ -30,7 +30,8 @@ bool ServiceLink::SendDataFromBuffer(int serviceId, const std::string& message) 
 }
 
 void ServiceLink::ProcessSendBuffer() {
-    while (AdminConsole::isRunning) {
+    bool isBufferEmpty = false;
+    while (AdminConsole::isRunning || !isBufferEmpty) {
         bool wasNewMessage = false;
         std::unique_lock<std::mutex> bufferLock(sendBufferMutex);
         for (int i = 0; i < MAX_CONNECTIONS; i++) {
@@ -50,7 +51,10 @@ void ServiceLink::ProcessSendBuffer() {
         }
         if (!wasNewMessage) {
             bufferLock.unlock();
-            std::this_thread::sleep_for(std::chrono::milliseconds(100));
+            std::this_thread::sleep_for(std::chrono::milliseconds(1));
+            bufferLock.lock();
+            isBufferEmpty = sendBuffer[0].empty() && sendBuffer[1].empty() && sendBuffer[2].empty() && sendBuffer[3].empty();
+            bufferLock.unlock();
         }
     }
 }

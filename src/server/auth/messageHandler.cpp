@@ -11,6 +11,12 @@ void handleMessageContent(std::string message) {
     } else if (action == "SETTING_SET_port") {
         settings.port = std::stoi(message);
         allSettingsReceivedArray[1] = true;
+
+    } else if (action == "SHUTTING_DOWN") {
+        ClientHandler::InitiateShutdown();
+
+    } else if (action == "SHUTDOWN") {
+        ClientHandler::Shutdown();
         
     } else {
         std::cerr << "Unknown action: " << action << std::endl;

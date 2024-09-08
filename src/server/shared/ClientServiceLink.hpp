@@ -1,28 +1,29 @@
 #pragma once
 
-#include <iostream>
+#include <mutex>
+#include <atomic>
 #include <string>
+#include <vector>
 #include <thread>
 #include <sstream>
+#include <iostream>
 #include <stdexcept>
-#include <vector>
-#include <mutex>
 #include <functional>
 #ifdef _WIN32
     #include <winsock2.h>
     #include <ws2tcpip.h>
     #pragma comment(lib, "Ws2_32.lib")
 #else
+    #include <unistd.h>
+    #include <arpa/inet.h>
     #include <sys/socket.h>
     #include <netinet/in.h>
-    #include <arpa/inet.h>
-    #include <unistd.h>
 #endif
 
 #include "SettingsManager.hpp"
 
 
-class ClientServiceLink{
+class ClientServiceLink {
 public:
     static void StartClient(const std::string& dir);
     static void DisconnectFromTcpServer();
@@ -31,6 +32,8 @@ public:
 
     template<typename... Args>
     static void SendData(const Args&... args);
+
+    static std::atomic<bool> running;
     
 private:
     static void ProcessMessages();

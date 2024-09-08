@@ -8,6 +8,7 @@ std::vector<std::string> ClientServiceLink::sendBuffer;
 std::mutex ClientServiceLink::sendBufferMutex;
 int ClientServiceLink::serviceId = 0;
 std::function<void(const std::string&)> ClientServiceLink::messageHandler = nullptr;
+std::atomic<bool> ClientServiceLink::running = true;
 
 
 bool ClientServiceLink::ConnectToTcpServer(const std::string& ip, int port) {
@@ -55,18 +56,41 @@ void ClientServiceLink::HandleConnection() {
     const int bufferSize = 1024;
     char buffer[bufferSize];
 
-    while (true) {
+    int sock_;
+    {
+        std::lock_guard<std::mutex> lock(sockMutex);
+        sock_ = sock;
+    }
+
+    #ifdef _WIN32
+        u_long mode = 1;
+        ioctlsocket(sock_, FIONBIO, &mode);
+    #else
+        int flags = fcntl(sock_, F_GETFL, 0);
+        fcntl(sock_, F_SETFL, flags | O_NONBLOCK);
+    #endif
+
+    while (running) {
         memset(buffer, 0, bufferSize);
-        int sock_;
-        {
-            std::lock_guard<std::mutex> lock(sockMutex);
-            sock_ = sock;
-        }
 
         int bytesReceived = recv(sock_, buffer, bufferSize, 0);
 
-        if (bytesReceived <= 0) {
-            std::cerr << "Error receiving message from server\n";
+        if (bytesReceived < 0) {
+            #ifdef _WIN32
+                int error = WSAGetLastError();
+                if (error == WSAEWOULDBLOCK) {
+            #else
+                if (errno == EWOULDBLOCK || errno == EAGAIN) {
+            #endif
+                    if (!running) break;
+                    std::this_thread::sleep_for(std::chrono::milliseconds(1));
+                    continue;
+                } else {
+                    std::cerr << "Error receiving message from server\n";
+                    return;
+                }
+        } else if (bytesReceived == 0) {
+            std::cerr << "Connection closed by server\n";
             return;
         }
 
@@ -76,10 +100,17 @@ void ClientServiceLink::HandleConnection() {
             std::cout << "Received message: " << std::string(buffer, bytesReceived) << std::endl;
         #endif
     }
+
+    #ifdef _WIN32
+        mode = 0;
+        ioctlsocket(sock_, FIONBIO, &mode);
+    #else
+        fcntl(sock_, F_SETFL, flags);
+    #endif
 }
 
 void ClientServiceLink::ProcessSendBuffer() {
-    while (true) {
+    while (running) {
         int sock_;
         {
             std::lock_guard<std::mutex> sockLock(sockMutex);
@@ -131,7 +162,7 @@ void ClientServiceLink::StartClient(const std::string& dir) {
 
     std::cout << "Service link client started\n";
 
-    while (true) {
+    while (running) {
         if (!ConnectToTcpServer(SettingsManager::GetSettings().ip, SettingsManager::GetSettings().port)) {
             std::cerr << "Can not connect to server. Retrying in 5 seconds...\n";
             std::this_thread::sleep_for(std::chrono::seconds(5));
@@ -148,6 +179,7 @@ void ClientServiceLink::StartClient(const std::string& dir) {
     }
 
     messageThread.join();
+    sendThread.join();
 }
 
 void ClientServiceLink::ProcessMessages() {
@@ -161,6 +193,7 @@ void ClientServiceLink::ProcessMessages() {
             HandleMessageContent(msg);
         } else {
             lock.unlock();
+            if (!running) break;
             std::this_thread::sleep_for(std::chrono::milliseconds(100));
         }
     }

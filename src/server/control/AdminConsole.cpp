@@ -632,13 +632,13 @@ void AdminConsole::Stop(double waitTime) {
 
         CmdReport("Stopping server...", 2);
         Log::Print("Server stopped by admin command", 1);
-        
-        isRunning = false;
 
         ServiceLink::SendData(0, "SHUTDOWN");
         ServiceLink::SendData(1, "SHUTDOWN");
         ServiceLink::SendData(2, "SHUTDOWN");
         ServiceLink::SendData(3, "SHUTDOWN");
+        
+        isRunning = false;
 
         AdvancedSettingsManager::SaveSettings();
         Log::Destroy();

@@ -26,6 +26,9 @@ public:
     static void Init(unsigned short port);
     static void Start();
 
+    static void InitiateShutdown();
+    static void Shutdown();
+
     template<typename... Args>
     static void SendData(const Args&... args);
 
@@ -50,6 +53,7 @@ private:
     static std::mutex sendBufferMutex;
 
     static std::atomic<bool> running;
+    static std::atomic<bool> shutdown;
     static const int maxThreads = 1024;
 
     static boost::asio::thread_pool threadPool;

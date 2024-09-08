@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Settings.hpp"
+#include "ClientHandler.hpp"
 #include "common/TypeUtils.hpp"
 #include "shared/ClientServiceLink.hpp"
 
