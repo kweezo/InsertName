@@ -89,6 +89,10 @@ namespace renderer{
         createInfo.pQueueCreateInfos = queueCreateInfos.data();
         createInfo.queueCreateInfoCount = queueCreateInfos.size();
 
+        for(char* str : extensions){
+            std::cerr << str << "\n";
+        }
+
         createInfo.enabledExtensionCount = extensions.size();
         createInfo.ppEnabledExtensionNames = extensions.data();
         
@@ -167,8 +171,8 @@ namespace renderer{
         };
 
         VmaVulkanFunctions vulkanFunctions = {};
-        vulkanFunctions.vkGetInstanceProcAddr = &vkGetInstanceProcAddr;
-        vulkanFunctions.vkGetDeviceProcAddr = &vkGetDeviceProcAddr;
+        vulkanFunctions.vkGetInstanceProcAddr = vkGetInstanceProcAddr;
+        vulkanFunctions.vkGetDeviceProcAddr = vkGetDeviceProcAddr;
         VmaAllocatorCreateFlags flags{};
 
         for(std::pair<std::string, VmaAllocatorCreateFlagBits> extension : optionalExtensions){

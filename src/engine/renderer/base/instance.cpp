@@ -160,11 +160,11 @@ namespace renderer{
         VkApplicationInfo appInfo{};
         appInfo.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
 
-        appInfo.apiVersion = VK_API_VERSION_1_3;
+        appInfo.apiVersion = VK_API_VERSION_1_1;
         appInfo.applicationVersion = version;
         appInfo.engineVersion = VK_MAKE_VERSION(0, 0, 0);
 
-        appInfo.pEngineName = "sugondeznuts";
+        appInfo.pEngineName = "blank";
         appInfo.pApplicationName = appName.c_str();
 
 

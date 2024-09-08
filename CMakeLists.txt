@@ -213,7 +213,7 @@ if(BUILD_ENGINE)
     set(VulkanMemoryAllocator_DIR "${CMAKE_SOURCE_DIR}/external/VulkanMemoryAllocator/")
 
     add_library(VulkanMemoryAllocator INTERFACE)
-    target_include_directories(VulkanMemoryAllocator INTERFACE "${CMAKE_SOURCE_DIR}")
+    target_include_directories(VulkanMemoryAllocator INTERFACE "${CMAKE_SOURCE_DIR}/include")
 
     target_link_libraries(engine PUBLIC VulkanMemoryAllocator)
 
