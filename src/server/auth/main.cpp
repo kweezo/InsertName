@@ -29,7 +29,6 @@ int main() {
 
     connectionThread.join();
 
-    ClientServiceLink::DisconnectFromTcpServer();
-
+    std::cout << "Exiting main" << std::endl;
     return 0;
 }

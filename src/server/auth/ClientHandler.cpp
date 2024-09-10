@@ -73,21 +73,21 @@ void ClientHandler::Shutdown() {
 }
 
 void ClientHandler::AcceptConnections() {
-    if (shutdown) return;
+    if (!running) return;
 
     #ifdef DEBUG
         std::cout << "Waiting to accept connections..." << std::endl;
     #endif
     auto socket = std::make_shared<boost::asio::ssl::stream<boost::asio::ip::tcp::socket>>(io_context, ssl_context);
     acceptor.async_accept(socket->lowest_layer(), [socket](const boost::system::error_code& error) {
-        if (shutdown) return;
+        if (!running) return;
 
         if (!error) {
             #ifdef DEBUG
                 std::cout << "Accepted connection" << std::endl;
             #endif
             socket->async_handshake(boost::asio::ssl::stream_base::server, [socket](const boost::system::error_code& error) {
-                if (shutdown) return;
+                if (!running) return;
 
                 if (!error) {
                     std::lock_guard<std::mutex> lock(clientSocketsMutex);

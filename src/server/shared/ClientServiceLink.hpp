@@ -21,6 +21,7 @@
 #endif
 
 #include "SettingsManager.hpp"
+#include "common/TypeUtils.hpp"
 
 
 class ClientServiceLink {
@@ -44,13 +45,6 @@ private:
 
     static void HandleMessageContent(const std::string& message);
 
-    template<typename T>
-    static void addToStream(std::stringstream& ss, const T& value);
-    template<typename T, typename... Args>
-    static void addToStream(std::stringstream& ss, const T& first, const Args&... args);
-    template<typename... Args>
-    static std::string CreateMessage(const Args&... args);
-
     static int sock;
     static std::mutex sockMutex;
     static std::vector<std::string> messageBuffer;
@@ -65,25 +59,7 @@ private:
 
 template<typename... Args>
 void ClientServiceLink::SendData(const Args&... args) {
-    std::string msg = CreateMessage(serviceId, args...);
+    std::string msg = TypeUtils::stickParams(serviceId, args..., (char)4);
     std::lock_guard<std::mutex> lock(sendBufferMutex);
     sendBuffer.push_back(msg);
-}
-
-template<typename T>
-void ClientServiceLink::addToStream(std::stringstream& ss, const T& value) {
-    ss << value;
-}
-
-template<typename T, typename... Args>
-void ClientServiceLink::addToStream(std::stringstream& ss, const T& first, const Args&... args) {
-    ss << first << static_cast<char>(30);
-    addToStream(ss, args...);
-}
-
-template<typename... Args>
-std::string ClientServiceLink::CreateMessage(const Args&... args) {
-    std::stringstream ss;
-    addToStream(ss, args...);
-    return ss.str();
 }

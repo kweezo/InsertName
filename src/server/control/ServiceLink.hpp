@@ -63,7 +63,7 @@ private:
 
 template<typename... Args>
 void ServiceLink::SendData(int serviceId, const Args&... args) {
-    std::string msg = TypeUtils::stickParams(args...);
+    std::string msg = TypeUtils::stickParams(args..., (char)4);
     std::lock_guard<std::mutex> lock(sendBufferMutex);
     sendBuffer[serviceId].push_back(msg);
 }

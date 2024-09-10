@@ -61,6 +61,7 @@ void ServiceLink::ProcessSendBuffer() {
 
 void ServiceLink::HandleConnection(int socket) {
     char buffer[1024];
+    std::string tempBuffer;
     int serviceId = -1;
     bool validConnection = true;
 
@@ -76,25 +77,32 @@ void ServiceLink::HandleConnection(int socket) {
             break;
         }
 
-        std::string receivedMessage(buffer, bytesReceived);
-        serviceId = stoi(TypeUtils::getFirstParam(receivedMessage));
+        tempBuffer.append(buffer, bytesReceived);
 
-        {
-            std::lock_guard<std::mutex> lock(socketMutex);
-            if (serviceSockets[serviceId] > 0) {
-                validConnection = false;
-                Log::Print("Service " + std::to_string(serviceId) + " already connected", 3);
-                break;
+        size_t pos;
+        while ((pos = tempBuffer.find(static_cast<char>(4))) != std::string::npos) {
+            std::string receivedMessage = tempBuffer.substr(0, pos);
+            tempBuffer.erase(0, pos + 1);
+
+            serviceId = stoi(TypeUtils::getFirstParam(receivedMessage));
+
+            {
+                std::lock_guard<std::mutex> lock(socketMutex);
+                if (serviceSockets[serviceId] > 0) {
+                    validConnection = false;
+                    std::cerr << "Service " + std::to_string(serviceId) + " already connected" << std::endl;
+                    return;
+                }
             }
-        }
 
-        if (receivedMessage == "CONNECT") {
-            receivedMessage += static_cast<char>(30) + std::to_string(socket);
-        }
+            if (receivedMessage == "CONNECT\036") {
+                receivedMessage += std::to_string(socket);
+            }
 
-        {
-            std::lock_guard<std::mutex> bufferLock(bufferMutex);
-            messageBuffer.push_back({serviceId, receivedMessage});
+            {
+                std::lock_guard<std::mutex> bufferLock(bufferMutex);
+                messageBuffer.push_back({serviceId, receivedMessage});
+            }
         }
     }
 
@@ -249,7 +257,7 @@ void ServiceLink::HandleMessageContent(Message msg) {
                                        " password=" + settings.dbpassword;
 
             SendData(serviceId, "SETTING_SET_dbConnString", dbConnString);
-            SendData(serviceId, "SETTING_SET_port", std::to_string(settings.authServicePort));     
+            SendData(serviceId, "SETTING_SET_port", std::to_string(settings.authServicePort));
         }
 
     } else if (action == "DISCONNECT") {

@@ -55,6 +55,7 @@ void ClientServiceLink::DisconnectFromTcpServer() {
 void ClientServiceLink::HandleConnection() {
     const int bufferSize = 1024;
     char buffer[bufferSize];
+    std::string tempBuffer;
 
     int sock_;
     {
@@ -79,9 +80,6 @@ void ClientServiceLink::HandleConnection() {
             #ifdef _WIN32
                 int error = WSAGetLastError();
                 if (error == WSAEWOULDBLOCK) {
-            #else
-                if (errno == EWOULDBLOCK || errno == EAGAIN) {
-            #endif
                     if (!running) break;
                     std::this_thread::sleep_for(std::chrono::milliseconds(1));
                     continue;
@@ -89,16 +87,37 @@ void ClientServiceLink::HandleConnection() {
                     std::cerr << "Error receiving message from server\n";
                     return;
                 }
+            #else
+                if (errno == EWOULDBLOCK || errno == EAGAIN) {
+                    if (!running) break;
+                    std::this_thread::sleep_for(std::chrono::milliseconds(1));
+                    continue;
+                } else {
+                    std::cerr << "Error receiving message from server\n";
+                    return;
+                }
+            #endif
         } else if (bytesReceived == 0) {
             std::cerr << "Connection closed by server\n";
             return;
         }
 
-        std::lock_guard<std::mutex> lock(bufferMutex);
-        messageBuffer.push_back(std::string(buffer, bytesReceived));
-        #ifdef DEBUG
-            std::cout << "Received message: " << std::string(buffer, bytesReceived) << std::endl;
-        #endif
+        tempBuffer.append(buffer, bytesReceived);
+
+        size_t pos;
+        while ((pos = tempBuffer.find(static_cast<char>(4))) != std::string::npos) {
+            std::string receivedMessage = tempBuffer.substr(0, pos);
+            tempBuffer.erase(0, pos + 1);
+
+            {
+                std::lock_guard<std::mutex> lock(bufferMutex);
+                messageBuffer.push_back(receivedMessage);
+            }
+
+            #ifdef DEBUG
+                std::cout << "Received message: " << receivedMessage << std::endl;
+            #endif
+        }
     }
 
     #ifdef _WIN32
@@ -175,7 +194,7 @@ void ClientServiceLink::StartClient(const std::string& dir) {
 
         DisconnectFromTcpServer();
         std::cerr << "Disconnected from serice link server.\n";
-        std::this_thread::sleep_for(std::chrono::seconds(5));
+        if (!running) break;
     }
 
     messageThread.join();

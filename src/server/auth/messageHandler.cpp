@@ -17,6 +17,7 @@ void handleMessageContent(std::string message) {
 
     } else if (action == "SHUTDOWN") {
         ClientHandler::Shutdown();
+        ClientServiceLink::running = false;
         
     } else {
         std::cerr << "Unknown action: " << action << std::endl;

@@ -619,9 +619,9 @@ void AdminConsole::Stop(double waitTime) {
 
     isShuttingDown = true;
 
-    ServiceLink::SendData(0, "SHUTTING_DOWN");
-    ServiceLink::SendData(1, "SHUTTING_DOWN");
-    ServiceLink::SendData(2, "SHUTTING_DOWN");
+    //TODO ServiceLink::SendData(0, "SHUTTING_DOWN");
+    //TODO ServiceLink::SendData(1, "SHUTTING_DOWN");
+    //TODO ServiceLink::SendData(2, "SHUTTING_DOWN");
     ServiceLink::SendData(3, "SHUTTING_DOWN");
 
     ServiceLink::NotifyConnection();
@@ -633,9 +633,9 @@ void AdminConsole::Stop(double waitTime) {
         CmdReport("Stopping server...", 2);
         Log::Print("Server stopped by admin command", 1);
 
-        ServiceLink::SendData(0, "SHUTDOWN");
-        ServiceLink::SendData(1, "SHUTDOWN");
-        ServiceLink::SendData(2, "SHUTDOWN");
+        //TODO ServiceLink::SendData(0, "SHUTDOWN");
+        //TODO ServiceLink::SendData(1, "SHUTDOWN");
+        //TODO ServiceLink::SendData(2, "SHUTDOWN");
         ServiceLink::SendData(3, "SHUTDOWN");
         
         isRunning = false;
