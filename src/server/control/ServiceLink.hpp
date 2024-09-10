@@ -3,24 +3,9 @@
 #include <array>
 #include <mutex>
 #include <vector>
-#include <thread>
-#include <chrono>
-#include <unistd.h>
-#include <string.h>
+#include <string>
 #include <condition_variable>
-#ifdef _WIN32
-	#include <winsock2.h>
-	#include <Ws2tcpip.h>
-	#pragma comment(lib, "Ws2_32.lib")
-#else
-	#include <arpa/inet.h>
-	#include <sys/socket.h>
-	#include <sys/select.h>
-	#include <netinet/in.h>
-#endif
 
-#include "Log.hpp"
-#include "AdminConsole.hpp"
 #include "common/TypeUtils.hpp"
 
 #define MAX_CONNECTIONS 4

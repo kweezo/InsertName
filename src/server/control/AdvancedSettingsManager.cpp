@@ -1,6 +1,11 @@
 #include "AdvancedSettingsManager.hpp"
 
 #include "AdminConsole.hpp"
+#include "Log.hpp"
+
+#include <jsoncpp/json/json.h>
+
+#include <fstream>
 
 std::string AdvancedSettingsManager::file;
 Config AdvancedSettingsManager::config;

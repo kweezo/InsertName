@@ -2,6 +2,9 @@
 
 #include "ServiceLink.hpp"
 
+#include <thread>
+#include <algorithm>
+
 std::atomic<bool> AdminConsole::isShuttingDown;
 std::atomic<bool> AdminConsole::isRunning;
 std::array<std::string, COMMAND_COUNT> AdminConsole::commands;

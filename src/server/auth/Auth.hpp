@@ -2,9 +2,6 @@
 
 #include <string>
 #include <pqxx/pqxx>
-#include <stdexcept>
-
-#include "Settings.hpp"
 
 
 struct UserRegistration {

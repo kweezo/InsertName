@@ -1,5 +1,23 @@
 #include "ServiceLink.hpp"
 
+#include "Log.hpp"
+#include "AdminConsole.hpp"
+
+#ifdef _WIN32
+	#include <winsock2.h>
+	#include <Ws2tcpip.h>
+	#pragma comment(lib, "Ws2_32.lib")
+#else
+	#include <arpa/inet.h>
+	#include <sys/socket.h>
+	#include <sys/select.h>
+	#include <netinet/in.h>
+#endif
+#include <thread>
+#include <chrono>
+#include <iostream>
+#include <unistd.h>
+
 std::mutex ServiceLink::connectionMutex;
 std::condition_variable ServiceLink::connectionCond;
 int ServiceLink::activeConnections = 0;

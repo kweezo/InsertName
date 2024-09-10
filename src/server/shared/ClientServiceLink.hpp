@@ -4,23 +4,8 @@
 #include <atomic>
 #include <string>
 #include <vector>
-#include <thread>
-#include <sstream>
-#include <iostream>
-#include <stdexcept>
 #include <functional>
-#ifdef _WIN32
-    #include <winsock2.h>
-    #include <ws2tcpip.h>
-    #pragma comment(lib, "Ws2_32.lib")
-#else
-    #include <unistd.h>
-    #include <arpa/inet.h>
-    #include <sys/socket.h>
-    #include <netinet/in.h>
-#endif
 
-#include "SettingsManager.hpp"
 #include "common/TypeUtils.hpp"
 
 

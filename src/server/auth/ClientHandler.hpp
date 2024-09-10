@@ -2,23 +2,14 @@
 
 #include <boost/asio.hpp>
 #include <boost/asio/ssl.hpp>
-#include <boost/asio/post.hpp>
 #include <boost/asio/thread_pool.hpp>
 
 #include <queue>
 #include <mutex>
-#include <thread>
 #include <string>
 #include <atomic>
-#include <iostream>
-#include <algorithm>
-#include <filesystem>
-#include <unordered_map>
-#include <unordered_set>
 
-#include "defines.hpp"
 #include "common/TypeUtils.hpp"
-#include "shared/ClientServiceLink.hpp"
 
 
 class ClientHandler {

@@ -1,5 +1,9 @@
 #include "Auth.hpp"
 
+#include "Settings.hpp"
+
+#include <stdexcept>
+
 UserRegistration Auth::userRegistration;
 std::unique_ptr<pqxx::connection> Auth::c;
 

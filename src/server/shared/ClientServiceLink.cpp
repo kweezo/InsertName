@@ -1,5 +1,22 @@
 #include "ClientServiceLink.hpp"
 
+#include "SettingsManager.hpp"
+
+#ifdef _WIN32
+    #include <winsock2.h>
+    #include <ws2tcpip.h>
+    #pragma comment(lib, "Ws2_32.lib")
+#else
+    #include <unistd.h>
+    #include <arpa/inet.h>
+    #include <sys/socket.h>
+    #include <netinet/in.h>
+#endif
+#include <thread>
+#include <sstream>
+#include <iostream>
+#include <stdexcept>
+
 int ClientServiceLink::sock = 0;
 std::mutex ClientServiceLink::sockMutex;
 std::vector<std::string> ClientServiceLink::messageBuffer;

@@ -1,5 +1,17 @@
 #include "ClientHandler.hpp"
 
+#include "defines.hpp"
+#include "shared/ClientServiceLink.hpp"
+
+#include <boost/asio/post.hpp>
+
+#include <thread>
+#include <iostream>
+#include <algorithm>
+#include <filesystem>
+#include <unordered_map>
+#include <unordered_set>
+
 boost::asio::io_context ClientHandler::io_context;
 boost::asio::ssl::context ClientHandler::ssl_context(boost::asio::ssl::context::tlsv13);
 boost::asio::ip::tcp::acceptor ClientHandler::acceptor(io_context);

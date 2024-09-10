@@ -1,10 +1,7 @@
 #pragma once
 
-#include <fstream>
 #include <string>
 #include <mutex>
-
-#include <jsoncpp/json/json.h>
 
 
 struct DefaultSettings {

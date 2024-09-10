@@ -6,6 +6,7 @@
 
 #include <thread>
 #include <chrono>
+#include <iostream>
 
 
 int main() {
@@ -29,6 +30,6 @@ int main() {
 
     connectionThread.join();
 
-    std::cout << "Exiting main" << std::endl;
+    std::cerr << "Exiting main" << std::endl;
     return 0;
 }

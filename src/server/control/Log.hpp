@@ -1,15 +1,10 @@
 #pragma once
 
-#include "AdminConsole.hpp"
-#include "AdvancedSettingsManager.hpp"
-
-#include <ctime>
 #include <string>
-#include <iostream>
-#include <vector>
 #include <mutex>
 
 #include <pqxx/pqxx>
+
 
 struct LogEntry {
     double timestamp;

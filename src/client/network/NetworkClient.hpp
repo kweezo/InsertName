@@ -1,6 +1,5 @@
 #pragma once
 
-#include "clientDefines.hpp"
 #include "common/TypeUtils.hpp"
 
 #include <boost/asio.hpp>
@@ -10,10 +9,6 @@
 #include <queue>
 #include <mutex>
 #include <atomic>
-#include <vector>
-#include <memory>
-#include <fstream>
-#include <sstream>
 #include <iostream>
 
 class NetworkClient {

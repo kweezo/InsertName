@@ -1,5 +1,12 @@
 #include "NetworkClient.hpp"
 
+#include "clientDefines.hpp"
+
+#include <vector>
+#include <memory>
+#include <fstream>
+#include <sstream>
+
 boost::asio::io_context NetworkClient::io_context;
 boost::asio::ssl::context NetworkClient::ssl_context(boost::asio::ssl::context::tlsv13);
 

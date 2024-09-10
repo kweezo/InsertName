@@ -1,5 +1,7 @@
 #include "TypeUtils.hpp"
 
+#include <charconv>
+
 namespace TypeUtils {
 
 bool tryPassDouble(const std::string& s, double& d) {

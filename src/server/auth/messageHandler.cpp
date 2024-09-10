@@ -1,5 +1,12 @@
 #include "messageHandler.hpp"
 
+#include "Settings.hpp"
+#include "ClientHandler.hpp"
+#include "common/TypeUtils.hpp"
+#include "shared/ClientServiceLink.hpp"
+
+#include <iostream>
+
 
 void handleMessageContent(std::string message) {
     std::string action = TypeUtils::getFirstParam(message);

@@ -1,5 +1,9 @@
 #include "SettingsManager.hpp"
 
+#include <jsoncpp/json/json.h>
+
+#include <fstream>
+
 DefaultSettings SettingsManager::settings;
 std::mutex SettingsManager::mutex;
 

@@ -1,5 +1,12 @@
 #include "Log.hpp"
 
+#include "AdminConsole.hpp"
+#include "AdvancedSettingsManager.hpp"
+
+#include <ctime>
+#include <vector>
+#include <iostream>
+
 std::unique_ptr<pqxx::connection> Log::c;
 int Log::logLevel;
 int Log::maxLogBufferSize;

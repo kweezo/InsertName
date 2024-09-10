@@ -4,23 +4,21 @@
 #include "common/TypeUtils.hpp"
 #include "AdvancedSettingsManager.hpp"
 
-#include <array> 
-#include <deque>
-#include <mutex>
-#include <atomic>
-#include <vector>
-#include <thread>
-#include <string>
-#include <algorithm>
-
 #ifdef _WIN32
     #undef MOUSE_MOVED
     #include <curses.h>
 #else
     #include <ncurses.h>
 #endif
+#include <array> 
+#include <deque>
+#include <mutex>
+#include <atomic>
+#include <vector>
+#include <string>
 
 #define COMMAND_COUNT 3
+
 
 class AdminConsole {
 public:
