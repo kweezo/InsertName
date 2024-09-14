@@ -7,8 +7,8 @@
 #include <stdexcept>
 
 std::atomic<std::shared_ptr<pqxx::connection>> Auth::c;
-std::atomic<std::unordered_map<unsigned, UserRegistration>> serRegistrations;
-std::atomic<unsigned> userRegistrationsIndex;
+// std::atomic<std::unordered_map<unsigned, UserRegistration>> serRegistrations;
+// std::atomic<unsigned> userRegistrationsIndex;
 
 
 void Auth::Init() {

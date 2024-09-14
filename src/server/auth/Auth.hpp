@@ -32,15 +32,13 @@ public:
     static std::string CreateReloginToken(int uid);
     static short VerifyReloginToken(int uid, const std::string& token);
 
-    static bool SendLoginToken(int uid);
-
     static int GetUID(const std::string& username);
 
 private:
     static std::atomic<std::shared_ptr<pqxx::connection>> c;
 
-    static std::atomic<std::unordered_map<unsigned, UserRegistration>> userRegistrations;
-    static std::atomic<unsigned> userRegistrationsIndex;
+    // static std::atomic<std::unordered_map<unsigned, UserRegistration>> userRegistrations;
+    // static std::atomic<unsigned> userRegistrationsIndex;
 };
 
 // ----------------------------------------------------------------------------------------

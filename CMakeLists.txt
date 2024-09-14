@@ -9,39 +9,39 @@ include_directories("src/server")
 if(WIN32)
     set(BOOST_LIB_SUFFIX "-mgw13-mt-x64-1_85.a")
 
-    include_directories("lib\\win\\include")
+    include_directories("C:\\lib\\include")
 
-    link_directories(lib\\win\\github_repos\\GLFW\\lib-mingw-w64)
-    link_directories(lib\\win\\github_repos\\VulkanSDK\\1.3.275.0\\Lib)
-    link_directories(lib\\win\\github_repos\\PDCurses-3.9\\wincon)
-    link_directories(lib\\win\\github_repos\\libpqxx-master\\build\\libpqxx\\lib)
-    link_directories(lib\\win\\github_repos\\assimp-master\\build\\Assimp\\lib)
-    link_directories(lib\\win\\github_repos\\jsoncpp-master\\build\\jsoncpp\\lib)
-    link_directories(lib\\win\\github_repos\\enkiTS-master\\build)
+    link_directories(C:\\lib\\github_repos\\GLFW\\lib-mingw-w64)
+    link_directories(C:\\lib\\github_repos\\VulkanSDK\\1.3.275.0\\Lib)
+    link_directories(C:\\lib\\github_repos\\PDCurses-3.9\\wincon)
+    link_directories(C:\\lib\\github_repos\\libpqxx-master\\build\\libpqxx\\lib)
+    link_directories(C:\\lib\\github_repos\\assimp-master\\build\\Assimp\\lib)
+    link_directories(C:\\lib\\github_repos\\jsoncpp-master\\build\\jsoncpp\\lib)
+    link_directories(C:\\lib\\github_repos\\enkiTS-master\\build)
 
     find_library(BOOST_CONTAINER
         NAMES libboost_container${BOOST_LIB_SUFFIX}
-        PATHS lib\\win\\github_repos\\boost_1_85_0\\stage\\lib
+        PATHS C:\\lib\\github_repos\\boost_1_85_0\\stage\\lib
     )
     find_library(BOOST_SYSTEM
         NAMES libboost_system${BOOST_LIB_SUFFIX}
-        PATHS lib\\win\\github_repos\\boost_1_85_0\\stage\\lib
+        PATHS C:\\lib\\github_repos\\boost_1_85_0\\stage\\lib
     )
     find_library(BOOST_THREAD
         NAMES libboost_thread${BOOST_LIB_SUFFIX}
-        PATHS lib\\win\\github_repos\\boost_1_85_0\\stage\\lib
+        PATHS C:\\lib\\github_repos\\boost_1_85_0\\stage\\lib
     )
     find_library(SSL_LIBRARY
         NAMES libssl.a
-        PATHS lib\\win\\github_repos\\c\\lib
+        PATHS C:\\lib\\github_repos\\c\\lib
     )
     find_library(CRYPTO_LIBRARY
         NAMES libcrypto.a
-        PATHS lib\\win\\github_repos\\c\\lib
+        PATHS C:\\lib\\github_repos\\c\\lib
     )
     find_library(PQ_LIBRARY
         NAMES libpq.a
-        PATHS lib\\win\\github_repos\\c\\lib
+        PATHS C:\\lib\\github_repos\\c\\lib
     )
 endif()
 
@@ -60,7 +60,9 @@ option(BUILD_SERVER_WORLD "Build the server world executable" OFF)
 option(BUILD_SERVER_CHAT "Build the server chat executable" OFF)
 option(BUILD_SERVER_VOICE "Build the server voice executable" OFF)
 option(BUILD_SERVER_CONTROL "Build the server control executable" OFF)
+option(BUILD_SERVER_SHARED "Build the server shared library" OFF)
 
+option(BUILD_COMMON "Build the common library" OFF)
 option(BUILD_CLIENT "Build the client executable" OFF)
 option(BUILD_INSTALLER "Build the installer executable" OFF)
 option(BUILD_ENGINE "Build the engine library" OFF)
@@ -76,6 +78,7 @@ if(BUILD_SERVER)
     set(BUILD_SERVER_CHAT ON)
     set(BUILD_SERVER_VOICE ON)
     set(BUILD_SERVER_CONTROL ON)
+    set(BUILD_SERVER_SHARED ON)
 endif()
 
 if(DEBUG)
@@ -99,7 +102,24 @@ if(BUILD_INSTALLER)
     add_executable(installer ${installersrc} src/installer/main.cpp)
 endif()
 
-if(BUILD_SERVER_CONTROL OR BUILD_SERVER_AUTH OR BUILD_SERVER_WORLD OR BUILD_SERVER_CHAT OR BUILD_SERVER_VOICE) # Server shared library
+if(BUILD_COMMON)
+    file(GLOB commonsrc src/common/*.cpp)
+    add_library(common SHARED ${commonsrc})
+
+    if(WIN32)
+        target_link_libraries(common PUBLIC
+            ${SSL_LIBRARY}
+            ${CRYPTO_LIBRARY}
+        )
+    else()
+        target_link_libraries(common PUBLIC
+            ssl
+            crypto
+        )
+    endif()
+endif()
+
+if(BUILD_SERVER_SHARED)
     file(GLOB serversharedsrc src/server/shared/*.cpp src/common/*.cpp)
     add_library(servershared SHARED ${serversharedsrc})
 
@@ -107,10 +127,12 @@ if(BUILD_SERVER_CONTROL OR BUILD_SERVER_AUTH OR BUILD_SERVER_WORLD OR BUILD_SERV
         target_link_libraries(servershared PUBLIC
             jsoncpp
             ws2_32
+            common
         )
     else()
         target_link_libraries(servershared PUBLIC
             jsoncpp
+            common
         )
     endif()
 endif()
@@ -125,6 +147,7 @@ if(BUILD_SERVER_CONTROL)
             pqxx
             ${PQ_LIBRARY}
             -l:pdcurses.a
+            common
         )
     else()
         target_link_libraries(servercontrol PUBLIC
@@ -132,6 +155,7 @@ if(BUILD_SERVER_CONTROL)
             pqxx
             ncurses
             SDL2
+            common
         )
     endif()
 endif()
@@ -150,6 +174,7 @@ if(BUILD_SERVER_AUTH)
             pqxx
             ${PQ_LIBRARY}
             servershared
+            common
         )
     else()
         target_link_libraries(serverauth PUBLIC
@@ -159,6 +184,7 @@ if(BUILD_SERVER_AUTH)
             boost_thread
             ssl
             crypto
+            common
         )
     endif()
 endif()
@@ -208,28 +234,6 @@ if(BUILD_SERVER_VOICE)
     endif()
 endif()
 
-# if(BUILD_SERVER)
-#     file(GLOB serversrc src/server/.old/*.cpp)
-#     add_executable(server ${serversrc} src/server/.old/main.cpp)
-
-#     if(WIN32)
-#         target_link_libraries(server PUBLIC
-#             pqxx
-#             ${PQ_LIBRARY}
-#             ws2_32
-#             ${SSL_LIBRARY}
-#             ${CRYPTO_LIBRARY}
-#             -l:pdcurses.a
-#         )
-#     else()
-#         target_link_libraries(server PUBLIC pqxx)
-#         target_link_libraries(server PUBLIC ssl)
-#         target_link_libraries(server PUBLIC crypto)
-#         target_link_libraries(server PUBLIC SDL2)
-#         target_link_libraries(server PUBLIC ncurses)
-#     endif()
-# endif()
-
 if(BUILD_ENGINE)
     file(GLOB enginesrc src/engine/*.cpp src/engine/renderer/base/*.cpp)
     add_library(engine SHARED ${enginesrc})
@@ -269,6 +273,7 @@ if(BUILD_CLIENT)
             ${SSL_LIBRARY}
             ${CRYPTO_LIBRARY}
             # engine
+            common
         )
     else()
         target_link_libraries(client PUBLIC ssl)
@@ -277,5 +282,6 @@ if(BUILD_CLIENT)
         target_link_libraries(client PUBLIC jsoncpp)
         target_link_libraries(client PUBLIC boost_system)
         target_link_libraries(client PUBLIC boost_thread)
+        target_link_libraries(client PUBLIC common)
     endif()
 endif()
