@@ -21,8 +21,6 @@ public:
     static void SendLogsToDatabase();
 
 private:
-    static double GetCurrentTimestamp();
-
     static std::unique_ptr<pqxx::connection> c;
     static int logLevel;
     static int maxLogBufferSize;

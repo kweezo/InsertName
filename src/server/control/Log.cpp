@@ -1,6 +1,7 @@
 #include "Log.hpp"
 
 #include "AdminConsole.hpp"
+#include "common/TypeUtils.hpp"
 #include "AdvancedSettingsManager.hpp"
 
 #include <ctime>
@@ -49,7 +50,7 @@ void Log::Destroy() {
 void Log::Print(const std::string& msg, int alertLevel) {
     std::lock_guard<std::mutex> lock(mutex);
     // Get current time as custom timestamp
-    double now = GetCurrentTimestamp();
+    double now = TypeUtils::getCurrentTimestamp();
 
     if (alertLevel > 3-logLevel) {
         int colorPair = alertLevel+1;
@@ -86,17 +87,4 @@ void Log::SendLogsToDatabase() {
 
     // Clear the buffer
     logsBuffer.clear();
-}
-
-double Log::GetCurrentTimestamp() {
-    using namespace std::chrono;
-    auto now = system_clock::now();
-    auto now_duration = now.time_since_epoch();
-    auto now_seconds = duration_cast<seconds>(now_duration).count();
-    auto now_microseconds = duration_cast<microseconds>(now_duration).count() % 1000000;
-
-    int days_since_epoch = now_seconds / 86400;
-    double fractional_day = (now_seconds % 86400 * 1000000 + now_microseconds) / (86400.0 * 1000000);
-
-    return days_since_epoch + fractional_day;
 }
