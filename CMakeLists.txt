@@ -169,6 +169,7 @@ if(BUILD_SERVER_AUTH)
             mswsock
             ${BOOST_SYSTEM}
             ${BOOST_THREAD}
+            ${BOOST_CONTAINER}
             ${SSL_LIBRARY}
             ${CRYPTO_LIBRARY}
             pqxx
@@ -182,6 +183,7 @@ if(BUILD_SERVER_AUTH)
             servershared
             boost_system
             boost_thread
+            boost_container
             ssl
             crypto
             common

@@ -55,6 +55,7 @@ void AdminConsole::InitColors() {
     init_pair(2, COLOR_BLUE, COLOR_BLACK);
     init_pair(3, COLOR_YELLOW, COLOR_BLACK);
     init_pair(4, COLOR_RED, COLOR_BLACK);
+    init_pair(5, COLOR_CYAN, COLOR_RED);
 }
 
 void AdminConsole::InitWindows() {
@@ -568,8 +569,8 @@ void AdminConsole::ProcessLine(const std::string& line) {
             CmdReport("Port must be greater than 0 and smaller than 65536", 4);
         } else if ((index == 0 || index == 3 || index == 10) && value < 0) {
             CmdReport("This value must be greater or equal to 0", 4);
-        } else if (index == 2 && (value < 0 || value > 4)) {
-            CmdReport("Log level must be between 0 and 4", 4);
+        } else if (index == 2 && (value < 0 || value > 5)) {
+            CmdReport("Log level must be between 0 and 5", 4);
         } else {
             AdvancedSettingsManager::SetSetting(index, value);
             CmdReport("Setting '" + commands[1] + "' is set to: '" + std::to_string(value) + '\'', 2);

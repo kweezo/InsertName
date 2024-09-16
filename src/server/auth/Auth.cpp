@@ -7,11 +7,14 @@
 #include <stdexcept>
 
 std::atomic<std::shared_ptr<pqxx::connection>> Auth::c;
+std::mutex Auth::mainMutex;
 // std::atomic<std::unordered_map<unsigned, UserRegistration>> serRegistrations;
 // std::atomic<unsigned> userRegistrationsIndex;
 
 
 void Auth::Init() {
+    std::lock_guard<std::mutex> lock(mainMutex);
+
     std::string connString = settings.dbConnString;
     c = std::make_unique<pqxx::connection>(settings.dbConnString);
     if (!c.load()->is_open()) {
@@ -35,6 +38,8 @@ void Auth::Init() {
 }
 
 short Auth::RegisterUser(const std::string& username, const std::string& password, const std::string& email) {
+    std::lock_guard<std::mutex> lock(mainMutex);
+
     try {
         auto conn = c.load();
         if (!conn) {
@@ -141,7 +146,7 @@ short Auth::VerifyPassword(int uid, const std::string& password) {
     }
 }
 
-bool Auth::VerifyEmail(const std::string& email) {
+short Auth::VerifyEmail(const std::string& email) {
     //TODO Implement email verification logic
     return true;
 }
@@ -195,9 +200,29 @@ bool Auth::CheckPassword(const std::string& password) {
     }
 }
 
-bool Auth::CheckEmail(const std::string& email) {
-    //TODO Implement email check logic
-    return true;
+short Auth::CheckEmail(const std::string& email) {
+    try {
+        auto conn = c.load();
+        if (!conn) {
+            std::cerr << "Database connection is not open" << std::endl;
+            return -10;
+        }
+
+        pqxx::work txn(*conn);
+        pqxx::result result = txn.exec_params(
+            "SELECT COUNT(*) FROM users WHERE email = $1",
+            email
+        );
+
+        if (result[0][0].as<int>() > 0) {
+            return 1; // Email exists
+        } else {
+            return 0; // Email does not exist
+        }
+    } catch (const std::exception& e) {
+        std::cerr << "Error checking email: " << e.what() << std::endl;
+        return -9;
+    }
 }
 
 std::string Auth::CreateReloginToken(int uid) {

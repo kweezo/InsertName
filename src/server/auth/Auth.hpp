@@ -2,6 +2,7 @@
 
 #include <pqxx/pqxx>
 
+#include <mutex>
 #include <string>
 #include <atomic>
 #include <unordered_map>
@@ -24,10 +25,11 @@ public:
     static short ChangePassword(int uid, const std::string& oldPassword, const std::string& newPassword);
 
     static short VerifyPassword(int uid, const std::string& password);
-    static bool VerifyEmail(const std::string& email);
+    static short VerifyEmail(const std::string& email);
+
     static short CheckUsername(const std::string& username);
     static bool CheckPassword(const std::string& password);
-    static bool CheckEmail(const std::string& email);
+    static short CheckEmail(const std::string& email);
 
     static std::string CreateReloginToken(int uid);
     static short VerifyReloginToken(int uid, const std::string& token);
@@ -36,6 +38,8 @@ public:
 
 private:
     static std::atomic<std::shared_ptr<pqxx::connection>> c;
+
+    static std::mutex mainMutex;
 
     // static std::atomic<std::unordered_map<unsigned, UserRegistration>> userRegistrations;
     // static std::atomic<unsigned> userRegistrationsIndex;

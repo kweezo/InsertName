@@ -52,7 +52,7 @@ void Log::Print(const std::string& msg, int alertLevel) {
     // Get current time as custom timestamp
     double now = TypeUtils::getCurrentTimestamp();
 
-    if (alertLevel > 3-logLevel) {
+    if (alertLevel > 4-logLevel) {
         int colorPair = alertLevel+1;
     
         // Format the timestamp

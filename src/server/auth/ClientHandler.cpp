@@ -1,5 +1,6 @@
 #include "ClientHandler.hpp"
 
+#include "Auth.hpp"
 #include "defines.hpp"
 #include "shared/ClientServiceLink.hpp"
 
@@ -21,13 +22,23 @@ std::mutex ClientHandler::clientSocketsMutex;
 std::queue<std::string> ClientHandler::recieveBuffer;
 std::mutex ClientHandler::recieveBufferMutex;
 
-std::queue<std::string> ClientHandler::sendBuffer;
+std::queue<TypeUtils::Message> ClientHandler::sendBuffer;
 std::mutex ClientHandler::sendBufferMutex;
+
+std::unordered_map<long, std::shared_ptr<boost::asio::ssl::stream<boost::asio::ip::tcp::socket>>> ClientHandler::uidToSocketMap;
+std::unordered_map<std::shared_ptr<boost::asio::ssl::stream<boost::asio::ip::tcp::socket>>, long> ClientHandler::socketToUIDMap;
+std::mutex ClientHandler::clientMapsMutex;
+
+boost::container::flat_map<
+ std::shared_ptr<boost::asio::ssl::stream<boost::asio::ip::tcp::socket>>,
+  std::chrono::time_point<std::chrono::steady_clock>> ClientHandler::unverifiedSockets;
+std::mutex ClientHandler::unverifiedSocketsMutex;
 
 std::atomic<bool> ClientHandler::running(true);
 std::atomic<bool> ClientHandler::shutdown(false);
 
 boost::asio::thread_pool ClientHandler::threadPool(std::thread::hardware_concurrency());
+
 
 void ClientHandler::Init(unsigned short port) {
     const std::string certFile = DIR + "auth/network/server.crt";
@@ -45,8 +56,6 @@ void ClientHandler::Init(unsigned short port) {
     acceptor.set_option(boost::asio::ip::tcp::acceptor::reuse_address(true));
     acceptor.bind(endpoint);
     acceptor.listen();
-
-
 }
 
 void ClientHandler::Start() {
@@ -82,6 +91,7 @@ void ClientHandler::Shutdown() {
     clientSockets.clear();
     io_context.stop();
     std::cout << "Server has been shut down." << std::endl;
+    ClientServiceLink::SendData("LOG", 2, "Server has been shut down.");
 }
 
 void ClientHandler::AcceptConnections() {
@@ -95,29 +105,28 @@ void ClientHandler::AcceptConnections() {
         if (!running) return;
 
         if (!error) {
-            #ifdef DEBUG
-                std::cout << "Accepted connection" << std::endl;
-            #endif
             socket->async_handshake(boost::asio::ssl::stream_base::server, [socket](const boost::system::error_code& error) {
                 if (!running) return;
 
                 if (!error) {
+                    {
+                        std::lock_guard<std::mutex> lock(unverifiedSocketsMutex);
+                        unverifiedSockets[socket] = std::chrono::steady_clock::now();
+                    }
                     std::lock_guard<std::mutex> lock(clientSocketsMutex);
                     clientSockets.push_back(socket);
                     #ifdef DEBUG
-                        std::cout << "Handshake successful" << std::endl;
+                        std::cout << "Accepted connection" << std::endl;
                     #endif
                 } else {
                     std::cerr << "Handshake failed: " << error.message() << std::endl;
+                    ClientServiceLink::SendData("LOG", 4, "Handshake failed: " + error.message());
                 }
-                // Continue accepting new connections regardless of handshake result
-                #ifdef DEBUG
-                    std::cout << "Ready to accept new connections after handshake" << std::endl;
-                #endif
                 AcceptConnections();
             });
         } else {
             std::cerr << "Accept failed: " << error.message() << std::endl;
+            ClientServiceLink::SendData("LOG", 4, "Accept failed: " + error.message());
             // Continue accepting new connections
             #ifdef DEBUG
                 std::cout << "Ready to accept new connections after accept failure" << std::endl;
@@ -156,8 +165,28 @@ void ClientHandler::RecieveData() {
                 if (!socket) return;
 
                 if (!error) {
+                    std::string data(buffer->data(), bytes_transferred);
+                    long verified = 0;
+                    {
+                        std::lock_guard<std::mutex> lock(unverifiedSocketsMutex);
+                        if (unverifiedSockets.find(socket) == unverifiedSockets.end()) {
+                            verified = 1;
+                        }
+                    }
+                    if (verified == 1) {
+                        verified = GetUIDBySocket(socket);
+                    } else {
+                        std::string dataCopy = data;
+                        std::string action = TypeUtils::getFirstParam(dataCopy);
+                        if (action != "REGISTER" || 0) { // * <------------------------------ unverified actions
+                            Disconnect(socket);
+                            return;
+                        }
+                    }
+                    data = TypeUtils::stickParams(verified, data);
+
                     std::lock_guard<std::mutex> lock(recieveBufferMutex);
-                    recieveBuffer.push(std::string(buffer->data(), bytes_transferred));
+                    recieveBuffer.push(data);
                     #ifdef DEBUG
                         std::cout << "Received data from client: " << std::string(buffer->data(), bytes_transferred) << "\n";
                     #endif
@@ -167,6 +196,7 @@ void ClientHandler::RecieveData() {
                 std::lock_guard<std::mutex> lock(clientSocketsMutex);
                 if (closedSockets.find(&socket->lowest_layer()) == closedSockets.end()) {
                     std::cerr << "Receive failed: " << error.message() << std::endl;
+                    ClientServiceLink::SendData("LOG", 4, "Receive failed: " + error.message());
                     closedSockets.insert(&socket->lowest_layer());
                 }
 
@@ -217,19 +247,20 @@ void ClientHandler::SendDataFromBuffer() {
             }
 
             while (!sendBuffer.empty()) {
-                std::string data = sendBuffer.front();
+                TypeUtils::Message msg = sendBuffer.front();
+                std::string data = msg.content;
+                long uid = msg.uid;
                 sendBuffer.pop();
                 sendLock.unlock();
 
-                std::lock_guard<std::mutex> lock(clientSocketsMutex);
-                for (auto& socket : clientSockets) {
-                    if (socket && socket->lowest_layer().is_open()) {
-                        boost::asio::async_write(*socket, boost::asio::buffer(data), [](const boost::system::error_code& error, std::size_t) {
-                            if (error) {
-                                std::cerr << "Error sending data: " << error.message() << std::endl;
-                            }
-                        });
-                    }
+                std::shared_ptr<boost::asio::ssl::stream<boost::asio::ip::tcp::socket>> socket = GetSocketByUID(uid);
+                if (socket && socket->lowest_layer().is_open()) {
+                    boost::asio::async_write(*socket, boost::asio::buffer(data), [](const boost::system::error_code& error, std::size_t) {
+                        if (error) {
+                            std::cerr << "Error sending data: " << error.message() << std::endl;
+                            ClientServiceLink::SendData("LOG", 4, "Error sending data: " + error.message());
+                        }
+                    });
                 }
 
                 sendLock.lock();
@@ -238,6 +269,86 @@ void ClientHandler::SendDataFromBuffer() {
     }
 }
 
+void ClientHandler::Disconnect(std::shared_ptr<boost::asio::ssl::stream<boost::asio::ip::tcp::socket>> socket) {
+    if (!socket) return;
+
+    boost::system::error_code ec;
+    socket->lowest_layer().shutdown(boost::asio::ip::tcp::socket::shutdown_both, ec);
+    socket->lowest_layer().close(ec);
+
+    {
+        std::lock_guard<std::mutex> lock(clientSocketsMutex);
+        auto it = std::find(clientSockets.begin(), clientSockets.end(), socket);
+        if (it != clientSockets.end()) {
+            clientSockets.erase(it);
+        }
+    }
+
+
+    {
+        std::lock_guard<std::mutex> lock(clientMapsMutex);
+        auto uidIt = std::find_if(uidToSocketMap.begin(), uidToSocketMap.end(),
+                                  [&socket](const auto& pair) { return pair.second == socket; });
+        if (uidIt != uidToSocketMap.end()) {
+            socketToUIDMap.erase(socket);
+            uidToSocketMap.erase(uidIt);
+        }
+    }
+
+    {
+        std::lock_guard<std::mutex> lock(unverifiedSocketsMutex);
+        unverifiedSockets.erase(socket);
+    }
+
+    #ifdef DEBUG
+        std::cout << "Disconnected client" << std::endl;
+    #endif
+}
+
+void ClientHandler::AddClient(long uid, std::shared_ptr<boost::asio::ssl::stream<boost::asio::ip::tcp::socket>> socket) {
+    std::lock_guard<std::mutex> lock(clientMapsMutex);
+    uidToSocketMap[uid] = socket;
+    socketToUIDMap[socket] = uid;
+}
+
+void ClientHandler::RemoveClient(long uid) {
+    std::lock_guard<std::mutex> lock(clientMapsMutex);
+    auto socket = uidToSocketMap[uid];
+    uidToSocketMap.erase(uid);
+    socketToUIDMap.erase(socket);
+}
+
+std::shared_ptr<boost::asio::ssl::stream<boost::asio::ip::tcp::socket>> ClientHandler::GetSocketByUID(long uid) {
+    std::lock_guard<std::mutex> lock(clientMapsMutex);
+    return uidToSocketMap[uid];
+}
+
+long ClientHandler::GetUIDBySocket(std::shared_ptr<boost::asio::ssl::stream<boost::asio::ip::tcp::socket>> socket) {
+    std::lock_guard<std::mutex> lock(clientMapsMutex);
+    return socketToUIDMap[socket];
+}
+
 void ClientHandler::ProcessDataContent(std::string data) {
-    
+    long uid = stol(TypeUtils::getFirstParam(data));
+
+    std::string action = TypeUtils::getFirstParam(data);
+    if (action.empty()) {
+        Disconnect(GetSocketByUID(uid));
+        return;
+    }
+
+    if (uid == 0) {
+        if (action == "REGISTER") {
+            std::string username = TypeUtils::getFirstParam(data);
+            std::string password = TypeUtils::getFirstParam(data);
+            std::string email = TypeUtils::getFirstParam(data);
+
+            short err;
+            if (err = Auth::CheckUsername(username), err != 0) {
+                ClientServiceLink::SendData("REGISTER", "USERNAME_EXISTS");
+                return;
+            }
+        }
+        return;
+    }
 }

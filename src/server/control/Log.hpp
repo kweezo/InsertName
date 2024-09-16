@@ -29,3 +29,11 @@ private:
     static std::mutex mutex;
     static std::mutex dbMutex;
 };
+
+/* Alert levels:
+ * 0: Useless
+ * 1: Info
+ * 2: Warning
+ * 3: Error
+ * 4: Critical
+*/

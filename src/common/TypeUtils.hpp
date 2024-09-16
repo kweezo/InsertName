@@ -6,6 +6,11 @@
 
 namespace TypeUtils {
 
+struct Message {
+    long uid;
+    std::string content;
+};
+
 double getCurrentTimestamp();
 
 std::string generateSalt();
