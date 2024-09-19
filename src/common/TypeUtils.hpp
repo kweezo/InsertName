@@ -1,13 +1,17 @@
 #pragma once
 
+#include <boost/asio.hpp>
+#include <boost/asio/ssl.hpp>
+
 #include <string>
+#include <cctype>
 #include <sstream>
 
 
 namespace TypeUtils {
 
 struct Message {
-    long uid;
+    std::shared_ptr<boost::asio::ssl::stream<boost::asio::ip::tcp::socket>> socket;
     std::string content;
 };
 
@@ -18,6 +22,8 @@ std::string hashString(const std::string& str, const std::string& salt);
 
 bool tryPassDouble(const std::string& s, double& d);
 bool tryPassInt(const std::string& s, int& i);
+
+bool isValidString(const std::string& s);
 
 std::string getFirstParam(std::string& message);
 

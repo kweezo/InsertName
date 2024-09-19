@@ -14,6 +14,15 @@
 #include <atomic>
 #include <unordered_map>
 
+#define SOCKET std::shared_ptr<boost::asio::ssl::stream<boost::asio::ip::tcp::socket>>
+
+struct UserPreregister {
+    std::string username;
+    std::string password;
+    std::string email;
+    short emailCode;
+    std::chrono::time_point<std::chrono::steady_clock> time;
+};
 
 class ClientHandler {
 public:
@@ -24,14 +33,12 @@ public:
     static void Shutdown();
 
     template<typename... Args>
-    static void SendData(long uid, const Args&... args);
+    static void SendData(SOCKET socket, const Args&... args);
 
-    static void AddClient(long uid, std::shared_ptr<boost::asio::ssl::stream<boost::asio::ip::tcp::socket>> socket);
-    static void RemoveClient(long uid);
-    static std::shared_ptr<boost::asio::ssl::stream<boost::asio::ip::tcp::socket>> GetSocketByUID(long uid);
-    static long GetUIDBySocket(std::shared_ptr<boost::asio::ssl::stream<boost::asio::ip::tcp::socket>> socket);
+    static SOCKET GetSocketByUID(long uid);
+    static long GetUIDBySocket(SOCKET socket);
 
-    static void Disconnect(std::shared_ptr<boost::asio::ssl::stream<boost::asio::ip::tcp::socket>> socket);
+    static void Disconnect(SOCKET socket);
 
 private:
     static void AcceptConnections();
@@ -39,12 +46,16 @@ private:
     static void ProcessData();
     static void SendDataFromBuffer();
 
+    static void AddClient(long uid, SOCKET socket);
+    static void RemoveClient(long uid);
+    static void CheckUnverifiedSockets();
+
     static void ProcessDataContent(std::string data);
 
     static boost::asio::io_context io_context;
     static boost::asio::ssl::context ssl_context;
     static boost::asio::ip::tcp::acceptor acceptor;
-    static std::vector<std::shared_ptr<boost::asio::ssl::stream<boost::asio::ip::tcp::socket>>> clientSockets;
+    static std::vector<SOCKET> clientSockets;
     static std::mutex clientSocketsMutex;
 
     static std::queue<std::string> recieveBuffer;
@@ -53,14 +64,20 @@ private:
     static std::queue<TypeUtils::Message> sendBuffer;
     static std::mutex sendBufferMutex;
 
-    static std::unordered_map<long, std::shared_ptr<boost::asio::ssl::stream<boost::asio::ip::tcp::socket>>> uidToSocketMap;
-    static std::unordered_map<std::shared_ptr<boost::asio::ssl::stream<boost::asio::ip::tcp::socket>>, long> socketToUIDMap;
+    static std::unordered_map<long, SOCKET> uidToSocketMap;
+    static std::unordered_map<SOCKET, long> socketToUIDMap;
     static std::mutex clientMapsMutex;
 
-    static boost::container::flat_map<
-     std::shared_ptr<boost::asio::ssl::stream<boost::asio::ip::tcp::socket>>,
-      std::chrono::time_point<std::chrono::steady_clock>> unverifiedSockets;
+    static boost::container::flat_map<SOCKET, std::chrono::time_point<std::chrono::steady_clock>> unverifiedSockets;
     static std::mutex unverifiedSocketsMutex;
+
+    static boost::container::flat_map<unsigned short, SOCKET> unverifiedSocketsIDs;
+    static std::mutex unverifiedSocketsIDsMutex;
+    static unsigned short unverifiedSocketsIDsCounter;
+
+    static boost::container::flat_map<unsigned short, UserPreregister> userPreregister;
+    static unsigned short userPreregisterCounter;
+    static std::mutex userPreregisterMutex;
 
     static std::atomic<bool> running;
     static std::atomic<bool> shutdown;
@@ -72,8 +89,8 @@ private:
 // ---------------------------- Template functions ---------------------------- //
 
 template<typename... Args>
-void ClientHandler::SendData(long uid, const Args&... args) {
+void ClientHandler::SendData(SOCKET socket, const Args&... args) {
     std::string msg = TypeUtils::stickParams(args...);
     std::lock_guard<std::mutex> sendLock(sendBufferMutex);
-    sendBuffer.push({uid, msg});
+    sendBuffer.push({socket, msg});
 }

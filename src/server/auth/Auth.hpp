@@ -8,12 +8,6 @@
 #include <unordered_map>
 
 
-struct UserRegistration {
-    std::string username = "";
-    std::string password = "";
-    std::string email = "";
-};
-
 class Auth {
 public:
     static void Init();
@@ -40,16 +34,13 @@ private:
     static std::atomic<std::shared_ptr<pqxx::connection>> c;
 
     static std::mutex mainMutex;
-
-    // static std::atomic<std::unordered_map<unsigned, UserRegistration>> userRegistrations;
-    // static std::atomic<unsigned> userRegistrationsIndex;
 };
 
 // ----------------------------------------------------------------------------------------
 
 /* Error codes:
-    * 1: No error
-    * 0: Wrong password
+    * 1: No error / User exists / Email exists
+    * 0: Wrong password / Username does not exist / Email does not exist
     * -1: User not found
     * -9: Catch-all error
     * -10: Database connection is not open

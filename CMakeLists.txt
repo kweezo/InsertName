@@ -110,6 +110,7 @@ if(BUILD_COMMON)
         target_link_libraries(common PUBLIC
             ${SSL_LIBRARY}
             ${CRYPTO_LIBRARY}
+            ws2_32
         )
     else()
         target_link_libraries(common PUBLIC

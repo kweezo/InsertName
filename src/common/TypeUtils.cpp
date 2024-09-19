@@ -68,6 +68,15 @@ bool tryPassInt(const std::string& s, int& i) {
     return ec == std::errc() && ptr == s.data() + s.size();
 }
 
+bool isValidString(const std::string& str) {
+    for (char c : str) {
+        if (!std::isprint(static_cast<unsigned char>(c))) {
+            return false;
+        }
+    }
+    return true;
+}
+
 std::string getFirstParam(std::string& message) {
     size_t pos = message.find(static_cast<char>(30));
     

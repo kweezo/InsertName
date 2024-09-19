@@ -8,8 +8,6 @@
 
 std::atomic<std::shared_ptr<pqxx::connection>> Auth::c;
 std::mutex Auth::mainMutex;
-// std::atomic<std::unordered_map<unsigned, UserRegistration>> serRegistrations;
-// std::atomic<unsigned> userRegistrationsIndex;
 
 
 void Auth::Init() {
