@@ -20,8 +20,9 @@ struct UserPreregister {
     std::string username;
     std::string password;
     std::string email;
-    short emailCode;
+    unsigned emailCode;
     std::chrono::time_point<std::chrono::steady_clock> time;
+    unsigned short attempts;
 };
 
 class ClientHandler {
@@ -34,6 +35,8 @@ public:
 
     template<typename... Args>
     static void SendData(SOCKET socket, const Args&... args);
+    
+    static short SendEmail(std::string email, std::string subject, std::string content);
 
     static SOCKET GetSocketByUID(long uid);
     static long GetUIDBySocket(SOCKET socket);
@@ -84,6 +87,8 @@ private:
     static const int maxThreads = 1024;
 
     static boost::asio::thread_pool threadPool;
+
+    static unsigned short emailVerificationsAttempts;
 };
 
 // ---------------------------- Template functions ---------------------------- //

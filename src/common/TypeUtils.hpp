@@ -22,6 +22,7 @@ std::string hashString(const std::string& str, const std::string& salt);
 
 bool tryPassDouble(const std::string& s, double& d);
 bool tryPassInt(const std::string& s, int& i);
+bool tryPassUInt(const std::string& s, unsigned int& i);
 
 bool isValidString(const std::string& s);
 

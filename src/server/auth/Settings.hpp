@@ -2,11 +2,12 @@
 
 #include <string>
 
-#define SETTINGS_NUM 2
+#define SETTINGS_NUM 3
 
 struct Settings {
     std::string dbConnString;
     unsigned short port;
+    unsigned short emailVerificationsAttempts;
 };
 
 

@@ -2,6 +2,7 @@
 
 #include "Auth.hpp"
 #include "defines.hpp"
+#include "Settings.hpp"
 #include "shared/ClientServiceLink.hpp"
 
 #include <boost/asio/post.hpp>
@@ -44,6 +45,8 @@ std::atomic<bool> ClientHandler::running(true);
 std::atomic<bool> ClientHandler::shutdown(false);
 
 boost::asio::thread_pool ClientHandler::threadPool(std::thread::hardware_concurrency());
+
+unsigned short ClientHandler::emailVerificationsAttempts;
 
 
 void ClientHandler::Init(unsigned short port) {
@@ -303,6 +306,15 @@ void ClientHandler::Disconnect(SOCKET socket) {
 
 
     {
+        std::lock_guard<std::mutex> lock(userPreregisterMutex);
+        auto it = std::find_if(userPreregister.begin(), userPreregister.end(),
+                               [&socket](const auto& pair) { return GetSocketByUID(-(pair.first)) == socket; });
+        if (it != userPreregister.end()) {
+            userPreregister.erase(it);
+        }
+    }
+
+    {
         std::lock_guard<std::mutex> lock(clientMapsMutex);
         auto uidIt = std::find_if(uidToSocketMap.begin(), uidToSocketMap.end(),
                                   [&socket](const auto& pair) { return pair.second == socket; });
@@ -323,15 +335,6 @@ void ClientHandler::Disconnect(SOCKET socket) {
                                [&socket](const auto& pair) { return pair.second == socket; });
         if (it != unverifiedSocketsIDs.end()) {
             unverifiedSocketsIDs.erase(it);
-        }
-    }
-
-    {
-        std::lock_guard<std::mutex> lock(userPreregisterMutex);
-        auto it = std::find_if(userPreregister.begin(), userPreregister.end(),
-                               [&socket](const auto& pair) { return GetSocketByUID(-(pair.first)) == socket; });
-        if (it != userPreregister.end()) {
-            userPreregister.erase(it);
         }
     }
 
@@ -379,6 +382,11 @@ void ClientHandler::CheckUnverifiedSockets() {
             }
         }
     }
+}
+
+short ClientHandler::SendEmail(std::string email, std::string subject, std::string content) {
+    //TODO Implement email sending logic
+    return 0;
 }
 
 void ClientHandler::ProcessDataContent(std::string data) {
@@ -437,19 +445,86 @@ void ClientHandler::ProcessDataContent(std::string data) {
                 std::lock_guard<std::mutex> lock(unverifiedSocketsIDsMutex);
                 unverifiedSocketsIDs.erase(uid);
             }
-            short emailCode = rand() % 1'000'000;
+            unsigned emailCode = rand() % 1'000'000;
             auto time = std::chrono::steady_clock::now();
             {
                 std::lock_guard<std::mutex> lock(userPreregisterMutex);
-                userPreregister[userPreregisterCounter++] = {username, password, email, emailCode, time};
+                userPreregister[userPreregisterCounter++] = {username, password, email, emailCode, time, 0};
                 AddClient(-(userPreregisterCounter), socket);
             }
-            //TODO send email with verification code
+            if (SendEmail(email, "Email verification", "Your verification code is: " + std::to_string(emailCode)) != 0) {
+                SendData(socket, "ERROR", "MAIL_SEND_ERROR");
+                Disconnect(socket);
+                return;
+            }
+            return;
         }
-    }
-
-    if (action.empty()) {
-        Disconnect(GetSocketByUID(uid));
+        Disconnect(socket);
         return;
     }
+
+    SOCKET socket = GetSocketByUID(uid);
+
+    if (action.empty()) {
+        Disconnect(socket);
+        return;
+    }
+
+    if (action == "REGISTER") {
+        std::string strEmailCode = TypeUtils::getFirstParam(data);
+        if (!TypeUtils::isValidString(strEmailCode)) {
+            Disconnect(socket);
+            return;
+        }
+        unsigned emailCode;
+        if (!TypeUtils::tryPassUInt(strEmailCode, emailCode)) {
+            Disconnect(socket);
+            return;
+        }
+
+        UserPreregister user;
+        {
+            std::lock_guard<std::mutex> lock(userPreregisterMutex);
+            auto it = userPreregister.find(uid);
+            if (it == userPreregister.end()) {
+                Disconnect(socket);
+                return;
+            }
+            user = it->second;
+        }
+
+        if (user.emailCode != emailCode) {
+            SendData(socket, "REGISTER", "EMAIL_CODE_INCORRECT");
+            return;
+        }
+        if (user.attempts++ >= emailVerificationsAttempts) {
+            SendData(socket, "REGISTER", "EMAIL_CODE_ATTEMPTS_EXCEEDED");
+            Disconnect(socket);
+            return;
+        }
+
+        short err;
+        if (err = Auth::RegisterUser(user.username, user.password, user.email), err == 1) {
+            SendData(socket, "REGISTER", "SUCCESS");
+            RemoveClient(uid);
+            {
+                std::lock_guard<std::mutex> lock(userPreregisterMutex);
+                userPreregister.erase(uid);
+            }
+        } else if (err == 0) {
+            SendData(socket, "REGISTER", "ERROR");
+            return;
+        } else {
+            SendData(socket, "ERROR", "Server error during registration");
+            Disconnect(socket);
+            std::cerr << "Error registering user: " << err << std::endl;
+            ClientServiceLink::SendData("LOG", 5, "Error registering user: " + std::to_string(err));
+            return;
+        }
+        AddClient(uid, socket);
+
+        return;
+    }
+
+    Disconnect(socket);
 }
