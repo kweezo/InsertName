@@ -41,12 +41,18 @@ boost::container::flat_map<unsigned short, UserPreregister> ClientHandler::userP
 unsigned short ClientHandler::userPreregisterCounter;
 std::mutex ClientHandler::userPreregisterMutex;
 
+boost::container::flat_map<long, UserLogin> ClientHandler::userLogin;
+std::mutex ClientHandler::userLoginMutex;
+
 std::atomic<bool> ClientHandler::running(true);
 std::atomic<bool> ClientHandler::shutdown(false);
 
 boost::asio::thread_pool ClientHandler::threadPool(std::thread::hardware_concurrency());
 
 unsigned short ClientHandler::emailVerificationsAttempts;
+unsigned short ClientHandler::loginAttempts;
+unsigned short ClientHandler::loginTime;
+unsigned short ClientHandler::emailVerificationTime;
 
 
 void ClientHandler::Init(unsigned short port) {
@@ -65,6 +71,11 @@ void ClientHandler::Init(unsigned short port) {
     acceptor.set_option(boost::asio::ip::tcp::acceptor::reuse_address(true));
     acceptor.bind(endpoint);
     acceptor.listen();
+
+    emailVerificationsAttempts = settings.emailVerificationsAttempts;
+    loginAttempts = settings.loginAttempts;
+    loginTime = settings.loginTime;
+    emailVerificationTime = settings.emailVerificationTime;
 }
 
 void ClientHandler::Start() {
@@ -82,6 +93,10 @@ void ClientHandler::Start() {
             }
         }).detach();
     }
+
+    std::thread(&ClientHandler::CheckUnverifiedSockets).detach();
+    std::thread(&ClientHandler::CheckUserPreregister).detach();
+    std::thread(&ClientHandler::CheckUserLogin).detach();
 }
 
 void ClientHandler::InitiateShutdown() {
@@ -338,6 +353,15 @@ void ClientHandler::Disconnect(SOCKET socket) {
         }
     }
 
+    {
+        std::lock_guard<std::mutex> lock(userLoginMutex);
+        auto it = std::find_if(userLogin.begin(), userLogin.end(),
+                               [&socket](const auto& pair) { return GetSocketByUID(pair.first) == socket; });
+        if (it != userLogin.end()) {
+            userLogin.erase(it);
+        }
+    }
+
     #ifdef DEBUG
         std::cout << "Disconnected client" << std::endl;
     #endif
@@ -368,15 +392,55 @@ long ClientHandler::GetUIDBySocket(SOCKET socket) {
 
 void ClientHandler::CheckUnverifiedSockets() {
     while (!shutdown) {
-        std::this_thread::sleep_for(std::chrono::seconds(5));
+        std::this_thread::sleep_for(std::chrono::seconds(1));
 
         auto now = std::chrono::steady_clock::now();
         std::lock_guard<std::mutex> lock(unverifiedSocketsMutex);
 
         for (auto it = unverifiedSockets.begin(); it != unverifiedSockets.end(); ) {
-            if (std::chrono::duration_cast<std::chrono::minutes>(now - it->second).count() > 5) {
+            if (std::chrono::duration_cast<std::chrono::minutes>(now - it->second).count() > loginTime) {
                 Disconnect(it->first);
                 it = unverifiedSockets.erase(it);
+            } else {
+                ++it;
+            }
+        }
+    }
+}
+
+void ClientHandler::CheckUserPreregister() {
+    while (!shutdown) {
+        std::this_thread::sleep_for(std::chrono::seconds(1));
+
+        auto now = std::chrono::steady_clock::now();
+        std::lock_guard<std::mutex> lock(userPreregisterMutex);
+
+        for (auto it = userPreregister.begin(); it != userPreregister.end(); ) {
+            if (std::chrono::duration_cast<std::chrono::minutes>(now - it->second.time).count() > emailVerificationTime) {
+                auto socket = GetSocketByUID(it->first);
+                SendData(socket, "EMAIL", "TIME_EXPIRED");
+                Disconnect(socket);
+                it = userPreregister.erase(it);
+            } else {
+                ++it;
+            }
+        }
+    }
+}
+
+void ClientHandler::CheckUserLogin() {
+    while (!shutdown) {
+        std::this_thread::sleep_for(std::chrono::seconds(1));
+
+        auto now = std::chrono::steady_clock::now();
+        std::lock_guard<std::mutex> lock(userLoginMutex);
+
+        for (auto it = userLogin.begin(); it != userLogin.end(); ) {
+            if (std::chrono::duration_cast<std::chrono::minutes>(now - it->second.time).count() > loginTime) {
+                auto socket = GetSocketByUID(it->first);
+                SendData(socket, "EMAIL", "TIME_EXPIRED");
+                Disconnect(socket);
+                it = userLogin.erase(it);
             } else {
                 ++it;
             }
@@ -405,7 +469,73 @@ void ClientHandler::ProcessDataContent(std::string data) {
             return;
         }
 
-        if (action == "REGISTER_PREPARE") {
+        if (action == "LOGIN") {
+            std::string username = TypeUtils::getFirstParam(data);
+            std::string password = TypeUtils::getFirstParam(data);
+            if (!TypeUtils::isValidString(username) || !TypeUtils::isValidString(password)) {
+                Disconnect(socket);
+                return;
+            }
+
+            short err;
+
+            if (uid = Auth::GetUID(username), uid == 0) {
+                SendData(socket, "LOGIN", "WRONG_USERNAME");
+
+            } else if (uid < 0) {
+                SendData(socket, "LOGIN", "Server error during login");
+                Disconnect(socket);
+                std::cerr << "Error getting UID: " << uid << std::endl;
+                ClientServiceLink::SendData("LOG", 5, "Error getting UID: " + std::to_string(uid));
+            }
+
+            if (err = Auth::VerifyPassword(uid, password), err == 0) {
+                SendData(socket, "LOGIN", "WRONG_PASSWORD");
+                return;
+            } else if (err != 1) {
+                SendData(socket, "ERROR", "Server error during login");
+                Disconnect(socket);
+                std::cerr << "Error verifying password: " << err << std::endl;
+                ClientServiceLink::SendData("LOG", 5, "Error verifying password: " + std::to_string(err));
+                return;
+            }
+
+            std::string email;
+            if (err = Auth::GetEmail(uid, email), err != 1) {
+                SendData(socket, "ERROR", "Server error during login");
+                Disconnect(socket);
+                std::cerr << "Error getting email: " << err << std::endl;
+                ClientServiceLink::SendData("LOG", 5, "Error getting email: " + std::to_string(err));
+                return;
+            }
+
+            {
+                std::lock_guard<std::mutex> lock(unverifiedSocketsIDsMutex);
+                unverifiedSocketsIDs.erase(uid);
+            }
+            {
+                std::lock_guard<std::mutex> lock(unverifiedSocketsMutex);
+                unverifiedSockets.erase(socket);
+            }
+            unsigned emailCode = rand() % 1'000'000;
+            auto time = std::chrono::steady_clock::now();
+            {
+                std::lock_guard<std::mutex> lock(userLoginMutex);
+                userLogin[uid] = {uid, time, email, emailCode, 0};
+            }
+
+            SendData(socket, "LOGIN", "PREPARE_SUCCESS", emailVerificationTime);
+            if (SendEmail(email, "Email verification", "Your verification code is: " + std::to_string(emailCode)) != 0) {
+                SendData(socket, "ERROR", "MAIL_SEND_ERROR");
+                Disconnect(socket);
+                return;
+            }
+
+            AddClient(uid, socket);
+
+            return;
+        
+        } else if (action == "REGISTER_PREPARE") {
             std::string username = TypeUtils::getFirstParam(data);
             std::string password = TypeUtils::getFirstParam(data);
             std::string email = TypeUtils::getFirstParam(data);
@@ -440,10 +570,13 @@ void ClientHandler::ProcessDataContent(std::string data) {
                 return;
             }
 
-            SendData(socket, "REGISTER", "PREPARE_SUCCESS");
             {
                 std::lock_guard<std::mutex> lock(unverifiedSocketsIDsMutex);
                 unverifiedSocketsIDs.erase(uid);
+            }
+            {
+                std::lock_guard<std::mutex> lock(unverifiedSocketsMutex);
+                unverifiedSockets.erase(socket);
             }
             unsigned emailCode = rand() % 1'000'000;
             auto time = std::chrono::steady_clock::now();
@@ -452,6 +585,8 @@ void ClientHandler::ProcessDataContent(std::string data) {
                 userPreregister[userPreregisterCounter++] = {username, password, email, emailCode, time, 0};
                 AddClient(-(userPreregisterCounter), socket);
             }
+
+            SendData(socket, "REGISTER", "PREPARE_SUCCESS", emailVerificationTime);
             if (SendEmail(email, "Email verification", "Your verification code is: " + std::to_string(emailCode)) != 0) {
                 SendData(socket, "ERROR", "MAIL_SEND_ERROR");
                 Disconnect(socket);
@@ -493,13 +628,17 @@ void ClientHandler::ProcessDataContent(std::string data) {
             user = it->second;
         }
 
-        if (user.emailCode != emailCode) {
-            SendData(socket, "REGISTER", "EMAIL_CODE_INCORRECT");
-            return;
-        }
         if (user.attempts++ >= emailVerificationsAttempts) {
             SendData(socket, "REGISTER", "EMAIL_CODE_ATTEMPTS_EXCEEDED");
             Disconnect(socket);
+            return;
+        }
+        if (user.emailCode != emailCode) {
+            SendData(socket, "REGISTER", "EMAIL_CODE_INCORRECT");
+            {
+                std::lock_guard<std::mutex> lock(userPreregisterMutex);
+                userPreregister[uid] = user;
+            }
             return;
         }
 
@@ -521,7 +660,59 @@ void ClientHandler::ProcessDataContent(std::string data) {
             ClientServiceLink::SendData("LOG", 5, "Error registering user: " + std::to_string(err));
             return;
         }
+
+        if (uid = Auth::GetUID(user.username), uid < 1) {
+            SendData(socket, "ERROR", "Server error during registration");
+            Disconnect(socket);
+            std::cerr << "Error getting UID: " << uid << std::endl;
+            ClientServiceLink::SendData("LOG", 5, "Error getting UID: " + std::to_string(uid));
+            return;
+        }
         AddClient(uid, socket);
+
+        SendData(socket, "RELOGIN_TOKEN", Auth::CreateReloginToken(uid));
+
+        return;
+    
+    } else if (action == "LOGIN") {
+        std::string strEmailCode = TypeUtils::getFirstParam(data);
+        if (!TypeUtils::isValidString(strEmailCode)) {
+            Disconnect(socket);
+            return;
+        }
+        unsigned emailCode;
+        if (!TypeUtils::tryPassUInt(strEmailCode, emailCode)) {
+            Disconnect(socket);
+            return;
+        }
+
+        UserLogin user;
+        {
+            std::lock_guard<std::mutex> lock(userLoginMutex);
+            auto it = userLogin.find(uid);
+            if (it == userLogin.end()) {
+                Disconnect(socket);
+                return;
+            }
+            user = it->second;
+        }
+
+        if (user.attempts++ >= loginAttempts) {
+            SendData(socket, "LOGIN", "ATTEMPTS_EXCEEDED");
+            Disconnect(socket);
+            return;
+        }
+
+        if (user.emailCode != emailCode) {
+            SendData(socket, "LOGIN", "EMAIL_CODE_INCORRECT");
+            {
+                std::lock_guard<std::mutex> lock(userLoginMutex);
+                userLogin[uid] = user;
+            }
+            return;
+        }
+
+        SendData(socket, "RELOGIN_TOKEN", Auth::CreateReloginToken(uid));
 
         return;
     }

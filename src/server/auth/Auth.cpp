@@ -311,3 +311,29 @@ int Auth::GetUID(const std::string& username) {
         return -9;
     }
 }
+
+short Auth::GetEmail(int uid, std::string& email) {
+    try {
+        auto conn = c.load();
+        if (!conn) {
+            std::cerr << "Database connection is not open" << std::endl;
+            return -10;
+        }
+
+        pqxx::work txn(*conn);
+        pqxx::result result = txn.exec_params(
+            "SELECT email FROM users WHERE uid = $1",
+            uid
+        );
+
+        if (result.empty()) { // User not found
+            return -1;
+        }
+
+        email = result[0]["email"].as<std::string>();
+        return 1;
+    } catch (const std::exception& e) {
+        std::cerr << "Error getting email: " << e.what() << std::endl;
+        return -9;
+    }
+}

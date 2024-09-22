@@ -29,6 +29,7 @@ public:
     static short VerifyReloginToken(int uid, const std::string& token);
 
     static int GetUID(const std::string& username);
+    static short GetEmail(int uid, std::string& email);
 
 private:
     static std::atomic<std::shared_ptr<pqxx::connection>> c;

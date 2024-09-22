@@ -276,6 +276,10 @@ void ServiceLink::HandleMessageContent(Message msg) {
 
             SendData(serviceId, "SETTING_SET_dbConnString", dbConnString);
             SendData(serviceId, "SETTING_SET_port", std::to_string(settings.authServicePort));
+            SendData(serviceId, "SETTING_SET_emailVerificationsAttempts", std::to_string(settings.emailVerificationsAttempts));
+            SendData(serviceId, "SETTING_SET_loginAttempts", std::to_string(settings.loginAttempts));
+            SendData(serviceId, "SETTING_SET_loginTime", std::to_string(settings.loginTime));
+            SendData(serviceId, "SETTING_SET_emailVerificationTime", std::to_string(settings.emailVerificationTime));
         }
 
     } else if (action == "DISCONNECT") {

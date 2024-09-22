@@ -24,6 +24,11 @@ struct Config {
     int commandWindowHeight = 3;
 
     int authServicePort = 8083;
+    int emailVerificationsAttempts = 3;
+    int loginAttempts = 3;
+    int loginTime = 5;
+    int emailVerificationTime = 3;
+
 };
 
 class AdvancedSettingsManager {
@@ -47,7 +52,11 @@ public:
         std::optional<std::string> commandPrompt = std::nullopt,
         std::optional<int> commandWindowHeight = std::nullopt,
         
-        std::optional<int> authServicePort = std::nullopt
+        std::optional<int> authServicePort = std::nullopt,
+        std::optional<int> emailVerificationsAttempts = std::nullopt,
+        std::optional<int> loginAttempts = std::nullopt,
+        std::optional<int> loginTime = std::nullopt,
+        std::optional<int> emailVerificationTime = std::nullopt
     );
     static void SetSetting(size_t index, const std::variant<int, std::string>& value);
     static std::string GetSetting(size_t index);

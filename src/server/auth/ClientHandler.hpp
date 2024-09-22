@@ -25,6 +25,14 @@ struct UserPreregister {
     unsigned short attempts;
 };
 
+struct UserLogin {
+    long uid;
+    std::chrono::time_point<std::chrono::steady_clock> time;
+    std::string email;
+    unsigned emailCode;
+    unsigned short attempts;
+};
+
 class ClientHandler {
 public:
     static void Init(unsigned short port);
@@ -52,6 +60,8 @@ private:
     static void AddClient(long uid, SOCKET socket);
     static void RemoveClient(long uid);
     static void CheckUnverifiedSockets();
+    static void CheckUserPreregister();
+    static void CheckUserLogin();
 
     static void ProcessDataContent(std::string data);
 
@@ -82,6 +92,9 @@ private:
     static unsigned short userPreregisterCounter;
     static std::mutex userPreregisterMutex;
 
+    static boost::container::flat_map<long, UserLogin> userLogin;
+    static std::mutex userLoginMutex;
+
     static std::atomic<bool> running;
     static std::atomic<bool> shutdown;
     static const int maxThreads = 1024;
@@ -89,6 +102,9 @@ private:
     static boost::asio::thread_pool threadPool;
 
     static unsigned short emailVerificationsAttempts;
+    static unsigned short loginAttempts;
+    static unsigned short loginTime;
+    static unsigned short emailVerificationTime;
 };
 
 // ---------------------------- Template functions ---------------------------- //

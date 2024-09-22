@@ -1,7 +1,7 @@
 #include "Settings.hpp"
 
 Settings settings;
-bool allSettingsReceivedArray[SETTINGS_NUM] = {false, false, false};
+bool allSettingsReceivedArray[SETTINGS_NUM] = {};
 
 bool allSettingsReceived() {
     bool yes = true;

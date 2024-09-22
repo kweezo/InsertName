@@ -93,7 +93,11 @@ void AdminConsole::AddCommands() {
         "commandprompt",
         "commandwindowheight",
 
-        "authserviceport"
+        "authserviceport",
+        "emailverificationsattempts",
+        "loginattempts",
+        "logintime",
+        "emailverificationtime"
     };
     secParam[2] = {"all", "setting", "logs"};
 }
@@ -567,7 +571,7 @@ void AdminConsole::ProcessLine(const std::string& line) {
         }
         if ((index == 1 || index == 8 || index == 11) && (value < 1 || value > 65535)) {
             CmdReport("Port must be greater than 0 and smaller than 65536", 4);
-        } else if ((index == 0 || index == 3 || index == 10) && value < 0) {
+        } else if ((index == 0 || index == 3 || index == 10 || (index >= 12 && index <= 15)) && value < 0) {
             CmdReport("This value must be greater or equal to 0", 4);
         } else if (index == 2 && (value < 0 || value > 5)) {
             CmdReport("Log level must be between 0 and 5", 4);

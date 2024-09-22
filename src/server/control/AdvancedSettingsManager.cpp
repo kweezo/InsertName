@@ -30,7 +30,11 @@ void AdvancedSettingsManager::LoadSettings(const std::string& file_) {
         &config.commandPrompt,
         &config.commandWindowHeight,
 
-        &config.authServicePort
+        &config.authServicePort,
+        &config.emailVerificationsAttempts,
+        &config.loginAttempts,
+        &config.loginTime,
+        &config.emailVerificationTime
     };
 
     std::lock_guard<std::mutex> lock(mutex);
@@ -81,6 +85,18 @@ void AdvancedSettingsManager::LoadSettings(const std::string& file_) {
         if (root.isMember("authServicePort")) {
             config.authServicePort = root["authServicePort"].asInt();
         }
+        if (root.isMember("emailVerificationsAttempts")) {
+            config.emailVerificationsAttempts = root["emailVerificationsAttempts"].asInt();
+        }
+        if (root.isMember("loginAttempts")) {
+            config.loginAttempts = root["loginAttempts"].asInt();
+        }
+        if (root.isMember("loginTime")) {
+            config.loginTime = root["loginTime"].asInt();
+        }
+        if (root.isMember("emailVerificationTime")) {
+            config.emailVerificationTime = root["emailVerificationTime"].asInt();
+        }
     }
 }
 
@@ -104,6 +120,10 @@ void AdvancedSettingsManager::SaveSettings() {
     root["commandWindowHeight"] = config.commandWindowHeight;
 
     root["authServicePort"] = config.authServicePort;
+    root["emailVerificationsAttempts"] = config.emailVerificationsAttempts;
+    root["loginAttempts"] = config.loginAttempts;
+    root["loginTime"] = config.loginTime;
+    root["emailVerificationTime"] = config.emailVerificationTime;
 
     std::ofstream configFile(file, std::ofstream::binary);
     configFile << root;
@@ -132,7 +152,11 @@ void AdvancedSettingsManager::SetSettings(
     std::optional<std::string> commandPrompt,
     std::optional<int> commandWindowHeight,
 
-    std::optional<int> authServicePort
+    std::optional<int> authServicePort,
+    std::optional<int> emailVerificationsAttempts,
+    std::optional<int> loginAttempts,
+    std::optional<int> loginTime,
+    std::optional<int> emailVerificationTime
 ) {
 
     std::lock_guard<std::mutex> lock(mutex);
@@ -172,6 +196,18 @@ void AdvancedSettingsManager::SetSettings(
     }
     if (authServicePort.has_value()) {
         config.authServicePort = authServicePort.value();
+    }
+    if (emailVerificationsAttempts.has_value()) {
+        config.emailVerificationsAttempts = emailVerificationsAttempts.value();
+    }
+    if (loginAttempts.has_value()) {
+        config.loginAttempts = loginAttempts.value();
+    }
+    if (loginTime.has_value()) {
+        config.loginTime = loginTime.value();
+    }
+    if (emailVerificationTime.has_value()) {
+        config.emailVerificationTime = emailVerificationTime.value();
     }
 }
 
